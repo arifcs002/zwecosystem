@@ -60,7 +60,7 @@ jobs:
               image: postgres:15-alpine
               container_name: ecommerce-postgres
               ports:
-                - "5432:5432"
+                - "5435:5432"
               environment:
                 POSTGRES_DB: ecommerce_db
                 POSTGRES_USER: dev_user
@@ -119,7 +119,7 @@ jobs:
               image: ghcr.io/${{ github.repository }}/admin-dashboard:latest
               container_name: ecommerce-admin
               ports:
-                - "4200:80"
+                - "4250:80"
               depends_on:
                 - backend
               networks:
