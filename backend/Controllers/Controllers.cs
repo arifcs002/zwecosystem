@@ -462,7 +462,7 @@ namespace Ecommerce.Api.Controllers
 
         private string GenerateCode128Barcode(Guid companyId)
         {
-            var prefix = companyId.ToString().Substring(0, 4).ToUpper();
+            var prefix = "ZW";
             var rand = new Random();
             var number = rand.Next(100000, 999999);
             return $"{prefix}-{number}";

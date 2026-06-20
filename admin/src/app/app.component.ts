@@ -68,9 +68,14 @@ export class AppComponent implements OnInit {
   
   // App View Modes
   viewMode: 'admin' | 'shop' = 'admin';
-  activeTab: 'dashboard' | 'products-list' | 'products-add' | 'pos' | 'orders' | 'settings' | 'users' | 'categories' | 'config' | 'checkout' = 'dashboard';
+  activeTab: 'dashboard' | 'products-list' | 'products-add' | 'pos' | 'orders' | 'settings' | 'users' | 'categories' | 'config' | 'checkout' | 'price-tag' = 'dashboard';
 
-  // Category State
+  // Price Tag & Barcode states
+  selectedPriceTagCategory = 'All';
+  selectedPriceTagPrintStatus = 'All';
+  priceTagSearchQuery = '';
+  printedProductIds: { [id: string]: boolean } = {};
+  selectedProductsForPrint: { [id: string]: boolean } = {};
   categories: any[] = [];
   newCategoryName = '';
   newCategoryDescription = '';
@@ -191,6 +196,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.refreshAllData();
+    this.loadPrintedStatus();
   }
 
   getHeaders() {
@@ -1327,6 +1333,263 @@ export class AppComponent implements OnInit {
     
     this.selectedProductForView = null;
     this.showShopCartModal = true; // Slide open the cart drawer! Same to same as Ghorer Bazar!
+  }
+
+  // Price Tag Management
+  loadPrintedStatus() {
+    try {
+      const stored = localStorage.getItem('ZW_printed_products');
+      if (stored) {
+        this.printedProductIds = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Error reading printed status", e);
+    }
+  }
+
+  savePrintedStatus() {
+    localStorage.setItem('ZW_printed_products', JSON.stringify(this.printedProductIds));
+  }
+
+  isProductPrinted(productId: string): boolean {
+    return !!this.printedProductIds[productId];
+  }
+
+  togglePrintedStatus(productId: string) {
+    this.printedProductIds[productId] = !this.printedProductIds[productId];
+    this.savePrintedStatus();
+  }
+
+  toggleSelectProductForPrint(productId: string) {
+    this.selectedProductsForPrint[productId] = !this.selectedProductsForPrint[productId];
+  }
+
+  isProductSelectedForPrint(productId: string): boolean {
+    return !!this.selectedProductsForPrint[productId];
+  }
+
+  toggleSelectAllForPrint(filteredProducts: any[]) {
+    const allSelected = filteredProducts.every(p => this.isProductSelectedForPrint(p.id));
+    filteredProducts.forEach(p => {
+      this.selectedProductsForPrint[p.id] = !allSelected;
+    });
+  }
+
+  markSelectedAsPrinted(status: boolean) {
+    const selectedIds = Object.keys(this.selectedProductsForPrint).filter(id => this.selectedProductsForPrint[id]);
+    if (selectedIds.length === 0) {
+      alert("No products selected.");
+      return;
+    }
+    selectedIds.forEach(id => {
+      this.printedProductIds[id] = status;
+    });
+    this.savePrintedStatus();
+    alert(`Marked ${selectedIds.length} items as ${status ? 'Printed' : 'Not Printed'}.`);
+  }
+
+  printSingleSticker(product: any) {
+    this.printTags([product]);
+  }
+
+  printSelectedStickers() {
+    const selectedList = this.products.filter(p => this.selectedProductsForPrint[p.id]);
+    if (selectedList.length === 0) {
+      alert("Please select at least one product to print.");
+      return;
+    }
+    this.printTags(selectedList);
+  }
+
+  printTags(productsToPrint: any[]) {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert("Pop-up blocker is preventing opening the print window.");
+      return;
+    }
+
+    let stickerHtml = '';
+    productsToPrint.forEach(p => {
+      const priceFormatted = Number(p.price).toLocaleString();
+      stickerHtml += `
+        <div class="sticker">
+          <div class="sticker-header">ZAIRA'S WORLD</div>
+          <div class="sticker-body">
+            <div class="left-col">
+              <div class="shop-logo">ZW</div>
+              <div class="product-sku">SKU: ${p.sku || 'N/A'}</div>
+              <div class="product-size">Size: ${p.size || 'N/A'}</div>
+            </div>
+            <div class="right-col">
+              <div class="product-name">${p.name}</div>
+              <div class="price-val">৳${priceFormatted}</div>
+            </div>
+          </div>
+          <div class="barcode-container">
+            <div class="barcode-lines">
+              ${this.generateBarcodeHtml(p.barcode)}
+            </div>
+            <div class="barcode-text">${p.barcode}</div>
+          </div>
+        </div>
+      `;
+      this.printedProductIds[p.id] = true;
+    });
+
+    this.savePrintedStatus();
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Price Tags - Zaira's World</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 10px;
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              background: #fff;
+            }
+            .sticker {
+              width: 50.8mm;
+              height: 38.1mm;
+              border: 1px dashed #ccc;
+              box-sizing: border-box;
+              padding: 2.5mm;
+              margin: 3mm;
+              display: inline-block;
+              vertical-align: top;
+              position: relative;
+              overflow: hidden;
+              background: #fff;
+              page-break-inside: avoid;
+            }
+            .sticker-header {
+              font-size: 10pt;
+              font-weight: 900;
+              text-align: center;
+              border-bottom: 1.5px solid #000;
+              padding-bottom: 0.5mm;
+              letter-spacing: 0.8px;
+            }
+            .sticker-body {
+              display: flex;
+              margin-top: 1.5mm;
+              height: 16mm;
+            }
+            .left-col {
+              width: 40%;
+              border-right: 1px dashed #666;
+              padding-right: 1mm;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+            }
+            .right-col {
+              width: 60%;
+              padding-left: 1.5mm;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+            }
+            .shop-logo {
+              font-size: 11pt;
+              font-weight: 900;
+              color: #000;
+              background: #f0f0f0;
+              border: 1px solid #000;
+              text-align: center;
+              border-radius: 3px;
+              padding: 0.5mm 0;
+              line-height: 1;
+            }
+            .product-sku, .product-size {
+              font-size: 6.5pt;
+              font-weight: 700;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .product-name {
+              font-size: 7pt;
+              font-weight: 700;
+              line-height: 1.2;
+              height: 9mm;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 3;
+              -webkit-box-orient: vertical;
+            }
+            .price-val {
+              font-size: 11pt;
+              font-weight: 900;
+              text-align: right;
+              line-height: 1;
+            }
+            .barcode-container {
+              position: absolute;
+              bottom: 1.5mm;
+              left: 2.5mm;
+              right: 2.5mm;
+              text-align: center;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .barcode-lines {
+              display: flex;
+              align-items: flex-end;
+              height: 8mm;
+              width: 90%;
+              justify-content: center;
+            }
+            .barcode-lines div {
+              background-color: #000;
+              height: 100%;
+            }
+            .barcode-text {
+              font-size: 6.5pt;
+              font-weight: 700;
+              letter-spacing: 1.5px;
+              margin-top: 0.5mm;
+            }
+            @media print {
+              .sticker {
+                border: 1px transparent;
+                margin: 0;
+                page-break-after: always;
+              }
+              body {
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${stickerHtml}
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+
+  generateBarcodeHtml(barcode: string): string {
+    if (!barcode) return '';
+    let html = '';
+    const seedString = barcode + "ZWBARCODE";
+    for (let i = 0; i < 35; i++) {
+      const charCode = seedString.charCodeAt(i % seedString.length);
+      const width = (charCode % 3) + 1;
+      const gap = (charCode % 2) + 1;
+      html += `<div style="width: ${width}px; margin-right: ${gap}px; background-color: #000; height: 100%;"></div>`;
+    }
+    return html;
   }
 
 }
