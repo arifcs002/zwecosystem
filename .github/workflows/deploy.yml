@@ -143,7 +143,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT || 22 }}
           source: "docker-compose.prod.yml"
-          target: "~/zairas_world/"
+          target: "/data/apps/zairasworld/"
 
       - name: Deploy containers via SSH Command
         uses: appleboy/ssh-action@master
@@ -153,8 +153,8 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            mkdir -p ~/zairas_world
-            cd ~/zairas_world
+            mkdir -p /data/apps/zairasworld
+            cd /data/apps/zairasworld
             mv -f docker-compose.prod.yml docker-compose.yml
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull
