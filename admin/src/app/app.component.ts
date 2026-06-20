@@ -68,7 +68,7 @@ export class AppComponent implements OnInit {
   
   // App View Modes
   viewMode: 'admin' | 'shop' = 'admin';
-  activeTab: 'dashboard' | 'products' | 'pos' | 'orders' | 'settings' | 'users' | 'categories' | 'config' = 'products';
+  activeTab: 'dashboard' | 'products-list' | 'products-add' | 'pos' | 'orders' | 'settings' | 'users' | 'categories' | 'config' = 'products-list';
 
   // Category State
   categories: any[] = [];
@@ -202,6 +202,8 @@ export class AppComponent implements OnInit {
 
   refreshAllData() {
     this.fetchProducts();
+      this.activeTab = 'products-list';
+      this.activeTab = 'products-list';
     this.fetchOrders();
     this.fetchSettings();
     this.fetchStats();
@@ -740,6 +742,8 @@ export class AppComponent implements OnInit {
       this.sizeCustomQuantities = {};
       this.uploadStatus = '';
       this.fetchProducts();
+      this.activeTab = 'products-list';
+      this.activeTab = 'products-list';
     })
     .catch(err => {
       console.error("Error saving products", err);
@@ -1171,6 +1175,8 @@ export class AppComponent implements OnInit {
   onStoreSearch() {
     if (!this.storeSearchQuery) {
       this.fetchProducts();
+      this.activeTab = 'products-list';
+      this.activeTab = 'products-list';
       return;
     }
     
