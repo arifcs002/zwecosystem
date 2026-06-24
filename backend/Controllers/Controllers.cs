@@ -15,8 +15,46 @@ namespace Ecommerce.Api.Controllers
 {
     // DTOs
     public record RegisterDto(string Email, string Password, string FirstName, string LastName, string? PhoneNumber, string? CompanyName, string? Subdomain);
+    public class CompanyRegisterDto
+    {
+        public string CompanyName { get; set; } = string.Empty;
+        public string Subdomain { get; set; } = string.Empty;
+        public string OwnerFirstName { get; set; } = string.Empty;
+        public string OwnerLastName { get; set; } = string.Empty;
+        public string OwnerEmail { get; set; } = string.Empty;
+        public string OwnerPhone { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string Division { get; set; } = string.Empty;
+        public string District { get; set; } = string.Empty;
+        public string Thana { get; set; } = string.Empty;
+    }
+
+    public class CreateUserDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public Guid? CompanyId { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class UpdateUserDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public Guid? CompanyId { get; set; }
+        public bool IsActive { get; set; }
+        public string? Password { get; set; }
+    }
     public record LoginDto(string Email, string Password);
-    public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, Guid? CompanyId, List<string> Roles);
+    public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, Guid? CompanyId, List<string> Roles, string? UserType);
     public record ProductCreateDto(string Name, string SKU, decimal Price, decimal WholesalePrice, int StockQuantity, string? Description, Guid? CategoryId, Guid? BrandId, string? Barcode, string? ImageUrl);
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(string Name, decimal Price, decimal WholesalePrice, string? Description, Guid? CategoryId, Guid? SupplierId, string? ImageUrl, List<SizeQtyDto> Sizes);
@@ -41,6 +79,65 @@ namespace Ecommerce.Api.Controllers
             _config = config;
         }
 
+        [HttpPost("register-company")]
+        public async Task<IActionResult> RegisterCompany([FromBody] CompanyRegisterDto dto)
+        {
+            if (await _context.Users.AnyAsync(u => u.Email == dto.OwnerEmail))
+                return BadRequest(new { message = "Email already registered" });
+
+            var subdomain = dto.Subdomain.ToLower().Replace(" ", "");
+            if (await _context.Companies.AnyAsync(c => c.Subdomain == subdomain))
+                return BadRequest(new { message = $"Subdomain '{subdomain}' is already taken." });
+
+            var basicPlan = await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Name == "Basic Plan");
+
+            var company = new Company
+            {
+                Name = dto.CompanyName,
+                Subdomain = subdomain,
+                IsActive = false, // Pending approval
+                ApprovalStatus = "Pending",
+                Address = dto.Address,
+                Division = dto.Division,
+                District = dto.District,
+                Thana = dto.Thana,
+                OwnerName = $"{dto.OwnerFirstName} {dto.OwnerLastName}",
+                ContactEmail = dto.OwnerEmail,
+                ContactPhone = dto.OwnerPhone,
+                SubscriptionPlanId = basicPlan?.Id,
+                SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1)
+            };
+
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
+
+            var user = new User
+            {
+                Email = dto.OwnerEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                FirstName = dto.OwnerFirstName,
+                LastName = dto.OwnerLastName,
+                PhoneNumber = dto.OwnerPhone,
+                Address = dto.Address,
+                CompanyId = company.Id,
+                IsActive = true,
+                UserType = "CompanyAdmin",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "COMPANY_ADMIN");
+            if (role != null)
+            {
+                user.UserRoles.Add(new UserRole { User = user, RoleId = role.Id });
+            }
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = user.Email, companyId = company.Id });
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
@@ -49,7 +146,7 @@ namespace Ecommerce.Api.Controllers
 
             Guid? companyId = null;
 
-            // If CompanyName is provided, perform SaaS tenant signup
+            // If CompanyName is provided, perform SaaS tenant signup (Legacy or secondary way)
             if (!string.IsNullOrEmpty(dto.CompanyName))
             {
                 var subdomain = dto.Subdomain ?? dto.CompanyName.ToLower().Replace(" ", "");
@@ -62,7 +159,8 @@ namespace Ecommerce.Api.Controllers
                 {
                     Name = dto.CompanyName,
                     Subdomain = subdomain,
-                    IsActive = true,
+                    IsActive = false,
+                    ApprovalStatus = "Pending",
                     SubscriptionPlanId = basicPlan?.Id,
                     SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1)
                 };
@@ -81,6 +179,7 @@ namespace Ecommerce.Api.Controllers
                 PhoneNumber = dto.PhoneNumber,
                 CompanyId = companyId,
                 IsActive = true,
+                UserType = companyId.HasValue ? "CompanyAdmin" : "SalesStaff",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -96,7 +195,7 @@ namespace Ecommerce.Api.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Registration successful", email = user.Email, companyId });
+            return Ok(new { message = companyId.HasValue ? "Registration successful. Awaiting Super Admin approval." : "Registration successful", email = user.Email, companyId });
         }
 
         [HttpPost("login")]
@@ -117,7 +216,7 @@ namespace Ecommerce.Api.Controllers
             var token = GenerateJwtToken(user, roles);
             var refreshToken = Guid.NewGuid().ToString();
 
-            return Ok(new LoginResponse(token, refreshToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles));
+            return Ok(new LoginResponse(token, refreshToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
         }
 
         [HttpPost("forgot-password")]
@@ -804,6 +903,117 @@ namespace Ecommerce.Api.Controllers
 
             return Ok(new { message = $"Password for user {targetUser.Email} updated successfully by Administrator." });
         }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
+        {
+            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var companyId = _context.CompanyId;
+
+            if (!isSuperAdmin)
+            {
+                if (!companyId.HasValue) return Forbid();
+                if (dto.CompanyId != companyId.Value) return Forbid(); // Cannot create user for another company
+            }
+
+            if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
+                return BadRequest(new { message = "Email already exists" });
+
+            var user = new User
+            {
+                Email = dto.Email,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                PhoneNumber = dto.PhoneNumber,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CompanyId = dto.CompanyId,
+                IsActive = dto.IsActive,
+                UserType = dto.Role
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.Role);
+            if (role != null)
+            {
+                _context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { user.Id, user.Email, user.FirstName, user.LastName, user.IsActive, user.CompanyId });
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDto dto)
+        {
+            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var companyId = _context.CompanyId;
+
+            var targetUser = isSuperAdmin
+                ? await _context.Users.IgnoreQueryFilters().Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Id == id)
+                : await _context.Users.Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Id == id);
+
+            if (targetUser == null) return NotFound("User not found");
+
+            if (!isSuperAdmin && targetUser.CompanyId != companyId)
+                return Forbid();
+
+            targetUser.Email = dto.Email;
+            targetUser.FirstName = dto.FirstName;
+            targetUser.LastName = dto.LastName;
+            targetUser.PhoneNumber = dto.PhoneNumber;
+            targetUser.IsActive = dto.IsActive;
+            targetUser.UserType = dto.Role;
+
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                targetUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            }
+
+            if (isSuperAdmin && dto.CompanyId.HasValue)
+            {
+                targetUser.CompanyId = dto.CompanyId.Value;
+            }
+
+            // Update Role
+            var currentRole = targetUser.UserRoles.FirstOrDefault();
+            var newRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.Role);
+            
+            if (newRole != null)
+            {
+                if (currentRole != null)
+                {
+                    _context.UserRoles.Remove(currentRole);
+                }
+                _context.UserRoles.Add(new UserRole { UserId = targetUser.Id, RoleId = newRole.Id });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { targetUser.Id, targetUser.Email, targetUser.FirstName, targetUser.LastName, targetUser.IsActive, targetUser.CompanyId });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var companyId = _context.CompanyId;
+
+            var targetUser = isSuperAdmin
+                ? await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == id)
+                : await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+            if (targetUser == null) return NotFound("User not found");
+
+            if (!isSuperAdmin && targetUser.CompanyId != companyId)
+                return Forbid();
+
+            _context.Users.Remove(targetUser);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User deleted successfully" });
+        }
     }
 
     [ApiController]
@@ -936,6 +1146,92 @@ namespace Ecommerce.Api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+    }
+
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CompaniesController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public CompaniesController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCompanies()
+        {
+            var companies = await _context.Companies.OrderBy(c => c.Name).ToListAsync();
+            return Ok(companies);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCompany(Guid id)
+        {
+            var company = await _context.Companies.FindAsync(id);
+            if (company == null) return NotFound();
+            return Ok(company);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateCompany([FromBody] Company company)
+        {
+            company.CreatedAt = DateTime.UtcNow;
+            company.UpdatedAt = DateTime.UtcNow;
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
+            return Ok(company);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCompany(Guid id, [FromBody] Company updateDto)
+        {
+            var company = await _context.Companies.FindAsync(id);
+            if (company == null) return NotFound();
+
+            company.Name = updateDto.Name;
+            company.Subdomain = updateDto.Subdomain;
+            company.ContactEmail = updateDto.ContactEmail;
+            company.CompanyMobile = updateDto.CompanyMobile;
+            company.OwnerName = updateDto.OwnerName;
+            company.OwnerMobile = updateDto.OwnerMobile;
+            company.Division = updateDto.Division;
+            company.District = updateDto.District;
+            company.Thana = updateDto.Thana;
+            company.Address = updateDto.Address;
+            company.FacebookLink = updateDto.FacebookLink;
+            company.InstagramLink = updateDto.InstagramLink;
+            company.BkashNumber = updateDto.BkashNumber;
+            company.NagadNumber = updateDto.NagadNumber;
+            company.BankName = updateDto.BankName;
+            company.BankAccountName = updateDto.BankAccountName;
+            company.IsActive = updateDto.IsActive;
+            company.ApprovalStatus = updateDto.ApprovalStatus;
+            company.LogoUrl = updateDto.LogoUrl;
+            company.UpdatedAt = DateTime.UtcNow;
+
+            // If approved and active, we should make sure the owner user is active too.
+            if (company.ApprovalStatus == "Approved" && company.IsActive)
+            {
+                var ownerUser = await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.UserType == "CompanyAdmin");
+                if (ownerUser != null && !ownerUser.IsActive)
+                {
+                    ownerUser.IsActive = true;
+                }
+            }
+            else if (company.ApprovalStatus == "Rejected" || !company.IsActive)
+            {
+                var ownerUser = await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.UserType == "CompanyAdmin");
+                if (ownerUser != null && ownerUser.IsActive)
+                {
+                    ownerUser.IsActive = false; // Suspend owner login
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(company);
         }
     }
 }

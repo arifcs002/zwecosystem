@@ -1,0 +1,41 @@
+<div class="h-full flex flex-col md:flex-row gap-6 p-4">
+  <!-- Left Side: Product Selection & Barcode -->
+  <div class="flex-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
+    <div class="mb-4">
+      <input type="text" placeholder="Scan Barcode or Search Product..." class="w-full p-3 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+    
+    <div class="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Example Product Card -->
+      <div class="border rounded p-4 text-center hover:shadow-md cursor-pointer transition">
+        <div class="h-24 bg-gray-200 rounded mb-2 flex items-center justify-center text-gray-500">Image</div>
+        <h5 class="font-semibold text-sm">Demo Sneaker</h5>
+        <p class="text-blue-600 font-bold">৳ 2,500</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Cart & Checkout -->
+  <div class="w-full md:w-96 bg-white p-6 rounded-lg shadow-md flex flex-col">
+    <h3 class="text-xl font-bold border-b pb-2 mb-4">Current Cart</h3>
+    
+    <div class="flex-1 overflow-y-auto">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <div>
+          <h6 class="font-semibold text-sm">Demo Sneaker</h6>
+          <p class="text-xs text-gray-500">1 x ৳ 2,500</p>
+        </div>
+        <button class="text-red-500 hover:text-red-700">✖</button>
+      </div>
+    </div>
+    
+    <div class="border-t pt-4 mt-4 space-y-2">
+      <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span>৳ 2,500</span></div>
+      <div class="flex justify-between"><span class="text-gray-600">Discount</span><span>৳ 0</span></div>
+      <div class="flex justify-between font-bold text-lg text-blue-600"><span>Total</span><span>৳ 2,500</span></div>
+      <button class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition shadow-lg">
+        Pay Now
+      </button>
+    </div>
+  </div>
+</div>

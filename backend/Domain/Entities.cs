@@ -11,7 +11,8 @@ namespace Ecommerce.Api.Domain
         SUPER_ADMIN,
         COMPANY_ADMIN,
         COMPANY_MANAGER,
-        SALES_STAFF
+        SALES_STAFF,
+        CUSTOMER
     }
 
     [Table("subscription_plans")]
@@ -90,6 +91,46 @@ namespace Ecommerce.Api.Domain
 
         [Column("subscription_expires_at")]
         public DateTime? SubscriptionExpiresAt { get; set; }
+
+        [Column("approval_status")]
+        public string ApprovalStatus { get; set; } = "Pending"; // Pending, Approved, Rejected
+
+        // Extra details for registration
+        [Column("owner_name")]
+        public string? OwnerName { get; set; }
+
+        [Column("owner_mobile")]
+        public string? OwnerMobile { get; set; }
+
+        [Column("company_mobile")]
+        public string? CompanyMobile { get; set; }
+
+        [Column("facebook_link")]
+        public string? FacebookLink { get; set; }
+
+        [Column("instagram_link")]
+        public string? InstagramLink { get; set; }
+
+        [Column("bkash_number")]
+        public string? BkashNumber { get; set; }
+
+        [Column("nagad_number")]
+        public string? NagadNumber { get; set; }
+
+        [Column("bank_name")]
+        public string? BankName { get; set; }
+
+        [Column("bank_account_name")]
+        public string? BankAccountName { get; set; }
+
+        [Column("division")]
+        public string? Division { get; set; }
+
+        [Column("district")]
+        public string? District { get; set; }
+
+        [Column("thana")]
+        public string? Thana { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -225,6 +266,13 @@ namespace Ecommerce.Api.Domain
 
         [Column("phone_number")]
         public string? PhoneNumber { get; set; }
+
+        // Determines if this is a ZW Admin, Company User, or Customer
+        [Column("user_type")]
+        public string UserType { get; set; } = "CompanyUser"; 
+
+        [Column("address")]
+        public string? Address { get; set; }
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;

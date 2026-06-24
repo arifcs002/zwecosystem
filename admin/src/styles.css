@@ -1,1 +1,36 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default Cyberpunk Teal Theme */
+  --theme-primary: #0ea5e9;
+  --theme-primary-hover: #0284c7;
+  --theme-grad-start: #06b6d4;
+  --theme-grad-end: #3b82f6;
+  
+  /* Global Background for Premium Dark Theme */
+  --theme-bg-dark: #0f111a;
+  --theme-card-bg: rgba(20, 24, 39, 0.7);
+  --theme-card-border: rgba(255, 255, 255, 0.05);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+/* Helper classes for the dynamic theme */
+.btn-theme-gradient {
+  background: linear-gradient(135deg, var(--theme-grad-start), var(--theme-grad-end));
+  transition: all 0.3s ease;
+}
+.btn-theme-gradient:hover {
+  box-shadow: 0 0 15px var(--theme-primary);
+  transform: translateY(-1px);
+}
+.text-theme-primary {
+  color: var(--theme-primary);
+}

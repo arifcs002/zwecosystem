@@ -1,0 +1,120 @@
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+    
+    <div class="flex items-center space-x-3 mb-8 pb-4 border-b border-gray-100">
+      <div class="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
+        <i class="fas fa-plus text-teal-500 text-sm"></i>
+      </div>
+      <h2 class="text-xl font-bold text-[#1a2b34]">Add Shoe Inventory</h2>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="space-y-6">
+      
+      <!-- Top Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Supplier</label>
+          <select [(ngModel)]="formData.supplierId" name="supplierId" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+            <option value="">-- Select Supplier --</option>
+            <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+          <select [(ngModel)]="formData.categoryId" (change)="onCategoryChange()" name="categoryId" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+            <option value="">-- Select Category --</option>
+            <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shoe Brand Model / Name</label>
+        <input type="text" [(ngModel)]="formData.name" name="name" placeholder="e.g. Apex Jogger v3" 
+               class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-gray-50">
+      </div>
+
+      <!-- Pricing -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Retail Price (BDT)</label>
+          <input type="number" [(ngModel)]="formData.price" name="price" 
+                 class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Wholesale Price (BDT)</label>
+          <input type="number" [(ngModel)]="formData.wholesalePrice" name="wholesalePrice" 
+                 class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description</label>
+        <textarea [(ngModel)]="formData.description" name="description" rows="3" placeholder="Model specifications, material details..."
+                  class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"></textarea>
+      </div>
+
+      <!-- Bottom Row: Photo & Sizes -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-gray-100 pt-6">
+        
+        <!-- Photo Upload -->
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Sample Photo</label>
+          <div class="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 h-48 flex flex-col items-center justify-center relative overflow-hidden group hover:border-teal-400 transition">
+            
+            <ng-container *ngIf="!imagePreview">
+              <i class="fas fa-camera text-3xl text-gray-300 mb-2 group-hover:text-teal-400 transition"></i>
+              <span class="text-sm text-gray-400 font-medium group-hover:text-teal-500 transition">Upload Image</span>
+            </ng-container>
+
+            <img *ngIf="imagePreview" [src]="imagePreview" class="absolute inset-0 w-full h-full object-cover">
+
+            <input type="file" (change)="onImageSelected($event)" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+          </div>
+          <div class="flex justify-center space-x-2 mt-3">
+            <button type="button" class="px-4 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full text-gray-500 hover:bg-gray-50"><i class="fas fa-images mr-1"></i> Gallery</button>
+            <button type="button" class="px-4 py-1.5 text-xs font-bold bg-[#1a2b34] rounded-full text-white hover:bg-[#253945]"><i class="fas fa-camera mr-1"></i> Camera</button>
+          </div>
+        </div>
+
+        <!-- Sizes Config -->
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Sizes & Quantities</label>
+          <div class="border border-gray-200 rounded-xl bg-gray-50 p-4 min-h-[12rem] flex flex-col">
+            
+            <div *ngIf="!selectedCategoryObj" class="flex-1 flex items-center justify-center text-sm text-gray-400">
+              Select a category to configure sizes.
+            </div>
+
+            <div *ngIf="selectedCategoryObj && availableSizes.length === 0" class="flex-1 flex items-center justify-center text-sm text-gray-400 text-center">
+              This category has no predefined sizes.<br>Cannot map variations.
+            </div>
+
+            <div *ngIf="selectedCategoryObj && availableSizes.length > 0" class="space-y-3 max-h-48 overflow-y-auto pr-2">
+              <div *ngFor="let size of availableSizes" class="flex items-center justify-between bg-white p-2 rounded border border-gray-100 shadow-sm">
+                <span class="font-bold text-gray-700 w-16 text-center">Size {{ size }}</span>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs text-gray-400">Qty</span>
+                  <input type="number" [(ngModel)]="sizeQuantities[size]" [name]="'qty_'+size" class="w-20 p-1.5 text-center border border-gray-200 rounded focus:outline-none focus:border-teal-500 text-sm font-bold">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-6 border-t border-gray-100 flex justify-end space-x-3">
+        <button type="button" class="px-6 py-2.5 rounded-lg font-bold text-gray-500 hover:bg-gray-100 transition">Cancel</button>
+        <button type="submit" [disabled]="isSubmitting" class="px-8 py-2.5 rounded-lg font-bold bg-[#1a2b34] text-white hover:bg-[#253945] shadow transition disabled:opacity-50 flex items-center gap-2">
+          <i *ngIf="isSubmitting" class="fas fa-spinner fa-spin"></i>
+          Save Inventory
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

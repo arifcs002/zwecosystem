@@ -1,0 +1,105 @@
+<div class="min-h-screen flex items-center justify-center p-4 bg-[#0b0e14]">
+  <!-- Main Card -->
+  <div *ngIf="loginContext !== 'invalid'" class="max-w-md w-full rounded-2xl p-8 relative overflow-hidden"
+       style="background: #151821; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+    
+    <!-- Header / Logo -->
+    <div class="text-center mb-8 flex flex-col items-center">
+      <!-- Dynamic Logo: Show company logo if subdomian, else show shield -->
+      <ng-container *ngIf="logoUrl; else defaultLogo">
+        <img [src]="logoUrl" alt="Company Logo" class="h-16 w-auto mb-4 rounded-lg shadow-lg">
+      </ng-container>
+      <ng-template #defaultLogo>
+        <!-- Purple Shield Icon -->
+        <svg class="h-14 w-14 mb-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </ng-template>
+
+      <h2 class="text-[22px] font-extrabold text-white tracking-tight">
+        {{ companyName }}
+      </h2>
+      <p class="mt-2 text-[13px] text-gray-400">
+        Sign in to access metrics and controls
+      </p>
+    </div>
+
+    <!-- Error Modal Popup -->
+    <div *ngIf="error" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="error = ''"></div>
+      <div class="bg-[#151821] border border-red-500/30 rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden transform transition-all scale-100 p-6 flex flex-col items-center text-center">
+        <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-500/20 mb-4">
+          <svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Login Failed</h3>
+        <p class="text-gray-400 text-sm mb-6">{{ error }}</p>
+        <button (click)="error = ''" class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors shadow-lg shadow-red-900/20">
+          Try Again
+        </button>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <ng-container *ngIf="loginContext !== 'invalid'">
+      <form (ngSubmit)="onSubmit()" class="space-y-5">
+        <div>
+          <label for="username" class="block text-sm font-semibold text-gray-200 mb-2">Username or Email</label>
+          <input id="username" name="email" type="text" [(ngModel)]="email" required
+                 class="w-full px-4 py-3 bg-[#eef2f6] border border-transparent rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] transition"
+                 placeholder="Enter username">
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-semibold text-gray-200 mb-2">Password</label>
+          <input id="password" name="password" type="password" [(ngModel)]="password" required
+                 class="w-full px-4 py-3 bg-[#eef2f6] border border-transparent rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] transition"
+                 placeholder="Enter password">
+        </div>
+
+        <div class="pt-3">
+          <button type="submit" [disabled]="isLoading"
+                  class="w-full flex justify-center items-center py-3 px-4 rounded-lg shadow-lg text-sm font-bold text-white bg-transparent border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#151821] focus:ring-gray-500 transition-colors">
+            <svg *ngIf="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'Signing in...' : 'Sign In' }}
+          </button>
+        </div>
+      </form>
+    </ng-container>
+  </div>
+</div>
+
+<!-- Invalid Store Full Page Overlay -->
+<div *ngIf="loginContext === 'invalid'" class="fixed inset-0 z-[100] bg-neutral-950 flex flex-col items-center justify-center overflow-hidden text-neutral-100 font-sans">
+  <!-- Massive Background Watermark ZW (China World Style) -->
+  <div class="absolute inset-0 z-0 flex items-center justify-center opacity-5 pointer-events-none select-none overflow-hidden">
+    <div class="relative">
+      <span class="text-[30rem] font-black text-white tracking-tighter leading-none" style="text-shadow: 0 0 100px rgba(255,255,255,0.8);">Z W</span>
+      <span class="absolute bottom-10 right-10 text-4xl font-bold tracking-widest text-red-600 opacity-80" style="writing-mode: vertical-rl;">中国风格</span>
+    </div>
+  </div>
+
+  <div class="absolute top-0 left-0 w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 z-0"></div>
+  <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-900/20 rounded-full blur-[150px] translate-x-1/3 translate-y-1/3 z-0"></div>
+
+  <div class="z-10 backdrop-blur-xl bg-neutral-900/40 border border-neutral-800/50 rounded-3xl p-12 text-center shadow-2xl max-w-2xl w-full mx-4 relative animate-fade-in">
+    <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
+      <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+    </div>
+    <h2 class="text-4xl font-black mb-4 tracking-tight">
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-400">Store Not Found</span>
+    </h2>
+    <h3 class="text-2xl text-white font-bold mb-4">আপনার স্টোরটি রেজিস্টার করা নেই</h3>
+    <p class="text-neutral-400 text-lg mb-8 leading-relaxed">
+      Your store is not registered in the Zairas World ecosystem yet. Kindly register your store to continue.<br><br>
+      আপনার স্টোরটি এখনো জায়রাস ওয়ার্ল্ড ইকোসিস্টেমে নিবন্ধিত নয়। অনুগ্রহ করে আপনার স্টোরটি নিবন্ধন করুন।
+    </p>
+    <a routerLink="/company/register" class="inline-block px-10 py-4 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:-translate-y-1 hover:shadow-red-500/25">
+      Register Now / এখনই নিবন্ধন করুন
+    </a>
+  </div>
+</div>

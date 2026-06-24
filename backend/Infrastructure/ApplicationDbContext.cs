@@ -149,13 +149,15 @@ namespace Ecommerce.Api.Infrastructure
 
         private void SeedInitialData(ModelBuilder modelBuilder)
         {
+            var staticDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             // Seed Subscription Plans
             var basicPlanId = new Guid("11111111-1111-1111-1111-111111111111");
             var premiumPlanId = new Guid("22222222-2222-2222-2222-222222222222");
 
             modelBuilder.Entity<SubscriptionPlan>().HasData(
-                new SubscriptionPlan { Id = basicPlanId, Name = "Basic Plan", Price = 1500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 200, \"pos_enabled\": true, \"ecommerce_enabled\": true}" },
-                new SubscriptionPlan { Id = premiumPlanId, Name = "Premium Plan", Price = 3500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 5000, \"pos_enabled\": true, \"ecommerce_enabled\": true, \"multi_staff\": true}" }
+                new SubscriptionPlan { Id = basicPlanId, Name = "Basic Plan", Price = 1500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 200, \"pos_enabled\": true, \"ecommerce_enabled\": true}", CreatedAt = staticDate, UpdatedAt = staticDate },
+                new SubscriptionPlan { Id = premiumPlanId, Name = "Premium Plan", Price = 3500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 5000, \"pos_enabled\": true, \"ecommerce_enabled\": true, \"multi_staff\": true}", CreatedAt = staticDate, UpdatedAt = staticDate }
             );
 
             // Seed Roles
@@ -163,12 +165,14 @@ namespace Ecommerce.Api.Infrastructure
             var companyAdminRoleId = new Guid("44444444-4444-4444-4444-444444444444");
             var companyManagerRoleId = new Guid("55555555-5555-5555-5555-555555555555");
             var salesStaffRoleId = new Guid("66666666-6666-6666-6666-666666666666");
+            var customerRoleId = new Guid("77777777-7777-7777-7777-777777777777");
 
             modelBuilder.Entity<Role>().HasData(
-                new Role { Id = superAdminRoleId, Name = "SUPER_ADMIN", Description = "Platform Owner - Full access to all system tenants and diagnostics" },
-                new Role { Id = companyAdminRoleId, Name = "COMPANY_ADMIN", Description = "Company Owner - Full access to settings, reports, staff management" },
-                new Role { Id = companyManagerRoleId, Name = "COMPANY_MANAGER", Description = "Store Manager - Manage inventory, store config, and view basic reports" },
-                new Role { Id = salesStaffRoleId, Name = "SALES_STAFF", Description = "POS Checkout Operator - Restricted access to barcodes and checkout" }
+                new Role { Id = superAdminRoleId, Name = "SUPER_ADMIN", Description = "Platform Owner", CreatedAt = staticDate },
+                new Role { Id = companyAdminRoleId, Name = "COMPANY_ADMIN", Description = "Company Owner", CreatedAt = staticDate },
+                new Role { Id = companyManagerRoleId, Name = "COMPANY_MANAGER", Description = "Store Manager", CreatedAt = staticDate },
+                new Role { Id = salesStaffRoleId, Name = "SALES_STAFF", Description = "POS Checkout Operator", CreatedAt = staticDate },
+                new Role { Id = customerRoleId, Name = "CUSTOMER", Description = "Public Customer", CreatedAt = staticDate }
             );
 
             // Seed Permissions
@@ -181,17 +185,19 @@ namespace Ecommerce.Api.Infrastructure
             var posPermId = new Guid("a7777777-7777-7777-7777-777777777777");
             var repFullPermId = new Guid("a8888888-8888-8888-8888-888888888888");
             var repOpPermId = new Guid("a9999999-9999-9999-9999-999999999999");
+            var buyPermId = new Guid("a0000000-0000-0000-0000-000000000000"); // Customer perm
 
             modelBuilder.Entity<Permission>().HasData(
-                new Permission { Id = diagPermId, Name = "platform:diagnostics", Description = "Access SaaS metrics and platform logs" },
-                new Permission { Id = compPermId, Name = "manage:companies", Description = "Add, suspend, or upgrade tenant companies" },
-                new Permission { Id = subsPermId, Name = "manage:subscriptions", Description = "Configure billing plans" },
-                new Permission { Id = settPermId, Name = "company:settings", Description = "Update company-wide configuration" },
-                new Permission { Id = staffPermId, Name = "manage:staff", Description = "Create/deactivate managers and checkout staff" },
-                new Permission { Id = invPermId, Name = "manage:inventory", Description = "Create products and trigger barcode generation" },
-                new Permission { Id = posPermId, Name = "pos:checkout", Description = "Scan barcodes and complete POS checkout" },
-                new Permission { Id = repFullPermId, Name = "reports:full", Description = "Access full company financial and inventory audits" },
-                new Permission { Id = repOpPermId, Name = "reports:operational", Description = "Access daily operational reports" }
+                new Permission { Id = diagPermId, Name = "platform:diagnostics", Description = "Access SaaS metrics and platform logs", CreatedAt = staticDate },
+                new Permission { Id = compPermId, Name = "manage:companies", Description = "Add, suspend, or upgrade tenant companies", CreatedAt = staticDate },
+                new Permission { Id = subsPermId, Name = "manage:subscriptions", Description = "Configure billing plans", CreatedAt = staticDate },
+                new Permission { Id = settPermId, Name = "company:settings", Description = "Update company-wide configuration", CreatedAt = staticDate },
+                new Permission { Id = staffPermId, Name = "manage:staff", Description = "Create/deactivate managers and checkout staff", CreatedAt = staticDate },
+                new Permission { Id = invPermId, Name = "manage:inventory", Description = "Create products and trigger barcode generation", CreatedAt = staticDate },
+                new Permission { Id = posPermId, Name = "pos:checkout", Description = "Scan barcodes and complete POS checkout", CreatedAt = staticDate },
+                new Permission { Id = repFullPermId, Name = "reports:full", Description = "Access full company financial and inventory audits", CreatedAt = staticDate },
+                new Permission { Id = repOpPermId, Name = "reports:operational", Description = "Access daily operational reports", CreatedAt = staticDate },
+                new Permission { Id = buyPermId, Name = "store:buy", Description = "Purchase products online", CreatedAt = staticDate }
             );
 
             // Role-Permissions Map
@@ -211,7 +217,9 @@ namespace Ecommerce.Api.Infrastructure
                 new RolePermission { RoleId = companyManagerRoleId, PermissionId = posPermId },
                 new RolePermission { RoleId = companyManagerRoleId, PermissionId = repOpPermId },
                 // Sales Staff
-                new RolePermission { RoleId = salesStaffRoleId, PermissionId = posPermId }
+                new RolePermission { RoleId = salesStaffRoleId, PermissionId = posPermId },
+                // Customer
+                new RolePermission { RoleId = customerRoleId, PermissionId = buyPermId }
             );
 
             // Seed Demo Company
@@ -228,8 +236,11 @@ namespace Ecommerce.Api.Infrastructure
                     LogoUrl = "/uploads/zairas_world_logo.png",
                     DeliveryCharge = 60.00m,
                     IsActive = true,
+                    ApprovalStatus = "Approved",
                     SubscriptionPlanId = premiumPlanId,
-                    SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1)
+                    SubscriptionExpiresAt = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedAt = staticDate,
+                    UpdatedAt = staticDate
                 }
             );
 
@@ -237,31 +248,33 @@ namespace Ecommerce.Api.Infrastructure
             var superAdminUserId = new Guid("99999999-9999-9999-9999-999999999999");
             var compAdminUserId = new Guid("88888888-8888-8888-8888-888888888888");
 
-            var superAdminPasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
+            var superAdminPasswordHash = "$2a$11$T8X9d8k1pLz6eH1U8y.BWeT1W1T5.6K4Q8oO8uQ1H7zV1I3pP5O5a"; // 123456
+            var passwordHash = "$2a$11$Y7M1r2zZ9n2L8T9eW5uV.uN1rT2C8O4pT5Q8aA7qT8I2kL9jH6W2S"; // admin123
 
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
                     Id = superAdminUserId,
                     CompanyId = null, // Global
+                    UserType = "SuperAdmin",
                     Email = "arifowneradmin.bd",
                     PasswordHash = superAdminPasswordHash,
                     FirstName = "Platform",
                     LastName = "Owner",
-                    PhoneNumber = "+8801500000000",
-                    IsActive = true
+                    IsActive = true,
+                    CreatedAt = staticDate
                 },
                 new User
                 {
                     Id = compAdminUserId,
                     CompanyId = demoCompanyId, // Bound to Demo Company
-                    Email = "admin@demo.com",
+                    UserType = "CompanyUser",
+                    Email = "admin@zairasworld.com",
                     PasswordHash = passwordHash,
-                    FirstName = "Demo",
-                    LastName = "Admin",
-                    PhoneNumber = "01626-458189",
-                    IsActive = true
+                    FirstName = "Admin",
+                    LastName = "User",
+                    IsActive = true,
+                    CreatedAt = staticDate
                 }
             );
 
@@ -282,8 +295,8 @@ namespace Ecommerce.Api.Infrastructure
             var supplierApexId = new Guid("51111111-1111-1111-1111-111111111111");
             var supplierBataId = new Guid("52222222-2222-2222-2222-222222222222");
             modelBuilder.Entity<Supplier>().HasData(
-                new Supplier { Id = supplierApexId, CompanyId = demoCompanyId, Name = "Apex Bangladesh", PhoneNumber = "01711122233", Address = "Dhaka" },
-                new Supplier { Id = supplierBataId, CompanyId = demoCompanyId, Name = "Bata Bangladesh", PhoneNumber = "01799887766", Address = "Tongi, Gazipur" }
+                new Supplier { Id = supplierApexId, CompanyId = demoCompanyId, Name = "Apex Bangladesh", PhoneNumber = "01711122233", Address = "Dhaka", CreatedAt = staticDate, UpdatedAt = staticDate },
+                new Supplier { Id = supplierBataId, CompanyId = demoCompanyId, Name = "Bata Bangladesh", PhoneNumber = "01799887766", Address = "Tongi, Gazipur", CreatedAt = staticDate, UpdatedAt = staticDate }
             );
 
             // Seed Demo Category & Brand & Product
@@ -293,15 +306,15 @@ namespace Ecommerce.Api.Infrastructure
             var olderShoesCatId = new Guid("c4444444-4444-4444-4444-444444444444");
 
             modelBuilder.Entity<Category>().HasData(
-                new Category { Id = clothingCatId, CompanyId = demoCompanyId, Name = "Sports Shoes", Slug = "sports-shoes", Description = "Running, tennis and sportswear shoes", Sizes = "39,40,41,42,43,44" },
-                new Category { Id = babyShoesCatId, CompanyId = demoCompanyId, Name = "Baby Shoes", Slug = "baby-shoes", Description = "Shoe sizes 1 to 6 for toddlers", Sizes = "1,2,3,4,5,6" },
-                new Category { Id = teenageShoesCatId, CompanyId = demoCompanyId, Name = "Teenage Shoes", Slug = "teenage-shoes", Description = "Shoe sizes 6 to 10 for kids & teens", Sizes = "6,7,8,9,10" },
-                new Category { Id = olderShoesCatId, CompanyId = demoCompanyId, Name = "Casual Sneakers", Slug = "casual-sneakers", Description = "Shoe sizes 39 to 45 for adults", Sizes = "39,40,41,42,43,44,45" }
+                new Category { Id = clothingCatId, CompanyId = demoCompanyId, Name = "Sports Shoes", Slug = "sports-shoes", Description = "Running, tennis and sportswear shoes", Sizes = "39,40,41,42,43,44", CreatedAt = staticDate, UpdatedAt = staticDate },
+                new Category { Id = babyShoesCatId, CompanyId = demoCompanyId, Name = "Baby Shoes", Slug = "baby-shoes", Description = "Shoe sizes 1 to 6 for toddlers", Sizes = "1,2,3,4,5,6", CreatedAt = staticDate, UpdatedAt = staticDate },
+                new Category { Id = teenageShoesCatId, CompanyId = demoCompanyId, Name = "Teenage Shoes", Slug = "teenage-shoes", Description = "Shoe sizes 6 to 10 for kids & teens", Sizes = "6,7,8,9,10", CreatedAt = staticDate, UpdatedAt = staticDate },
+                new Category { Id = olderShoesCatId, CompanyId = demoCompanyId, Name = "Casual Sneakers", Slug = "casual-sneakers", Description = "Shoe sizes 39 to 45 for adults", Sizes = "39,40,41,42,43,44,45", CreatedAt = staticDate, UpdatedAt = staticDate }
             );
 
             var ecotexBrandId = new Guid("d1111111-1111-1111-1111-111111111111");
             modelBuilder.Entity<Brand>().HasData(
-                new Brand { Id = ecotexBrandId, CompanyId = demoCompanyId, Name = "Zaira Brand", Slug = "zaira-brand", Description = "Zaira's World Premium Shoe Selection" }
+                new Brand { Id = ecotexBrandId, CompanyId = demoCompanyId, Name = "Zaira Brand", Slug = "zaira-brand", Description = "Zaira's World Premium Shoe Selection", CreatedAt = staticDate, UpdatedAt = staticDate }
             );
 
             var poloProductId = new Guid("f1111111-1111-1111-1111-111111111111");
@@ -322,7 +335,9 @@ namespace Ecommerce.Api.Infrastructure
                     CategoryId = olderShoesCatId,
                     BrandId = ecotexBrandId,
                     Size = "42",
-                    ImageUrl = "/uploads/zairas_world_logo.png"
+                    ImageUrl = "/uploads/zairas_world_logo.png",
+                    CreatedAt = staticDate,
+                    UpdatedAt = staticDate
                 }
             );
         }
