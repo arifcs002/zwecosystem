@@ -3,82 +3,58 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: ecommerce-postgres
+    container_name: zwecosystem-postgres
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ecommerce_db
-      POSTGRES_USER: dev_user
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: zwecodb
+      POSTGRES_USER: zw_user
+      POSTGRES_PASSWORD: A3w%$Labu!!Mh#896
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - ecommerce-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: ecommerce-redis
-    ports:
-      - "6380:6379"
-    volumes:
-      - redisdata:/data
-    networks:
-      - ecommerce-network
-
-  minio:
-    image: minio/minio:latest
-    container_name: ecommerce-storage
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword
-    command: server /data --console-address ":9001"
-    volumes:
-      - miniadata:/data
-    networks:
-      - ecommerce-network
+      - zwecosystem-network
+    restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ecommerce-backend
+    container_name: zwecosystem-api
     ports:
-      - "5000:8080"
+      - "5500:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=194.5.152.74;Port=5432;Database=ecommerce_db;Username=dev_user;Password=${DB_PASSWORD};Include Error Detail=true;
-      - Redis__Configuration=redis:6379
-      - Jwt__Secret=super-secret-key-change-in-prod-long-enough-32-chars
-      - AwsS3__ServiceUrl=http://minio:9000
-      - AwsS3__AccessKey=minioadmin
-      - AwsS3__SecretKey=minioadminpassword
-      - AwsS3__BucketName=ecommerce-media
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=zwecodb;Username=zw_user;Password=A3w%$Labu!!Mh#896;Include Error Detail=true;
+      - Jwt__Secret=zw-ecosystem-super-secret-key-2026-change-in-prod-must-be-32-chars-min
+      - SmtpSettings__Host=smtp.gmail.com
+      - SmtpSettings__Port=587
+      - SmtpSettings__EnableSsl=true
+      - SmtpSettings__Username=your-email@gmail.com
+      - SmtpSettings__Password=your-app-password
+      - SmtpSettings__FromAddress=noreply@zwecosystem.com
+      - SmtpSettings__FromName=ZW Ecosystem
     depends_on:
       - postgres
-      - redis
-      - minio
     networks:
-      - ecommerce-network
+      - zwecosystem-network
+    restart: unless-stopped
 
   admin-dashboard:
     build:
       context: ./admin
       dockerfile: Dockerfile
-    container_name: ecommerce-admin
+    container_name: zwecosystem-admin
     ports:
-      - "4200:80"
+      - "85:80"
     depends_on:
       - backend
     networks:
-      - ecommerce-network
+      - zwecosystem-network
+    restart: unless-stopped
 
 volumes:
   pgdata:
-  redisdata:
-  miniadata:
 
 networks:
-  ecommerce-network:
+  zwecosystem-network:
     driver: bridge

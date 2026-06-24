@@ -1,0 +1,18 @@
+.order-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.info-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 0.75rem 1rem; }
+.info-item label { display: block; font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem; }
+.info-item span { font-weight: 600; color: #e5e7eb; }
+.total-amount { color: #a78bfa !important; font-size: 1.1rem; }
+.status-update-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+.filter-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.status-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.filter-btn { padding: 0.4rem 0.9rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.filter-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.status-pending { color: #f59e0b; font-weight: 600; }
+.status-processing { color: #3b82f6; font-weight: 600; }
+.status-packed { color: #8b5cf6; font-weight: 600; }
+.status-shipped { color: #06b6d4; font-weight: 600; }
+.status-completed { color: #10b981; font-weight: 600; }
+.status-cancelled { color: #ef4444; font-weight: 600; }
+.badge { background: rgba(139,92,246,0.2); color: #a78bfa; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; }

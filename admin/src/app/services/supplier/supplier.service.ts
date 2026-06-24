@@ -12,9 +12,7 @@ export interface Supplier {
   createdAt?: string;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class SupplierService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/suppliers`;
@@ -23,8 +21,12 @@ export class SupplierService {
     return this.http.get<Supplier[]>(this.apiUrl);
   }
 
-  createSupplier(supplier: Supplier): Observable<Supplier> {
+  addSupplier(supplier: Partial<Supplier>): Observable<Supplier> {
     return this.http.post<Supplier>(this.apiUrl, supplier);
+  }
+
+  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier> {
+    return this.http.put<Supplier>(`${this.apiUrl}/${id}`, supplier);
   }
 
   deleteSupplier(id: string): Observable<void> {

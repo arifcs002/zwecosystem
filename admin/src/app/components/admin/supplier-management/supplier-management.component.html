@@ -1,0 +1,79 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">🏭 Supplier Management</h1>
+      <p class="page-subtitle">Manage your product suppliers</p>
+    </div>
+    <button class="btn-primary" (click)="openAdd()">+ Add Supplier</button>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <input type="text" [(ngModel)]="searchQuery" (input)="filter()" placeholder="🔍 Search suppliers..." class="search-input" />
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="loading" *ngIf="isLoading">Loading suppliers...</div>
+    <table class="data-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of filteredSuppliers; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td><span class="name-badge">{{ s.name }}</span></td>
+          <td>{{ s.phoneNumber || '—' }}</td>
+          <td>{{ s.address || '—' }}</td>
+          <td class="actions">
+            <button class="btn-edit" (click)="openEdit(s)">✏️ Edit</button>
+            <button class="btn-delete" (click)="delete(s.id!)">🗑️ Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredSuppliers.length === 0">
+          <td colspan="5" class="empty-row">No suppliers found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditMode ? 'Edit Supplier' : 'Add Supplier' }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        <div class="form-group">
+          <label>Supplier Name *</label>
+          <input type="text" [(ngModel)]="currentSupplier.name" class="form-input" placeholder="Enter supplier name" />
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" [(ngModel)]="currentSupplier.phoneNumber" class="form-input" placeholder="01XXXXXXXXX" />
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <textarea [(ngModel)]="currentSupplier.address" class="form-input" rows="3" placeholder="Full address"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn-primary" (click)="save()">{{ isEditMode ? 'Update' : 'Add Supplier' }}</button>
+      </div>
+    </div>
+  </div>
+</div>

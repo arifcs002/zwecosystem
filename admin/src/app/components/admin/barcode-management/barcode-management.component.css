@@ -1,0 +1,14 @@
+.filter-row { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.category-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.cat-btn { padding: 0.35rem 0.8rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; cursor: pointer; font-size: 0.78rem; transition: all 0.2s; }
+.cat-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.summary-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+.summary-card { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1rem; text-align: center; }
+.summary-val { display: block; font-size: 2rem; font-weight: 700; color: #a78bfa; }
+.summary-label { display: block; font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }
+.selected-row { background: rgba(124,58,237,0.08) !important; }
+.code-badge { background: rgba(0,0,0,0.3); border-radius: 4px; padding: 0.15rem 0.5rem; font-family: monospace; font-size: 0.8rem; color: #a78bfa; }
+.code-badge.barcode { color: #34d399; letter-spacing: 1px; }
+.product-info { display: flex; align-items: center; gap: 0.5rem; }
+.product-thumb { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
+.header-actions { display: flex; gap: 0.75rem; }

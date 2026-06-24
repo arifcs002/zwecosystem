@@ -1,77 +1,145 @@
-<div class="flex h-screen bg-gray-100">
+<!-- ZW Ecosystem Admin Layout -->
+<div class="zw-layout">
   <!-- Sidebar -->
-  <aside class="w-64 bg-gray-800 text-white flex flex-col">
-    <div class="p-4 text-center font-bold text-xl border-b border-gray-700">
-      Zaira's Dashboard
+  <aside class="zw-sidebar" [class.collapsed]="sidebarCollapsed">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-text" *ngIf="!sidebarCollapsed">ZW Ecosystem</span>
+      </div>
+      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed">
+        {{ sidebarCollapsed ? '→' : '←' }}
+      </button>
     </div>
-    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+
+    <!-- User Info -->
+    <div class="sidebar-user" *ngIf="!sidebarCollapsed">
+      <div class="user-avatar">{{ (authService.currentUserValue?.fullName || 'A')[0].toUpperCase() }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
+        <span class="user-role" *ngIf="authService.isSuperAdmin()">Super Admin</span>
+        <span class="user-role" *ngIf="!authService.isSuperAdmin()">Company Admin</span>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+
+      <!-- ===== SUPER ADMIN MODULE ===== -->
       <ng-container *ngIf="authService.isSuperAdmin()">
-          <a [routerLink]="basePath + '/dashboard'" routerLinkActive="bg-gray-700" class="block p-2 rounded hover:bg-gray-700 transition">Super Dashboard</a>
-          <a [routerLink]="basePath + '/companies'" routerLinkActive="bg-gray-700" class="block p-2 rounded hover:bg-gray-700 transition">Company Management</a>
-          <a [routerLink]="basePath + '/users'" routerLinkActive="bg-gray-700" class="block p-2 rounded hover:bg-gray-700 transition">User Management</a>
-          <a [routerLink]="basePath + '/roles'" routerLinkActive="bg-gray-700" class="block p-2 rounded hover:bg-gray-700 transition">Role Management</a>
-          <a [routerLink]="basePath + '/theme'" routerLinkActive="bg-gray-700" class="block p-2 rounded hover:bg-gray-700 transition">Theme & Profile</a>
+        <div class="nav-section-title" *ngIf="!sidebarCollapsed">⚙️ Super Admin</div>
+
+        <a [routerLink]="'/admin/dashboard'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
+        </a>
+        <a [routerLink]="'/admin/companies'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🏢</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Companies</span>
+        </a>
+        <a [routerLink]="'/admin/users'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
+        </a>
+        <a [routerLink]="'/admin/roles'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🔐</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Role Management</span>
+        </a>
+        <a [routerLink]="'/admin/theme'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Theme & Settings</span>
+        </a>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section-title" *ngIf="!sidebarCollapsed">🏢 Company Module</div>
       </ng-container>
+
+      <!-- ===== COMPANY / TENANT MODULE ===== -->
+      <!-- These show for both Super Admin (company-filtered) and Company Admins -->
+      <a [routerLink]="basePath + '/dashboard'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
+      </a>
+      <a [routerLink]="basePath + '/products'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Product List</span>
+      </a>
+      <a [routerLink]="basePath + '/add-product'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">➕</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
+      </a>
+      <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🗂️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
+      </a>
+      <a [routerLink]="basePath + '/barcodes'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🏷️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Barcode Management</span>
+      </a>
+      <a [routerLink]="basePath + '/suppliers'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🏭</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
+      </a>
+      <a [routerLink]="basePath + '/pos'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🧾</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
+      </a>
+      <a [routerLink]="basePath + '/orders'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🛒</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
+      </a>
+      <a [routerLink]="basePath + '/delivery'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🚚</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>
+      </a>
+      <a [routerLink]="basePath + '/payments'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">💳</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Payments</span>
+      </a>
+      <a [routerLink]="basePath + '/reports'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Reports</span>
+      </a>
+      <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin()" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
+      </a>
+      <a [routerLink]="basePath + '/config'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Config</span>
+      </a>
+
     </nav>
-    <div class="p-4 border-t border-gray-700" *ngIf="authService.isSuperAdmin()">
-      <button (click)="logout()" class="w-full bg-red-600 hover:bg-red-700 p-2 rounded transition">Logout</button>
+
+    <!-- Logout -->
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <span class="nav-icon">🚪</span>
+        <span *ngIf="!sidebarCollapsed">Logout</span>
+      </button>
     </div>
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 flex flex-col overflow-hidden bg-[#F4F7FA]">
-    <!-- Topbar for Company Users (Black Theme) -->
-    <header *ngIf="!authService.isSuperAdmin()" class="bg-[#1a2b34] text-white shadow flex items-center justify-between px-6 py-3 border-b border-[#2d4251]">
-      <div class="flex items-center space-x-3">
-        <!-- Logo Placeholder -->
-        <div class="w-10 h-10 bg-[#253945] rounded flex items-center justify-center border border-gray-600">
-           <span class="font-bold text-teal-400">ZW</span>
-        </div>
-        <div>
-          <h2 class="text-lg font-bold tracking-wider leading-tight">ZAIRA'S WORLD</h2>
-          <p class="text-xs text-gray-400">PREMIUM SHOE COLLECTION</p>
-        </div>
+  <main class="zw-main">
+    <!-- Topbar -->
+    <header class="zw-topbar">
+      <div class="topbar-left">
+        <h2 class="page-breadcrumb">
+          {{ authService.isSuperAdmin() ? '⚡ ZW Ecosystem Admin' : '🏢 Company Workspace' }}
+        </h2>
       </div>
-      
-      <!-- Top Navigation Links -->
-      <nav class="flex items-center space-x-2 text-sm font-medium">
-        <a [routerLink]="basePath + '/dashboard'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          <i class="fas fa-chart-line"></i> Dashboard
-        </a>
-        <a [routerLink]="basePath + '/products'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          Product List
-        </a>
-        <a [routerLink]="basePath + '/add-product'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          <i class="far fa-plus-square"></i> Add Product
-        </a>
-        <a [routerLink]="basePath + '/price-tag'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          <i class="fas fa-barcode"></i> Price Tag
-        </a>
-        <a [routerLink]="basePath + '/categories'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          <i class="far fa-folder"></i> Categories
-        </a>
-        <a [routerLink]="basePath + '/pos'" routerLinkActive="bg-[#253945] text-white" class="px-4 py-2 rounded text-gray-300 hover:text-white hover:bg-[#253945] flex items-center gap-2 transition">
-          <i class="fas fa-users"></i> Supplier Add
-        </a>
-      </nav>
-      
-      <div class="flex items-center space-x-4">
-        <button class="bg-[#F89C1E] text-white px-5 py-2 rounded font-bold shadow hover:bg-orange-600 transition flex items-center gap-2">
-          <i class="fas fa-shopping-cart"></i> Cart
-        </button>
-        <button (click)="logout()" class="text-gray-400 hover:text-white ml-4"><i class="fas fa-sign-out-alt"></i></button>
+      <div class="topbar-right">
+        <div class="topbar-user">
+          <div class="user-dot"></div>
+          <span>{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
+        </div>
       </div>
     </header>
 
-    <!-- Super Admin Topbar -->
-    <header *ngIf="authService.isSuperAdmin()" class="h-16 bg-white shadow flex items-center justify-between px-6">
-      <h2 class="text-xl font-semibold text-gray-800">Admin Panel</h2>
-      <div class="flex items-center space-x-4">
-        <span class="text-sm text-gray-600">{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
-      </div>
-    </header>
-    <!-- Content Outlet -->
-    <div class="flex-1 p-6 overflow-auto" [ngClass]="{'bg-[#F4F7FA]': !authService.isSuperAdmin(), 'bg-gray-50': authService.isSuperAdmin()}">
+    <!-- Content -->
+    <div class="zw-content">
       <router-outlet></router-outlet>
     </div>
   </main>

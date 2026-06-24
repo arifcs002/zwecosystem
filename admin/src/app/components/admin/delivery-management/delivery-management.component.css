@@ -1,0 +1,10 @@
+.pipeline-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.pipeline-step { flex: 1; min-width: 100px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 0.75rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+.pipeline-step.active { background: rgba(124,58,237,0.2); border-color: #7c3aed; }
+.step-label { display: block; font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+.step-count { display: block; font-size: 1.4rem; font-weight: 700; color: #a78bfa; margin-top: 0.25rem; }
+.status-processing { color: #3b82f6; font-weight: 600; }
+.status-packed { color: #8b5cf6; font-weight: 600; }
+.status-shipped { color: #06b6d4; font-weight: 600; }
+.status-completed { color: #10b981; font-weight: 600; }
+.status-cancelled { color: #ef4444; font-weight: 600; }

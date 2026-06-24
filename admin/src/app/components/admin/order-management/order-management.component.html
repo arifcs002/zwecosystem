@@ -1,0 +1,110 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">🛒 Order Management</h1>
+      <p class="page-subtitle">View and manage all orders</p>
+    </div>
+  </div>
+
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg && !showDetailModal">❌ {{ errorMsg }}</div>
+
+  <!-- Filters -->
+  <div class="filter-row">
+    <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="🔍 Search order#, customer..." class="search-input" />
+    <div class="status-filters">
+      <button *ngFor="let s of statuses" [class.active]="filterStatus === s" (click)="filterStatus = s; applyFilter()" class="filter-btn">{{ s }}</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="loading" *ngIf="isLoading">Loading orders...</div>
+    <table class="data-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Type</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of filteredOrders">
+          <td><strong>{{ o.orderNumber }}</strong></td>
+          <td>{{ o.customerName || 'Guest' }}<br><small>{{ o.customerPhone }}</small></td>
+          <td><span class="badge">{{ o.saleType }}</span></td>
+          <td>৳{{ o.total | number:'1.0-0' }}</td>
+          <td><span [class]="getPaymentClass(o.paymentStatus)">{{ o.paymentStatus }}</span></td>
+          <td><span [class]="getStatusClass(o.status)">{{ o.status }}</span></td>
+          <td>{{ o.createdAt | date:'dd MMM, HH:mm' }}</td>
+          <td><button class="btn-edit" (click)="openDetail(o)">👁 View</button></td>
+        </tr>
+        <tr *ngIf="filteredOrders.length === 0">
+          <td colspan="8" class="empty-row">No orders found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" *ngIf="showDetailModal" (click)="closeModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Order {{ selectedOrder?.orderNumber }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" *ngIf="selectedOrder">
+        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        <div class="order-info-grid">
+          <div class="info-item"><label>Customer</label><span>{{ selectedOrder.customerName || 'Guest' }}</span></div>
+          <div class="info-item"><label>Phone</label><span>{{ selectedOrder.customerPhone || '—' }}</span></div>
+          <div class="info-item"><label>Payment Method</label><span>{{ selectedOrder.paymentMethod }}</span></div>
+          <div class="info-item"><label>Payment Status</label><span [class]="getPaymentClass(selectedOrder.paymentStatus)">{{ selectedOrder.paymentStatus }}</span></div>
+          <div class="info-item"><label>Subtotal</label><span>৳{{ selectedOrder.subtotal | number:'1.0-0' }}</span></div>
+          <div class="info-item"><label>Discount</label><span>৳{{ selectedOrder.discount | number:'1.0-0' }}</span></div>
+          <div class="info-item"><label>Shipping</label><span>৳{{ selectedOrder.shippingFee | number:'1.0-0' }}</span></div>
+          <div class="info-item"><label>Total</label><span class="total-amount">৳{{ selectedOrder.total | number:'1.0-0' }}</span></div>
+        </div>
+
+        <!-- Items -->
+        <h3 style="margin-top:1.5rem;color:#a78bfa">Order Items</h3>
+        <table class="data-table" style="margin-top:0.5rem">
+          <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of selectedOrder.items">
+              <td>{{ item.product?.name || item.productId }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>৳{{ item.price | number:'1.0-0' }}</td>
+              <td>৳{{ item.totalPrice | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Update Status -->
+        <div class="status-update-section">
+          <h3 style="color:#a78bfa">Update Status</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>New Status</label>
+              <select [(ngModel)]="newStatus" class="form-input">
+                <option *ngFor="let s of orderStatuses" [value]="s">{{ s }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Note (optional)</label>
+              <input type="text" [(ngModel)]="statusNote" class="form-input" placeholder="Add a note..." />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Close</button>
+        <button class="btn-primary" (click)="updateStatus()">Update Status</button>
+      </div>
+    </div>
+  </div>
+</div>

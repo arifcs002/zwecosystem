@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth/auth.service';
 export class AdminLayoutComponent {
   authService = inject(AuthService);
   router = inject(Router);
+  sidebarCollapsed = false;
 
   get basePath(): string {
     const user = this.authService.currentUserValue;

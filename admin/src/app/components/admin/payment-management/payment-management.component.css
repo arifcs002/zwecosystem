@@ -1,0 +1,15 @@
+.tab-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.tab-btn { padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; cursor: pointer; transition: all 0.2s; }
+.tab-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.method-badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: rgba(255,255,255,0.1); }
+.method-badge.bkash { background: rgba(231,0,80,0.2); color: #e70050; }
+.method-badge.nagad { background: rgba(238,110,46,0.2); color: #ee6e2e; }
+.method-badge.rocket { background: rgba(142,39,140,0.2); color: #8e278c; }
+.pay-pending { color: #f59e0b; font-weight: 600; }
+.pay-paid { color: #10b981; font-weight: 600; }
+.pay-failed { color: #ef4444; font-weight: 600; }
+.btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+.verified-badge { color: #10b981; font-weight: 600; }
+.order-summary { display: flex; gap: 2rem; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.order-summary span { color: #9ca3af; font-size: 0.9rem; }
+.order-summary strong { color: #e5e7eb; }

@@ -1,0 +1,88 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">🚚 Delivery Management</h1>
+      <p class="page-subtitle">Track and update delivery statuses</p>
+    </div>
+  </div>
+
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg && !showUpdateModal">❌ {{ errorMsg }}</div>
+
+  <!-- Status Pipeline -->
+  <div class="pipeline-row">
+    <div class="pipeline-step" *ngFor="let s of filterStatuses" [class.active]="filterStatus === s" (click)="setFilter(s)">
+      <span class="step-label">{{ s }}</span>
+      <span class="step-count">{{ getCountForStatus(s) }}</span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="🔍 Search by order# or customer..." class="search-input" />
+  </div>
+
+  <div class="table-card">
+    <div class="loading" *ngIf="isLoading">Loading orders...</div>
+    <table class="data-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of filteredOrders">
+          <td><strong>{{ o.orderNumber }}</strong></td>
+          <td>{{ o.customerName || 'Guest' }}</td>
+          <td>{{ o.customerPhone || '—' }}</td>
+          <td>৳{{ o.total | number:'1.0-0' }}</td>
+          <td>{{ o.paymentMethod }}</td>
+          <td><span [class]="getStatusClass(o.status)">{{ getStatusIcon(o.status) }} {{ o.status }}</span></td>
+          <td>{{ o.createdAt | date:'dd MMM' }}</td>
+          <td><button class="btn-edit" (click)="openUpdate(o)">✏️ Update</button></td>
+        </tr>
+        <tr *ngIf="filteredOrders.length === 0">
+          <td colspan="8" class="empty-row">No orders found for this status.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Update Modal -->
+  <div class="modal-overlay" *ngIf="showUpdateModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Update Delivery — {{ selectedOrder?.orderNumber }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        <div class="form-group">
+          <label>Customer</label>
+          <p style="color:#e5e7eb;margin:0">{{ selectedOrder?.customerName || 'Guest' }} — {{ selectedOrder?.customerPhone }}</p>
+        </div>
+        <div class="form-group">
+          <label>Update Status</label>
+          <select [(ngModel)]="newStatus" class="form-input">
+            <option *ngFor="let s of deliveryStatuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Note (optional)</label>
+          <input type="text" [(ngModel)]="statusNote" class="form-input" placeholder="e.g. Delivered at gate" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn-primary" (click)="updateDeliveryStatus()">Update Status</button>
+      </div>
+    </div>
+  </div>
+</div>
