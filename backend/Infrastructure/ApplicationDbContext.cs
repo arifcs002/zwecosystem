@@ -257,7 +257,7 @@ namespace Ecommerce.Api.Infrastructure
                     Id = superAdminUserId,
                     CompanyId = null, // Global
                     UserType = "SuperAdmin",
-                    Email = "arifowneradmin.bd",
+                    Email = "arifsuperadmin",
                     PasswordHash = superAdminPasswordHash,
                     FirstName = "Platform",
                     LastName = "Owner",
