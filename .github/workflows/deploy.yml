@@ -21,6 +21,18 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            # Set explicit PATH containing all standard binary locations
+            export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+            # Load user and system profiles
+            [ -f /etc/profile ] && . /etc/profile
+            [ -f ~/.profile ] && . ~/.profile
+            [ -f ~/.bashrc ] && . ~/.bashrc
+
+            echo "==> PATH is: $PATH"
+            echo "==> Checking git location..."
+            which git || echo "git not found in PATH"
+
             set -e
             echo "==> Navigating to deploy directory..."
             cd /data/apps/zwecosystem
