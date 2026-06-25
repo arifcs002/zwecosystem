@@ -1,0 +1,78 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">📱 Dashboard View</h1>
+      <p class="page-subtitle">Preview of the configured storefront view for your customers</p>
+    </div>
+  </div>
+
+  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+
+  <!-- Loading State -->
+  <div class="loading" *ngIf="isLoading" style="text-align: center; padding: 3rem; color: #a78bfa;">
+    Loading dashboard view...
+  </div>
+
+  <div *ngIf="!isLoading">
+    <!-- Category Pills -->
+    <div class="filter-row" style="margin-bottom: 2rem;">
+      <div class="status-filters">
+        <button 
+          class="filter-btn" 
+          [class.active]="selectedCategory === 'All'" 
+          (click)="filterProducts('All')">
+          All ({{ products.length }})
+        </button>
+        <button 
+          *ngFor="let cat of categories" 
+          class="filter-btn" 
+          [class.active]="selectedCategory === cat.name" 
+          (click)="filterProducts(cat.name)">
+          {{ cat.name }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div *ngFor="let product of filteredProducts" class="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:border-violet-500/50 hover:transform hover:-translate-y-1">
+        <!-- Image Container -->
+        <div class="relative h-48 bg-[#090915] flex items-center justify-center overflow-hidden">
+          <img 
+            *ngIf="product.imageUrl" 
+            [src]="product.imageUrl" 
+            [alt]="product.name" 
+            class="h-full w-full object-cover">
+          <div *ngIf="!product.imageUrl" class="text-gray-500 text-4xl">
+            📦
+          </div>
+          <span class="absolute top-3 right-3 bg-violet-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+            {{ product.category?.name || 'Uncategorized' }}
+          </span>
+        </div>
+
+        <!-- Product Body -->
+        <div class="p-4 space-y-3">
+          <h3 class="text-base font-semibold text-gray-100 line-clamp-1" [title]="product.name">
+            {{ product.name }}
+          </h3>
+          <div class="flex justify-between items-center">
+            <span class="text-lg font-bold text-violet-400">
+              ৳{{ product.price | number:'1.0-0' }}
+            </span>
+            <span 
+              class="text-xs px-2 py-0.5 rounded font-medium"
+              [ngClass]="product.stockQuantity > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'">
+              {{ product.stockQuantity > 0 ? 'In Stock (' + product.stockQuantity + ')' : 'Out of Stock' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="filteredProducts.length === 0" class="col-span-full text-center py-12 bg-white/5 border border-white/10 rounded-xl">
+        <div class="text-4xl mb-3">🛍️</div>
+        <p class="text-gray-400 text-sm">No products found in this category.</p>
+      </div>
+    </div>
+  </div>
+</div>

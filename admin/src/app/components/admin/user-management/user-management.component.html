@@ -6,7 +6,7 @@
     </div>
 
     <!-- Custom Select2-like Context Switcher -->
-    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-lg border border-white/10" *ngIf="authService.isSuperAdmin()">
       <label class="text-sm font-semibold text-gray-400">Context:</label>
       <div class="relative">
         <button (click)="toggleDropdown()" class="w-full min-w-[250px] p-2 bg-[#0d0d1a] border border-white/10 rounded text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-violet-500 font-medium text-violet-400 relative z-20">
@@ -107,7 +107,7 @@
         <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
         
         <!-- Company Dropdown (disabled if editing or company context is set) -->
-        <div class="form-group">
+        <div class="form-group" *ngIf="authService.isSuperAdmin()">
           <label>Company</label>
           <select [(ngModel)]="currentUser.companyId" [disabled]="selectedCompanyContext !== 'all' || isEditMode" class="form-input">
             <option value="">-- Select Company --</option>
@@ -145,7 +145,7 @@
           <label>Role</label>
           <select [(ngModel)]="currentUser.role" class="form-input">
             <option value="">-- Select Role --</option>
-            <option *ngFor="let role of availableRoles" [value]="role">{{ role }}</option>
+            <option *ngFor="let role of filteredRoles" [value]="role">{{ role }}</option>
           </select>
         </div>
       </div>

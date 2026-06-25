@@ -1,24 +1,32 @@
 <div class="page-container">
   <div class="page-header">
     <div>
-      <h1 class="page-title">⚙️ Store Configuration</h1>
-      <p class="page-subtitle">Manage branding and social settings</p>
+      <h1 class="page-title">⚙️ Store & Dashboard Configuration</h1>
+      <p class="page-subtitle">Configure store profile, branding, and dashboard visibility settings</p>
     </div>
   </div>
 
+  <!-- Alerts -->
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+
   <div class="bg-white/5 p-6 rounded-xl border border-white/10 max-w-3xl">
-    <form class="space-y-6">
+    <div class="loading" *ngIf="isLoading" style="text-align: center; padding: 2rem; color: #a78bfa;">
+      Loading settings...
+    </div>
+
+    <form class="space-y-6" *ngIf="!isLoading" (submit)="$event.preventDefault(); saveSettings()">
       <!-- Basic Info -->
       <div>
         <h4 class="font-semibold text-lg text-violet-400 mb-4">Basic Information</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-group">
             <label>Store Name</label>
-            <input type="text" value="Demo Fashion Shop" class="form-input">
+            <input type="text" [(ngModel)]="storeName" name="storeName" class="form-input" placeholder="e.g. My Fashion Hub">
           </div>
           <div class="form-group">
             <label>Contact Number</label>
-            <input type="text" value="+8801700000000" class="form-input">
+            <input type="text" [(ngModel)]="storePhone" name="storePhone" class="form-input" placeholder="e.g. +88017XXXXXXXX">
           </div>
         </div>
       </div>
@@ -30,13 +38,35 @@
           <div class="form-group">
             <label>Primary Color (Hex)</label>
             <div class="flex items-center mt-1">
-              <input type="color" value="#7c3aed" class="h-10 w-10 border border-white/10 rounded cursor-pointer bg-[#0d0d1a]">
-              <input type="text" value="#7c3aed" class="ml-2 form-input font-mono">
+              <input type="color" [(ngModel)]="primaryColor" name="primaryColorColor" class="h-10 w-10 border border-white/10 rounded cursor-pointer bg-[#0d0d1a]">
+              <input type="text" [(ngModel)]="primaryColor" name="primaryColorText" class="ml-2 form-input font-mono">
             </div>
           </div>
           <div class="form-group">
             <label>Store Logo URL</label>
-            <input type="text" placeholder="https://example.com/logo.png" class="form-input">
+            <input type="text" [(ngModel)]="logoUrl" name="logoUrl" placeholder="https://example.com/logo.png" class="form-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Categories Configuration -->
+      <div class="border-t border-white/10 pt-6">
+        <h4 class="font-semibold text-lg text-violet-400 mb-2">Dashboard Categories Configuration</h4>
+        <p class="text-sm text-gray-400 mb-4">Select which categories of products will be displayed on the Dashboard View and Public Storefront.</p>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 bg-white/5 p-4 rounded-lg border border-white/5">
+          <div *ngFor="let cat of categories" class="flex items-center space-x-2">
+            <input type="checkbox" 
+                   [id]="'cat-' + cat.id" 
+                   [(ngModel)]="selectedCategoryIds[cat.id!]" 
+                   [name]="'cat-' + cat.id" 
+                   class="rounded border-white/10 bg-[#0d0d1a] text-violet-600 focus:ring-violet-500 h-4 w-4">
+            <label [for]="'cat-' + cat.id" class="text-sm text-gray-200 cursor-pointer select-none">
+              {{ cat.name }}
+            </label>
+          </div>
+          <div *ngIf="categories.length === 0" class="col-span-full text-center text-sm text-gray-400 py-2">
+            No categories available. Please create categories first.
           </div>
         </div>
       </div>
@@ -47,18 +77,18 @@
         <div class="space-y-3">
           <div class="flex items-center">
             <span class="bg-white/5 p-2 px-4 border border-white/10 border-r-0 rounded-l text-gray-400 text-sm font-medium">Facebook</span>
-            <input type="text" placeholder="https://facebook.com/yourshop" class="flex-1 form-input rounded-l-none">
+            <input type="text" [(ngModel)]="facebookLink" name="facebookLink" placeholder="https://facebook.com/yourshop" class="flex-1 form-input rounded-l-none">
           </div>
           <div class="flex items-center">
             <span class="bg-white/5 p-2 px-4 border border-white/10 border-r-0 rounded-l text-gray-400 text-sm font-medium">Instagram</span>
-            <input type="text" placeholder="https://instagram.com/yourshop" class="flex-1 form-input rounded-l-none">
+            <input type="text" [(ngModel)]="instagramLink" name="instagramLink" placeholder="https://instagram.com/yourshop" class="flex-1 form-input rounded-l-none">
           </div>
         </div>
       </div>
 
       <div class="border-t border-white/10 pt-6 flex justify-end">
-        <button type="button" class="btn-primary">
-          Save Settings
+        <button type="submit" class="btn-primary">
+          Save Configuration
         </button>
       </div>
     </form>

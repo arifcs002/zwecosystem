@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService, User } from '../../../services/user/user.service';
 import { CompanyService, Company } from '../../../services/company/company.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 @Component({
   selector: 'app-user-management',
@@ -15,6 +16,7 @@ export class UserManagementComponent implements OnInit {
   
   private userService = inject(UserService);
   private companyService = inject(CompanyService);
+  public authService = inject(AuthService);
 
   companies: Company[] = [];
   selectedCompanyContext: string = 'all';
@@ -33,10 +35,21 @@ export class UserManagementComponent implements OnInit {
   successMsg = '';
   errorMsg = '';
 
-  availableRoles = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'SALES', 'ACCOUNTANT'];
+  get filteredRoles(): string[] {
+    if (this.authService.isSuperAdmin()) {
+      return ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'SALES', 'ACCOUNTANT', 'CASHIER'];
+    } else {
+      return ['MANAGER', 'SALES', 'ACCOUNTANT', 'CASHIER'];
+    }
+  }
 
   ngOnInit() {
-    this.loadCompanies();
+    if (this.authService.isSuperAdmin()) {
+      this.selectedCompanyContext = 'all';
+      this.loadCompanies();
+    } else {
+      this.selectedCompanyContext = this.authService.currentUserValue?.companyId || '';
+    }
     this.loadUsers();
   }
 
@@ -62,6 +75,7 @@ export class UserManagementComponent implements OnInit {
 
   // Custom Select2 Logic
   toggleDropdown() {
+    if (!this.authService.isSuperAdmin()) return;
     this.isDropdownOpen = !this.isDropdownOpen;
     if (this.isDropdownOpen) {
       this.searchQuery = '';
@@ -100,7 +114,17 @@ export class UserManagementComponent implements OnInit {
   }
 
   getEmptyUser(): any {
-    return { id: '', firstName: '', lastName: '', email: '', phoneNumber: '', role: '', companyId: this.selectedCompanyContext === 'all' ? null : this.selectedCompanyContext, isActive: true, password: '' };
+    return { 
+      id: '', 
+      firstName: '', 
+      lastName: '', 
+      email: '', 
+      phoneNumber: '', 
+      role: '', 
+      companyId: this.selectedCompanyContext === 'all' ? null : this.selectedCompanyContext, 
+      isActive: true, 
+      password: '' 
+    };
   }
 
   openAddModal() {
@@ -124,6 +148,23 @@ export class UserManagementComponent implements OnInit {
 
   saveUser() {
     this.errorMsg = '';
+
+    if (!this.currentUser.role) {
+      this.errorMsg = 'Role is required.';
+      return;
+    }
+
+    if (!this.authService.isSuperAdmin()) {
+      // Force user's own company context
+      this.currentUser.companyId = this.authService.currentUserValue?.companyId;
+      
+      // Prevent assigning forbidden roles
+      if (this.currentUser.role === 'SUPER_ADMIN' || this.currentUser.role === 'COMPANY_ADMIN') {
+        this.errorMsg = 'You are not authorized to assign Super Admin or Company Admin roles.';
+        return;
+      }
+    }
+
     if (this.isEditMode) {
       this.userService.updateUser(this.currentUser.id, this.currentUser).subscribe({
         next: () => {

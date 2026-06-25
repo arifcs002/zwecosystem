@@ -57,57 +57,61 @@
 
       <!-- ===== COMPANY / TENANT MODULE ===== -->
       <!-- These show for both Super Admin (company-filtered) and Company Admins -->
-      <a [routerLink]="basePath + '/dashboard'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/dashboard'" *ngIf="authService.hasRight('PAGE_SHOP_DASHBOARD')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📈</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
       </a>
-      <a [routerLink]="basePath + '/products'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/products'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📦</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Product List</span>
       </a>
-      <a [routerLink]="basePath + '/add-product'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/add-product'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">➕</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
       </a>
-      <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/categories'" *ngIf="authService.hasRight('PAGE_CATEGORIES')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🗂️</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
       </a>
-      <a [routerLink]="basePath + '/barcodes'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/barcodes'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🏷️</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Barcode Management</span>
       </a>
-      <a [routerLink]="basePath + '/suppliers'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/suppliers'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🏭</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
       </a>
-      <a [routerLink]="basePath + '/pos'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🧾</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
       </a>
-      <a [routerLink]="basePath + '/orders'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/orders'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🛒</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
       </a>
-      <a [routerLink]="basePath + '/delivery'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/delivery'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🚚</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>
       </a>
-      <a [routerLink]="basePath + '/payments'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/payments'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">💳</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Payments</span>
       </a>
-      <a [routerLink]="basePath + '/reports'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/reports'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📊</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Reports</span>
       </a>
-      <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin()" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">👤</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
       </a>
-      <a [routerLink]="basePath + '/config'" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Config</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard Config</span>
+      </a>
+      <a [routerLink]="basePath + '/dashboard-view'" *ngIf="authService.hasRight('PAGE_DASHBOARD_VIEW')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📱</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard View</span>
       </a>
 
     </nav>

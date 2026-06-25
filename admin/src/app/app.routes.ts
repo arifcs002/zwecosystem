@@ -16,6 +16,7 @@ import { CategoryManagementComponent } from './components/admin/category-managem
 import { ReportsComponent } from './components/admin/reports/reports.component';
 import { PriceTagComponent } from './components/admin/price-tag/price-tag.component';
 import { DashboardConfigComponent } from './components/admin/dashboard-config/dashboard-config.component';
+import { DashboardViewComponent } from './components/admin/dashboard-view/dashboard-view.component';
 import { SupplierManagementComponent } from './components/admin/supplier-management/supplier-management.component';
 import { OrderManagementComponent } from './components/admin/order-management/order-management.component';
 import { DeliveryManagementComponent } from './components/admin/delivery-management/delivery-management.component';
@@ -55,6 +56,7 @@ export const routes: Routes = [
       { path: 'payments', component: PaymentManagementComponent },
       { path: 'reports', component: ReportsComponent },
       { path: 'config', component: DashboardConfigComponent },
+      { path: 'dashboard-view', component: DashboardViewComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
@@ -80,6 +82,7 @@ export const routes: Routes = [
       { path: 'reports', component: ReportsComponent },
       { path: 'users', component: UserManagementComponent },
       { path: 'config', component: DashboardConfigComponent },
+      { path: 'dashboard-view', component: DashboardViewComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

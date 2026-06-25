@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CompanyService } from '../../services/company/company.service';
+import { CategoryService } from '../../services/category/category.service';
+import { ProductService } from '../../services/product/product.service';
+import { SettingsService } from '../../services/settings/settings.service';
 
 interface Product {
   id: string;
@@ -29,6 +32,9 @@ export class PublicShopComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private companyService = inject(CompanyService);
+  private categoryService = inject(CategoryService);
+  private productService = inject(ProductService);
+  private settingsService = inject(SettingsService);
 
   companySlug: string = '';
   companyName: string = 'Loading...';
@@ -36,19 +42,9 @@ export class PublicShopComponent implements OnInit {
   themeClass: string = 'theme-cyberpunk-teal'; // Default fallback
   isValidStore: boolean | null = null;
 
-  // Mocks
-  categories = ['All', 'Men', 'Women', 'Accessories', 'Electronics'];
+  categories: string[] = [];
   selectedCategory = 'All';
-
-  products: Product[] = [
-    { id: '1', name: 'Classic White T-Shirt', price: 1200, category: 'Men', stock: 50, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=400' },
-    { id: '2', name: 'Denim Jacket', price: 3500, category: 'Women', stock: 20, image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&q=80&w=400' },
-    { id: '3', name: 'Leather Wallet', price: 850, category: 'Accessories', stock: 15, image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=400' },
-    { id: '4', name: 'Wireless Earbuds', price: 2500, category: 'Electronics', stock: 100, image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&q=80&w=400' },
-    { id: '5', name: 'Running Sneakers', price: 4200, category: 'Men', stock: 30, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400' },
-    { id: '6', name: 'Summer Dress', price: 2100, category: 'Women', stock: 25, image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&q=80&w=400' }
-  ];
-
+  products: Product[] = [];
   filteredProducts: Product[] = [];
 
   // Cart State
@@ -78,6 +74,8 @@ export class PublicShopComponent implements OnInit {
             if (comp.logoUrl) {
               this.companyLogo = comp.logoUrl;
             }
+            // Load categories and products for this company
+            this.loadStorefrontData();
           } else {
             this.companyName = 'Store Not Found';
             this.isValidStore = false;
@@ -91,8 +89,40 @@ export class PublicShopComponent implements OnInit {
           this.isValidStore = false;
         }
       });
-      
-      this.filterProducts('All');
+    });
+  }
+
+  loadStorefrontData() {
+    this.settingsService.getSettings().subscribe({
+      next: (settings) => {
+        const setting = settings.find(s => s.key === 'visible_dashboard_categories');
+        const visibleCategoryIds = setting && setting.value ? setting.value.split(',') : [];
+
+        this.categoryService.getCategories().subscribe({
+          next: (allCats) => {
+            const filteredCats = allCats.filter(c => visibleCategoryIds.includes(c.id || ''));
+            this.categories = ['All', ...filteredCats.map(c => c.name)];
+
+            this.productService.getProducts().subscribe({
+              next: (allProds) => {
+                const filteredProds = allProds.filter(p => visibleCategoryIds.includes(p.categoryId || ''));
+                this.products = filteredProds.map(p => ({
+                  id: p.id,
+                  name: p.name,
+                  price: p.price,
+                  image: p.imageUrl || '',
+                  category: p.category?.name || 'Uncategorized',
+                  stock: p.stockQuantity
+                }));
+                this.filterProducts('All');
+              },
+              error: (err) => console.error('Failed to load products:', err)
+            });
+          },
+          error: (err) => console.error('Failed to load categories:', err)
+        });
+      },
+      error: (err) => console.error('Failed to load settings:', err)
     });
   }
 
