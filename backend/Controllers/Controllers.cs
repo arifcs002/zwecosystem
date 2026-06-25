@@ -53,7 +53,7 @@ namespace Ecommerce.Api.Controllers
         public bool IsActive { get; set; }
         public string? Password { get; set; }
     }
-    public record LoginDto(string Email, string Password);
+    public record LoginDto(string Email, string Password, string? LoginContext);
     public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, Guid? CompanyId, List<string> Roles, string? UserType);
     public record ProductCreateDto(string Name, string SKU, decimal Price, decimal WholesalePrice, int StockQuantity, string? Description, Guid? CategoryId, Guid? BrandId, string? Barcode, string? ImageUrl);
     public record SizeQtyDto(string Size, int Quantity);
@@ -201,7 +201,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            Console.WriteLine($"[LOGIN DEBUG] Attempt for email: '{dto.Email}'");
+            Console.WriteLine($"[LOGIN DEBUG] Attempt for email: '{dto.Email}' under context: '{dto.LoginContext}'");
             var user = await _context.Users
                 .IgnoreQueryFilters()
                 .Include(u => u.UserRoles)
@@ -212,6 +212,26 @@ namespace Ecommerce.Api.Controllers
             {
                 Console.WriteLine($"[LOGIN DEBUG] User NOT found for email: '{dto.Email}'");
                 return Unauthorized(new { message = "Invalid email or password" });
+            }
+
+            // Validate login context to prevent cross-login (Admin or Company isolation)
+            if (dto.LoginContext == "admin")
+            {
+                if (user.UserType != "SuperAdmin")
+                {
+                    return Unauthorized(new { message = "Only platform administrators can log in here." });
+                }
+            }
+            else if (!string.IsNullOrEmpty(dto.LoginContext))
+            {
+                var company = await _context.Companies
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(c => EF.Functions.ILike(c.Subdomain, dto.LoginContext));
+                
+                if (company == null || user.CompanyId != company.Id)
+                {
+                    return Unauthorized(new { message = "You do not have access to this store dashboard." });
+                }
             }
 
             bool passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
