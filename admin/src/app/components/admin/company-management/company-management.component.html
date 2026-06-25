@@ -1,59 +1,69 @@
-<div class="bg-white p-6 rounded-lg shadow-md relative">
-  <div class="flex justify-between items-center mb-6 border-b pb-4">
-    <h3 class="text-2xl font-bold text-gray-800">Company Management</h3>
-    <button (click)="navigateToCreate()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+<div class="page-container">
+  <div class="page-header flex justify-between items-center">
+    <div>
+      <h1 class="page-title">🏢 Company Management</h1>
+      <p class="page-subtitle">Manage companies and registration statuses</p>
+    </div>
+    <button (click)="navigateToCreate()" class="btn-primary">
       + Create New Company
     </button>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-left border-collapse min-w-[800px]">
+  <div class="table-card">
+    <table class="data-table">
       <thead>
-        <tr class="bg-gray-100 text-gray-700 uppercase text-xs border-b">
-          <th class="p-3">Company Details</th>
-          <th class="p-3">Contact Info</th>
-          <th class="p-3">Owner Info</th>
-          <th class="p-3">Status</th>
-          <th class="p-3 text-right">Actions</th>
+        <tr>
+          <th>Company Details</th>
+          <th>Contact Info</th>
+          <th>Owner Info</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let company of companies" class="border-b border-gray-100 hover:bg-gray-50 transition">
-          <td class="p-4">
+        <tr *ngFor="let company of companies">
+          <td>
             <div class="flex items-center space-x-3">
-              <img *ngIf="company.logoUrl" [src]="company.logoUrl" class="h-10 w-10 object-contain rounded border shadow-sm bg-white" alt="Logo">
-              <div *ngIf="!company.logoUrl" class="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
+              <img *ngIf="company.logoUrl" [src]="company.logoUrl" class="h-10 w-10 object-contain rounded border border-white/10 shadow-sm bg-white/5" alt="Logo">
+              <div *ngIf="!company.logoUrl" class="h-10 w-10 rounded bg-[#161630] border border-white/10 flex items-center justify-center text-violet-400 font-bold text-lg">
                 {{ company.name.charAt(0) }}
               </div>
               <div>
-                <p class="font-bold text-gray-800">{{ company.name }}</p>
-                <p class="text-xs text-gray-500">{{ company.subdomain }}.zairasworld.com</p>
+                <p class="font-bold text-gray-200">{{ company.name }}</p>
+                <p class="text-xs text-violet-400 font-mono">{{ company.subdomain }}.zairasworld.com</p>
               </div>
             </div>
           </td>
-          <td class="p-4 text-sm text-gray-600">
-            <p>{{ company.contactEmail }}</p>
-            <p>{{ company.companyMobile }}</p>
+          <td>
+            <p class="text-gray-300 font-medium">{{ company.contactEmail }}</p>
+            <p class="text-xs text-gray-500">{{ company.companyMobile }}</p>
           </td>
-          <td class="p-4 text-sm text-gray-600">
-            <p class="font-medium text-gray-800">{{ company.ownerName }}</p>
-            <p>{{ company.ownerMobile }}</p>
+          <td>
+            <p class="font-medium text-gray-200">{{ company.ownerName }}</p>
+            <p class="text-xs text-gray-500">{{ company.ownerMobile }}</p>
           </td>
-          <td class="p-4 flex flex-col items-start gap-1">
-            <span [ngClass]="company.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'" class="text-xs px-2 py-1 rounded-full font-semibold">
-              {{ company.isActive ? 'Active' : 'Inactive' }}
-            </span>
-            <span [ngClass]="{'bg-yellow-100 text-yellow-800': company.approvalStatus === 'Pending', 'bg-emerald-100 text-emerald-800': company.approvalStatus === 'Approved', 'bg-red-100 text-red-800': company.approvalStatus === 'Rejected'}" class="text-xs px-2 py-1 rounded-full font-semibold mt-1">
-              {{ company.approvalStatus || 'Pending' }}
-            </span>
+          <td>
+            <div class="flex flex-col items-start gap-1.5">
+              <span [ngClass]="company.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-gray-800 text-gray-400 border-white/10'" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border">
+                {{ company.isActive ? 'Active' : 'Inactive' }}
+              </span>
+              <span [ngClass]="{'bg-amber-900/40 text-amber-300 border-amber-800/30': company.approvalStatus === 'Pending', 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30': company.approvalStatus === 'Approved', 'bg-rose-900/40 text-rose-300 border-rose-800/30': company.approvalStatus === 'Rejected'}" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border">
+                {{ company.approvalStatus || 'Pending' }}
+              </span>
+            </div>
           </td>
-          <td class="p-4 text-right space-x-3">
-            <button (click)="toggleStatus(company)" [ngClass]="company.isActive ? 'text-orange-500 hover:text-orange-700' : 'text-green-500 hover:text-green-700'" class="font-medium">
-              {{ company.isActive ? 'Deactivate' : 'Activate' }}
-            </button>
-            <button (click)="navigateToEdit(company)" class="text-blue-500 hover:text-blue-700 font-medium">Edit</button>
-            <button (click)="deleteCompany(company)" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
+          <td>
+            <div class="flex justify-end gap-2">
+              <button (click)="toggleStatus(company)" [ngClass]="company.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
+                {{ company.isActive ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button (click)="navigateToEdit(company)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
+              <button (click)="deleteCompany(company)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+            </div>
           </td>
+        </tr>
+        <tr *ngIf="companies.length === 0">
+          <td colspan="5" class="empty-row">No companies found.</td>
         </tr>
       </tbody>
     </table>

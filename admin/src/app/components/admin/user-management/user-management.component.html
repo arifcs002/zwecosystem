@@ -1,34 +1,37 @@
-<div class="bg-white p-6 rounded-lg shadow-md relative">
-  <div class="flex justify-between items-center mb-6 border-b pb-4">
-    <h3 class="text-2xl font-bold text-gray-800">User Management</h3>
-    
+<div class="page-container">
+  <div class="page-header flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h1 class="page-title">👥 User Management</h1>
+      <p class="page-subtitle">Manage system and company users</p>
+    </div>
+
     <!-- Custom Select2-like Context Switcher -->
-    <div class="flex items-center space-x-3 bg-gray-50 px-4 py-2 rounded-lg border">
-      <label class="text-sm font-semibold text-gray-600">Context:</label>
+    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+      <label class="text-sm font-semibold text-gray-400">Context:</label>
       <div class="relative">
-        <button (click)="toggleDropdown()" class="w-full min-w-[250px] p-2 bg-white border rounded text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-blue-800 relative z-20">
+        <button (click)="toggleDropdown()" class="w-full min-w-[250px] p-2 bg-[#0d0d1a] border border-white/10 rounded text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-violet-500 font-medium text-violet-400 relative z-20">
           {{ getSelectedCompanyName() }}
-          <svg class="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <svg class="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </button>
 
         <!-- Invisible Backdrop for click-outside -->
         <div *ngIf="isDropdownOpen" (click)="isDropdownOpen = false" class="fixed inset-0 z-10 cursor-default"></div>
 
         <!-- Dropdown Menu -->
-        <div *ngIf="isDropdownOpen" class="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div *ngIf="isDropdownOpen" class="absolute z-20 w-full mt-1 bg-[#161630] border border-white/10 rounded-md shadow-lg max-h-60 overflow-y-auto">
           <!-- Search Box -->
-          <div class="sticky top-0 p-2 bg-white border-b">
+          <div class="sticky top-0 p-2 bg-[#161630] border-b border-white/10">
             <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" 
                    placeholder="Search company..." 
-                   class="w-full p-2 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                   class="w-full p-2 bg-[#0d0d1a] border border-white/10 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
                    autofocus>
           </div>
           <!-- Options -->
           <ul class="py-1">
             <li *ngFor="let comp of filteredCompanies" 
                 (click)="selectCompany(comp.id)"
-                class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm font-medium"
-                [ngClass]="{'bg-blue-100 text-blue-800': selectedCompanyContext === comp.id}">
+                class="px-4 py-2 hover:bg-white/5 cursor-pointer text-sm font-medium text-gray-300"
+                [ngClass]="{'bg-violet-900/40 text-violet-300': selectedCompanyContext === comp.id}">
               {{ comp.name }}
             </li>
             <li *ngIf="filteredCompanies.length === 0" class="px-4 py-2 text-sm text-gray-500 text-center">
@@ -39,109 +42,116 @@
       </div>
     </div>
 
-    <button (click)="openAddModal()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition font-medium">
+    <button (click)="openAddModal()" class="btn-primary">
       + Add User
     </button>
   </div>
 
-  <table class="w-full text-left border-collapse">
-    <thead>
-      <tr class="bg-gray-100 text-gray-700 uppercase text-xs border-b">
-        <th class="p-3">User Info</th>
-        <th class="p-3">Role</th>
-        <th class="p-3">Status</th>
-        <th class="p-3 text-right">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let user of filteredUsers" class="border-b hover:bg-gray-50 transition text-sm">
-        <td class="p-4 text-sm text-gray-800 font-medium">{{ user.firstName }} {{ user.lastName }}</td>
-        <td class="p-4 text-sm text-gray-600">
-          <div>{{ user.email }}</div>
-          <div class="text-xs">{{ user.phoneNumber }}</div>
-        </td>
-        <td class="p-4 text-sm">
-          <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">{{ user.roles?.[0] || user.role }}</span>
-        </td>
-        <td class="p-4">
-          <span [ngClass]="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="text-xs px-2 py-1 rounded-full font-semibold">
-            {{ user.isActive ? 'Active' : 'Inactive' }}
-          </span>
-        </td>
-        <td class="p-4 text-right space-x-3">
-          <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-orange-500 hover:text-orange-700' : 'text-green-500 hover:text-green-700'" class="font-medium text-sm">
-            {{ user.isActive ? 'Deactivate' : 'Activate' }}
-          </button>
-          <button (click)="editUser(user)" class="text-blue-500 hover:text-blue-700 font-medium text-sm">Edit</button>
-          <button (click)="deleteUser(user)" class="text-red-500 hover:text-red-700 font-medium text-sm">Delete</button>
-        </td>
-      </tr>
-      <tr *ngIf="filteredUsers.length === 0">
-        <td colspan="5" class="p-8 text-center text-gray-500">
-          No users found for the selected company.
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+
+  <div class="table-card mt-4">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User Info</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>
+            <div class="font-semibold text-gray-200">{{ user.firstName }} {{ user.lastName }}</div>
+          </td>
+          <td>
+            <div class="text-gray-300 font-medium">{{ user.email }}</div>
+            <div class="text-xs text-gray-500">{{ user.phoneNumber }}</div>
+          </td>
+          <td>
+            <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
+              {{ user.roles?.[0] || user.role }}
+            </span>
+            <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="ml-2 text-xs px-2.5 py-1 rounded-full font-semibold border">
+              {{ user.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="flex justify-end gap-2">
+              <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
+                {{ user.isActive ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button (click)="editUser(user)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
+              <button (click)="deleteUser(user)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredUsers.length === 0">
+          <td colspan="4" class="empty-row">
+            No users found for the selected company.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <!-- User Modal (Add/Edit) -->
-  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-      <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
-        <h3 class="font-bold text-lg text-gray-800">{{ isEditMode ? 'Edit User' : 'Add New User' }}</h3>
-        <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600">&times;</button>
+  <div *ngIf="showModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>{{ isEditMode ? 'Edit User' : 'Add New User' }}</h2>
+        <button (click)="closeModal()" class="close-btn">&times;</button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="modal-body space-y-4">
+        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
         
         <!-- Company Dropdown (disabled if editing or company context is set) -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
-          <select [(ngModel)]="currentUser.companyId" [disabled]="selectedCompanyContext !== 'all' || isEditMode" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        <div class="form-group">
+          <label>Company</label>
+          <select [(ngModel)]="currentUser.companyId" [disabled]="selectedCompanyContext !== 'all' || isEditMode" class="form-input">
             <option value="">-- Select Company --</option>
             <option *ngFor="let c of companies" [value]="c.id">{{ c.name }}</option>
           </select>
         </div>
 
-        <div class="flex gap-4">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-            <input type="text" [(ngModel)]="currentUser.firstName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. John">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" [(ngModel)]="currentUser.firstName" class="form-input" placeholder="e.g. John">
           </div>
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-            <input type="text" [(ngModel)]="currentUser.lastName" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. Doe">
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" [(ngModel)]="currentUser.lastName" class="form-input" placeholder="e.g. Doe">
           </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" [(ngModel)]="currentUser.email" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. admin@domain.com">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" [(ngModel)]="currentUser.email" class="form-input" placeholder="e.g. admin@domain.com">
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
-          <input type="text" [(ngModel)]="currentUser.phoneNumber" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. 01711223344">
+        <div class="form-group">
+          <label>Mobile</label>
+          <input type="text" [(ngModel)]="currentUser.phoneNumber" class="form-input" placeholder="e.g. 01711223344">
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input type="password" [(ngModel)]="currentUser.password" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" [placeholder]="isEditMode ? 'Leave blank to keep current' : 'Enter password'">
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" [(ngModel)]="currentUser.password" class="form-input" [placeholder]="isEditMode ? 'Leave blank to keep current' : 'Enter password'">
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select [(ngModel)]="currentUser.role" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        <div class="form-group">
+          <label>Role</label>
+          <select [(ngModel)]="currentUser.role" class="form-input">
             <option value="">-- Select Role --</option>
             <option *ngFor="let role of availableRoles" [value]="role">{{ role }}</option>
           </select>
         </div>
-
-
-
       </div>
-      <div class="p-6 border-t flex justify-end space-x-3 bg-gray-50 rounded-b-lg">
-        <button (click)="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded transition font-medium">Cancel</button>
-        <button (click)="saveUser()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow font-medium">Save User</button>
+      <div class="modal-footer">
+        <button (click)="closeModal()" class="btn-secondary">Cancel</button>
+        <button (click)="saveUser()" class="btn-primary">Save User</button>
       </div>
     </div>
   </div>

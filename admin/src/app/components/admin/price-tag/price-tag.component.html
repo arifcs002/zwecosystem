@@ -1,46 +1,51 @@
-<div class="bg-white p-6 rounded-lg shadow-md max-w-5xl mx-auto">
-  <div class="flex justify-between items-center mb-6">
-    <h3 class="text-2xl font-bold text-gray-800">Print Price Tags (Barcodes)</h3>
-    <button class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+<div class="page-container">
+  <div class="page-header flex justify-between items-center">
+    <div>
+      <h1 class="page-title">🏷️ Print Price Tags (Barcodes)</h1>
+      <p class="page-subtitle">Configure and print barcode labels for products</p>
+    </div>
+    <button class="btn-primary">
       Print Selected Tags
     </button>
   </div>
 
-  <div class="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
-    <p class="text-sm text-yellow-700">
+  <div class="mb-6 bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg">
+    <p class="text-sm text-amber-300">
       <strong>Tip:</strong> Select the products below that you want to print barcodes for. Ensure your barcode printer is connected.
     </p>
   </div>
 
-  <table class="w-full text-left border-collapse">
-    <thead>
-      <tr class="bg-gray-100 text-gray-700 uppercase text-sm border-b">
-        <th class="p-3 w-12 text-center"><input type="checkbox" class="w-4 h-4"></th>
-        <th class="p-3">Product Name</th>
-        <th class="p-3">Barcode Number</th>
-        <th class="p-3">Price</th>
-        <th class="p-3 text-center">Copies</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="border-b hover:bg-gray-50">
-        <td class="p-3 text-center"><input type="checkbox" class="w-4 h-4" checked></td>
-        <td class="p-3 font-semibold">Air Force Retro Sneaker</td>
-        <td class="p-3 text-gray-500 font-mono tracking-widest">123456789012</td>
-        <td class="p-3 text-green-600 font-bold">৳ 3,200</td>
-        <td class="p-3 text-center">
-          <input type="number" value="10" class="w-16 p-1 border rounded text-center">
-        </td>
-      </tr>
-      <tr class="border-b hover:bg-gray-50">
-        <td class="p-3 text-center"><input type="checkbox" class="w-4 h-4"></td>
-        <td class="p-3 font-semibold">Casual Denim Jacket</td>
-        <td class="p-3 text-gray-500 font-mono tracking-widest">987654321098</td>
-        <td class="p-3 text-green-600 font-bold">৳ 1,500</td>
-        <td class="p-3 text-center">
-          <input type="number" value="1" class="w-16 p-1 border rounded text-center text-gray-400" disabled>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="w-12 text-center"><input type="checkbox" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40"></th>
+          <th>Product Name</th>
+          <th>Barcode Number</th>
+          <th>Price</th>
+          <th class="text-center">Copies</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40" checked></td>
+          <td><strong class="text-gray-200">Air Force Retro Sneaker</strong></td>
+          <td class="text-gray-400 font-mono tracking-widest">123456789012</td>
+          <td class="text-emerald-400 font-bold">৳ 3,200</td>
+          <td class="text-center">
+            <input type="number" value="10" class="form-input w-20 py-1 text-center inline-block">
+          </td>
+        </tr>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40"></td>
+          <td><strong class="text-gray-200">Casual Denim Jacket</strong></td>
+          <td class="text-gray-400 font-mono tracking-widest">987654321098</td>
+          <td class="text-emerald-400 font-bold">৳ 1,500</td>
+          <td class="text-center">
+            <input type="number" value="1" class="form-input w-20 py-1 text-center inline-block text-gray-500 bg-white/5 border-white/5 cursor-not-allowed" disabled>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

@@ -45,6 +45,8 @@ export class RoleManagementComponent {
   showModal = false;
   isEditMode = false;
   currentRole: Role = this.getEmptyRole();
+  successMsg = '';
+  errorMsg = '';
 
   get categories(): string[] {
     return [...new Set(this.availableRights.map(r => r.category))];
@@ -76,22 +78,26 @@ export class RoleManagementComponent {
   openAddModal() {
     this.isEditMode = false;
     this.currentRole = this.getEmptyRole();
+    this.errorMsg = '';
     this.showModal = true;
   }
 
   openEditModal(role: Role) {
     this.isEditMode = true;
     this.currentRole = { ...role, rights: [...role.rights] };
+    this.errorMsg = '';
     this.showModal = true;
   }
 
   closeModal() {
     this.showModal = false;
+    this.errorMsg = '';
   }
 
   saveRole() {
+    this.errorMsg = '';
     if (!this.currentRole.name) {
-      alert('Role Name is required!');
+      this.errorMsg = 'Role Name is required!';
       return;
     }
 
@@ -99,13 +105,16 @@ export class RoleManagementComponent {
       const idx = this.roles.findIndex(r => r.id === this.currentRole.id);
       if (idx !== -1) {
         this.roles[idx] = { ...this.currentRole, name: this.currentRole.name.toUpperCase().replace(/\s+/g, '_') };
+        this.successMsg = 'Role updated successfully!';
       }
     } else {
       this.currentRole.id = Date.now().toString();
       this.currentRole.name = this.currentRole.name.toUpperCase().replace(/\s+/g, '_');
       this.roles.push({ ...this.currentRole });
+      this.successMsg = 'Role created successfully!';
     }
     this.closeModal();
+    setTimeout(() => this.successMsg = '', 3000);
   }
 
   deleteRole(role: Role) {
@@ -115,6 +124,8 @@ export class RoleManagementComponent {
     }
     if (confirm(`Are you sure you want to delete role: ${role.name}?`)) {
       this.roles = this.roles.filter(r => r.id !== role.id);
+      this.successMsg = 'Role deleted successfully!';
+      setTimeout(() => this.successMsg = '', 3000);
     }
   }
 }

@@ -30,6 +30,8 @@ export class UserManagementComponent implements OnInit {
   showModal = false;
   isEditMode = false;
   currentUser: any = this.getEmptyUser();
+  successMsg = '';
+  errorMsg = '';
 
   availableRoles = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'SALES', 'ACCOUNTANT'];
 
@@ -104,35 +106,47 @@ export class UserManagementComponent implements OnInit {
   openAddModal() {
     this.isEditMode = false;
     this.currentUser = this.getEmptyUser();
+    this.errorMsg = '';
     this.showModal = true;
   }
 
   editUser(user: any) {
     this.isEditMode = true;
     this.currentUser = { ...user, role: user.roles?.[0] || 'COMPANY_ADMIN', password: '' };
+    this.errorMsg = '';
     this.showModal = true;
   }
 
   closeModal() {
     this.showModal = false;
+    this.errorMsg = '';
   }
 
   saveUser() {
+    this.errorMsg = '';
     if (this.isEditMode) {
       this.userService.updateUser(this.currentUser.id, this.currentUser).subscribe({
         next: () => {
+          this.successMsg = 'User updated successfully!';
           this.loadUsers();
           this.closeModal();
+          setTimeout(() => this.successMsg = '', 3000);
         },
-        error: (err) => alert(`Error ${err.status}: ` + (typeof err.error === 'string' ? err.error : (err.error?.message || JSON.stringify(err.error) || err.message)))
+        error: (err) => {
+          this.errorMsg = typeof err.error === 'string' ? err.error : (err.error?.message || JSON.stringify(err.error) || err.message);
+        }
       });
     } else {
       this.userService.addUser(this.currentUser).subscribe({
         next: () => {
+          this.successMsg = 'User added successfully!';
           this.loadUsers();
           this.closeModal();
+          setTimeout(() => this.successMsg = '', 3000);
         },
-        error: (err) => alert(`Error ${err.status}: ` + (typeof err.error === 'string' ? err.error : (err.error?.message || JSON.stringify(err.error) || err.message)))
+        error: (err) => {
+          this.errorMsg = typeof err.error === 'string' ? err.error : (err.error?.message || JSON.stringify(err.error) || err.message);
+        }
       });
     }
   }
