@@ -5,25 +5,16 @@
     
     <!-- Header / Logo -->
     <div class="text-center mb-8 flex flex-col items-center">
-      <!-- Dynamic Logo: Show ZW logo, company logo, or default shield -->
-      <ng-container [ngSwitch]="logoUrl">
-        <!-- ZW Logo -->
-        <div *ngSwitchCase="'ZW'" class="h-16 w-16 mb-5 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 border border-violet-400/20">
-          <span class="text-2xl font-black text-white tracking-wider">ZW</span>
-        </div>
-        
-        <!-- Default Logo (Empty or unrecognized) -->
-        <ng-container *ngSwitchCase="''">
-          <svg class="h-14 w-14 mb-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-        </ng-container>
-        
-        <!-- Company Uploaded Logo -->
-        <ng-container *ngSwitchDefault>
-          <img [src]="logoUrl" alt="Company Logo" class="h-16 w-auto mb-4 rounded-lg shadow-lg">
-        </ng-container>
+      <!-- Dynamic Logo: Show company/ZW logo if logoUrl is set, else show shield -->
+      <ng-container *ngIf="logoUrl; else defaultLogo">
+        <img [src]="logoUrl" alt="ZW Ecosystem Logo" class="h-20 w-auto mb-4 rounded-lg">
       </ng-container>
+      <ng-template #defaultLogo>
+        <!-- Purple Shield Icon -->
+        <svg class="h-14 w-14 mb-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </ng-template>
 
       <h2 class="text-[22px] font-extrabold text-white tracking-tight">
         {{ companyName }}
@@ -62,9 +53,20 @@
 
         <div>
           <label for="password" class="block text-sm font-semibold text-gray-200 mb-2">Password</label>
-          <input id="password" name="password" type="password" [(ngModel)]="password" required
-                 class="w-full px-4 py-3 bg-[#eef2f6] border border-transparent rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] transition"
-                 placeholder="Enter password">
+          <div class="relative">
+            <input id="password" name="password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" required
+                   class="w-full px-4 py-3 pr-12 bg-[#eef2f6] border border-transparent rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] transition"
+                   placeholder="Enter password">
+            <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700">
+              <svg *ngIf="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg *ngIf="showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="pt-3">

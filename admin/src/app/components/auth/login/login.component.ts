@@ -18,6 +18,7 @@ export class LoginComponent implements OnInit {
   password = '';
   error = '';
   isLoading = false;
+  showPassword = false;
 
   companyName = 'ZW ECOSYSTEM';
   logoUrl = ''; // If 'ZW', show custom ZW logo, if empty show default, else show image
@@ -42,7 +43,7 @@ export class LoginComponent implements OnInit {
       this.loginContext = 'admin';
       this.isCompanySubdomain = false;
       this.companyName = 'ZW ECOSYSTEM';
-      this.logoUrl = 'ZW';
+      this.logoUrl = 'assets/zw-logo.png';
       this.themeService.applyTheme('deep-royal-amethyst');
     } else {
       // Must be /:companySlug/login
@@ -52,7 +53,7 @@ export class LoginComponent implements OnInit {
           this.loginContext = slug;
           if (this.loginContext === 'admin') {
             this.companyName = 'ZW ECOSYSTEM';
-            this.logoUrl = 'ZW';
+            this.logoUrl = 'assets/zw-logo.png';
           } else {
             this.companyService.getCompanies().subscribe({
               next: (companies: any[]) => {
