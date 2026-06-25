@@ -70,7 +70,7 @@ jobs:
               image: postgres:15-alpine
               container_name: zwecosystem-postgres
               ports:
-                - "5432:5432"
+                - "5436:5432"
               environment:
                 POSTGRES_DB: ${POSTGRES_DB}
                 POSTGRES_USER: ${POSTGRES_USER}
