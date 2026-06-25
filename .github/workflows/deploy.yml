@@ -164,24 +164,24 @@ jobs:
             docker image prune -f
             rm -rf admin backend mobile schema.sql user_messages.txt README.md .git
 
-            # Configure firewall to allow traffic on ports 85, 5500, 5432
+            # Configure firewall to allow traffic only on port 85 (keep 5500 and 5432 blocked publicly)
             if command -v ufw >/dev/null 2>&1; then
               echo "Configuring UFW firewall..."
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 85/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 5500/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 5432/tcp
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw deny 5500/tcp
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw deny 5432/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw reload
             elif command -v firewall-cmd >/dev/null 2>&1; then
               echo "Configuring Firewalld..."
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --add-port=85/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --add-port=5500/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --add-port=5432/tcp
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --add-port=85/tcp
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --remove-port=5500/tcp --permanent 2>/dev/null || true
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --remove-port=5432/tcp --permanent 2>/dev/null || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --reload
             else
-              echo "No ufw or firewalld command found. Attempting raw iptables rules..."
+              echo "No ufw or firewalld command found. Relying on raw iptables rules..."
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -D INPUT -p tcp --dport 5500 -j ACCEPT 2>/dev/null || true
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -D INPUT -p tcp --dport 5432 -j ACCEPT 2>/dev/null || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 85 -j ACCEPT
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 5500 -j ACCEPT
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 5432 -j ACCEPT
             fi
 
             echo "==> Deployment complete!"
