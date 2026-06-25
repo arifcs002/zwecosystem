@@ -24,6 +24,17 @@
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
 
-# Secrets and local configurations
+# ================================================
+# SECRETS — NEVER COMMIT THESE
+# ================================================
+# Real .env file with credentials
+.env
+
+# ASP.NET Core appsettings with real credentials
 **/appsettings.json
 **/appsettings.Development.json
+**/appsettings.Production.json
+
+# Keep the example/template files (no real secrets)
+!**/appsettings.example.json
+!.env.example

@@ -38,18 +38,36 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Db Connection Selection: Enforce PostgreSQL connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// ================================================================
+// SECURITY: Load sensitive config from Environment Variables first.
+// Server uses ENV VARs set via .env file (loaded by Docker Compose).
+// Local dev uses appsettings.json (git-ignored).
+// ================================================================
+
+// DB Connection: ENV VAR takes priority over appsettings.json
+var connectionString =
+    Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("DefaultConnection connection string is missing or empty.");
+    throw new InvalidOperationException(
+        "Database connection string is missing. Set DB_CONNECTION_STRING env var or configure appsettings.json.");
 }
+
+// JWT Secret: ENV VAR takes priority
+var jwtSecret =
+    Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? builder.Configuration["Jwt:Secret"]
+    ?? throw new InvalidOperationException("JWT_SECRET env var or Jwt:Secret config is required.");
+
+Console.WriteLine($"--> DB Host: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host"))?.Split('=').LastOrDefault() ?? "unknown"}");
+Console.WriteLine($"--> JWT Secret configured: {(jwtSecret.Length >= 16 ? "YES (" + jwtSecret.Length + " chars)" : "TOO SHORT - minimum 32 chars required")}");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString)
            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
-Console.WriteLine("--> Using PostgreSQL Database with provided connection string");
+Console.WriteLine("--> Using PostgreSQL Database.");
 
 // Configure CORS for Angular Dashboard frontend
 builder.Services.AddCors(options =>
@@ -62,8 +80,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "super-secret-key-change-in-prod-long-enough-32-chars";
+// Configure JWT Authentication (jwtSecret already resolved from ENV VAR above)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

@@ -1,5 +1,11 @@
 version: '3.8'
 
+# ================================================================
+# ZW Ecosystem — Docker Compose
+# Secrets are loaded from .env file (git-ignored).
+# Copy .env.example to .env on the server and fill real values.
+# ================================================================
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -7,14 +13,19 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: zwecodb
-      POSTGRES_USER: zw_user
-      POSTGRES_PASSWORD: A3w%$Labu!!Mh#896
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - zwecosystem-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -24,17 +35,21 @@ services:
     ports:
       - "5500:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=zwecodb;Username=zw_user;Password=A3w%$Labu!!Mh#896;Include Error Detail=true;
-      - Jwt__Secret=zw-ecosystem-super-secret-key-2026-change-in-prod-must-be-32-chars-min
-      - SmtpSettings__Host=smtp.gmail.com
-      - SmtpSettings__Port=587
+      # These env vars are picked up by Program.cs (DB_CONNECTION_STRING, JWT_SECRET)
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
+      - JWT_SECRET=${JWT_SECRET}
+      # SMTP (optional)
+      - SmtpSettings__Host=${SMTP_HOST:-smtp.gmail.com}
+      - SmtpSettings__Port=${SMTP_PORT:-587}
       - SmtpSettings__EnableSsl=true
-      - SmtpSettings__Username=your-email@gmail.com
-      - SmtpSettings__Password=your-app-password
-      - SmtpSettings__FromAddress=noreply@zwecosystem.com
+      - SmtpSettings__Username=${SMTP_USERNAME}
+      - SmtpSettings__Password=${SMTP_PASSWORD}
+      - SmtpSettings__FromAddress=${SMTP_FROM:-noreply@zwecosystem.com}
       - SmtpSettings__FromName=ZW Ecosystem
+      - ASPNETCORE_ENVIRONMENT=Production
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - zwecosystem-network
     restart: unless-stopped
