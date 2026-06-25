@@ -5,74 +5,164 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ghcr.io/${{ github.repository }}/backend:latest
+  IMAGE_NAME_FRONTEND: ghcr.io/${{ github.repository }}/admin-dashboard:latest
+
 jobs:
-  deploy:
-    name: Build & Deploy to Contabo VPS
+  build-and-push:
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🚀 Deploy via SSH
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ⚙️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🚀 Build and push Backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME_BACKEND }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🚀 Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin
+          file: ./admin/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME_FRONTEND }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Copy Config & Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📝 Prepare production docker-compose
+        run: |
+          cat << 'EOF' > docker-compose.prod.yml
+          version: '3.8'
+
+          services:
+            postgres:
+              image: postgres:15-alpine
+              container_name: zwecosystem-postgres
+              ports:
+                - "5432:5432"
+              environment:
+                POSTGRES_DB: ${POSTGRES_DB}
+                POSTGRES_USER: ${POSTGRES_USER}
+                POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+              volumes:
+                - pgdata:/var/lib/postgresql/data
+              networks:
+                - zwecosystem-network
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+
+            backend:
+              image: ghcr.io/${{ github.repository }}/backend:latest
+              container_name: zwecosystem-api
+              ports:
+                - "5500:8080"
+              environment:
+                - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
+                - JWT_SECRET=${JWT_SECRET}
+                - SmtpSettings__Host=${SMTP_HOST}
+                - SmtpSettings__Port=${SMTP_PORT}
+                - SmtpSettings__EnableSsl=true
+                - SmtpSettings__Username=${SMTP_USERNAME}
+                - SmtpSettings__Password=${SMTP_PASSWORD}
+                - SmtpSettings__FromAddress=${SMTP_FROM}
+                - SmtpSettings__FromName=ZW Ecosystem
+                - ASPNETCORE_ENVIRONMENT=Production
+              depends_on:
+                postgres:
+                  condition: service_healthy
+              networks:
+                - zwecosystem-network
+              restart: unless-stopped
+
+            admin-dashboard:
+              image: ghcr.io/${{ github.repository }}/admin-dashboard:latest
+              container_name: zwecosystem-admin
+              ports:
+                - "85:80"
+              depends_on:
+                - backend
+              networks:
+                - zwecosystem-network
+              restart: unless-stopped
+
+          volumes:
+            pgdata:
+
+          networks:
+            zwecosystem-network:
+              driver: bridge
+          EOF
+
+      - name: 📁 Copy docker-compose to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "docker-compose.prod.yml"
+          target: "/data/apps/zwecosystem/"
+
+      - name: 🚀 Deploy Containers via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            # Set explicit PATH containing all standard binary locations
-            export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
-
-            # Load user and system profiles
-            [ -f /etc/profile ] && . /etc/profile
-            [ -f ~/.profile ] && . ~/.profile
-            [ -f ~/.bashrc ] && . ~/.bashrc
-
-            echo "==> PATH is: $PATH"
-            echo "==> Checking git location..."
-            if ! which git >/dev/null 2>&1; then
-              echo "==> Git is missing! Attempting to install git..."
-              if which apt-get >/dev/null 2>&1; then
-                echo "${{ secrets.SSH_PASSWORD }}" | sudo -S apt-get update -y
-                echo "${{ secrets.SSH_PASSWORD }}" | sudo -S apt-get install -y git
-              elif which yum >/dev/null 2>&1; then
-                echo "${{ secrets.SSH_PASSWORD }}" | sudo -S yum install -y git
-              else
-                echo "No package manager found to install git!"
-                exit 1
-              fi
-            fi
-
-            which git || { echo "Git could not be installed!"; exit 1; }
-
-            set -e
-            echo "==> Ensuring deploy directory exists and has correct permissions..."
             echo "${{ secrets.SSH_PASSWORD }}" | sudo -S mkdir -p /data/apps/zwecosystem
             echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R $USER:$USER /data/apps/zwecosystem
 
             cd /data/apps/zwecosystem
 
-            if [ ! -d .git ]; then
-              echo "==> Directory is not a git repository. Initializing git..."
-              git init
-              git remote add origin https://github.com/arifcs002/zwecosystem.git
-              git fetch origin main
-              git checkout -f main || git checkout -b main
-              git reset --hard origin/main
-            else
-              echo "==> Pulling latest code from GitHub..."
-              git pull origin main
-            fi
+            # Move and overwrite the compose config
+            mv -f docker-compose.prod.yml docker-compose.yml
 
-            echo "==> Stopping running containers..."
+            # Log in to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest pre-built images and restart containers
+            docker compose pull
             docker compose down
+            docker compose up -d
 
-            echo "==> Building and starting containers..."
-            docker compose up -d --build
-
-            echo "==> Cleaning up unused Docker images..."
+            # Clean up old images and source directories to keep only docker-compose and .env
             docker image prune -f
+            rm -rf admin backend mobile schema.sql user_messages.txt README.md .git
 
             echo "==> Deployment complete!"
             docker compose ps
