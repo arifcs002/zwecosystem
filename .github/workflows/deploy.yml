@@ -47,11 +47,23 @@ jobs:
             which git || { echo "Git could not be installed!"; exit 1; }
 
             set -e
-            echo "==> Navigating to deploy directory..."
+            echo "==> Ensuring deploy directory exists and has correct permissions..."
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S mkdir -p /data/apps/zwecosystem
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R $USER:$USER /data/apps/zwecosystem
+
             cd /data/apps/zwecosystem
 
-            echo "==> Pulling latest code from GitHub..."
-            git pull origin main
+            if [ ! -d .git ]; then
+              echo "==> Directory is not a git repository. Initializing git..."
+              git init
+              git remote add origin https://github.com/arifcs002/zwecosystem.git
+              git fetch origin main
+              git checkout -f main || git checkout -b main
+              git reset --hard origin/main
+            else
+              echo "==> Pulling latest code from GitHub..."
+              git pull origin main
+            fi
 
             echo "==> Stopping running containers..."
             docker compose down
