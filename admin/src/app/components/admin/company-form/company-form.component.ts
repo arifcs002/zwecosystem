@@ -110,12 +110,23 @@ export class CompanyFormComponent implements OnInit {
         error: (err) => console.error(err)
       });
     } else {
-      this.companyService.addCompany(this.currentCompany).subscribe({
+      const companyToCreate = { ...this.currentCompany };
+      // Generate a new unique Guid for the new company to avoid C# Guid deserialization errors
+      companyToCreate.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+
+      this.companyService.addCompany(companyToCreate).subscribe({
         next: () => {
           alert('Company created successfully!');
           this.router.navigate(['/admin/companies']);
         },
-        error: (err) => console.error(err)
+        error: (err) => {
+          console.error(err);
+          alert('Failed to create company: ' + (err.error?.message || err.message || 'Unknown error'));
+        }
       });
     }
   }
