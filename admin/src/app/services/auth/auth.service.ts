@@ -38,26 +38,26 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  login(email: string, password: string, loginContext: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password, loginContext })
+  login(email: string, password: string, loginContext: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/login`, { email, password, loginContext })
       .pipe(tap(response => {
-        if (response && response.token) {
-          // If the backend returned a successful login but it doesn't match the subdomain context, 
-          // we can reject it here. We'll trust the backend to validate if this user belongs to this companySlug.
-          
-          localStorage.setItem('token', response.token);
-          
-          const user: User = {
-            id: '', 
-            email: response.email,
-            fullName: response.fullName,
-            companyId: response.companyId,
-            loginContext: loginContext,
-            roles: response.roles
-          };
-          
-          localStorage.setItem('user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
+        if (response) {
+          const token = response.token || response.Token;
+          if (token) {
+            localStorage.setItem('token', token);
+            
+            const user: User = {
+              id: response.id || response.Id || '', 
+              email: response.email || response.Email,
+              fullName: response.fullName || response.FullName,
+              companyId: response.companyId !== undefined ? response.companyId : response.CompanyId,
+              loginContext: loginContext,
+              roles: response.roles || response.Roles || []
+            };
+            
+            localStorage.setItem('user', JSON.stringify(user));
+            this.currentUserSubject.next(user);
+          }
         }
       }));
   }
