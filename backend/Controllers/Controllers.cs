@@ -201,13 +201,23 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
+            Console.WriteLine($"[LOGIN DEBUG] Attempt for email: '{dto.Email}'");
             var user = await _context.Users
                 .IgnoreQueryFilters()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            if (user == null)
+            {
+                Console.WriteLine($"[LOGIN DEBUG] User NOT found for email: '{dto.Email}'");
+                return Unauthorized(new { message = "Invalid email or password" });
+            }
+
+            bool passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+            Console.WriteLine($"[LOGIN DEBUG] User found. Password match: {passwordMatch} (Password entered: '{dto.Password}')");
+
+            if (!passwordMatch)
                 return Unauthorized(new { message = "Invalid email or password" });
 
             if (!user.IsActive)

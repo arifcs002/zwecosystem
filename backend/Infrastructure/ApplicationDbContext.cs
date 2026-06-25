@@ -248,7 +248,7 @@ namespace Ecommerce.Api.Infrastructure
             var superAdminUserId = new Guid("99999999-9999-9999-9999-999999999999");
             var compAdminUserId = new Guid("88888888-8888-8888-8888-888888888888");
 
-            var superAdminPasswordHash = "$2a$11$T8X9d8k1pLz6eH1U8y.BWeT1W1T5.6K4Q8oO8uQ1H7zV1I3pP5O5a"; // 123456
+            var superAdminPasswordHash = "$2b$11$f1FDqBdveY.KIotMM1fKM.OoZUEGh1tnXTAlWX6aGj3zZHsW2KCrK"; // 123456
             var passwordHash = "$2a$11$Y7M1r2zZ9n2L8T9eW5uV.uN1rT2C8O4pT5Q8aA7qT8I2kL9jH6W2S"; // admin123
 
             modelBuilder.Entity<User>().HasData(
