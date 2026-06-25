@@ -64,69 +64,10 @@ var jwtSecret =
 Console.WriteLine($"--> DB Host: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host"))?.Split('=').LastOrDefault() ?? "unknown"}");
 Console.WriteLine($"--> JWT Secret configured: {(jwtSecret.Length >= 16 ? "YES (" + jwtSecret.Length + " chars)" : "TOO SHORT - minimum 32 chars required")}");
 
-// Test PostgreSQL connection
-bool usePostgres = false;
-try
-{
-    var host = "localhost";
-    var parts = connectionString.Split(';');
-    foreach (var part in parts)
-    {
-        if (part.Trim().StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
-        {
-            var kv = part.Split('=');
-            if (kv.Length > 1) host = kv[1].Trim();
-            break;
-        }
-    }
-
-    using (var client = new System.Net.Sockets.TcpClient())
-    {
-        var result = client.BeginConnect(host, 5432, null, null);
-        var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(1000));
-        if (success)
-        {
-            client.EndConnect(result);
-            usePostgres = true;
-        }
-    }
-}
-catch
-{
-    usePostgres = false;
-}
-
-if (usePostgres)
-{
-    try
-    {
-        using (var conn = new Npgsql.NpgsqlConnection(connectionString))
-        {
-            conn.Open();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"--> PostgreSQL host is reachable, but connection failed (auth/firewall issue): {ex.Message}");
-        usePostgres = false;
-    }
-}
-
-if (usePostgres)
-{
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(connectionString)
-               .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
-    Console.WriteLine("--> Using PostgreSQL Database.");
-}
-else
-{
-    var sqliteConn = "Data Source=ecommerce.db";
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(sqliteConn)
-               .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
-    Console.WriteLine("--> Using SQLite Database locally (PostgreSQL is offline or unreachable).");
-}
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString)
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+Console.WriteLine("--> Using PostgreSQL Database.");
 
 // Configure CORS for Angular Dashboard frontend
 builder.Services.AddCors(options =>
