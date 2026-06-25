@@ -186,3 +186,18 @@ jobs:
 
             echo "==> Deployment complete!"
             docker compose ps
+
+            echo "=== SYSTEM DIAGNOSTICS ==="
+            echo "1. Host Firewall Status:"
+            if command -v ufw >/dev/null 2>&1; then echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw status verbose; fi
+            if command -v firewall-cmd >/dev/null 2>&1; then echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --list-all; fi
+            
+            echo "2. Listening Ports on Host:"
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ss -tulnp
+            
+            echo "3. Active Docker Containers:"
+            docker ps -a
+            
+            echo "4. Local Host Nginx Configuration:"
+            if [ -f /etc/nginx/nginx.conf ]; then cat /etc/nginx/nginx.conf; fi
+            if [ -d /etc/nginx/conf.d ]; then ls -la /etc/nginx/conf.d/; fi
