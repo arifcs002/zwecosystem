@@ -6,6 +6,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Exclude tempDb subfolder (it has its own csproj) -->
+  <ItemGroup>
+    <Compile Remove="tempDb\**" />
+    <Content Remove="tempDb\**" />
+    <EmbeddedResource Remove="tempDb\**" />
+    <None Remove="tempDb\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">

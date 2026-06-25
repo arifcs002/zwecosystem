@@ -1,20 +1,224 @@
-<div class="p-6">
-  <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
-  
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-      <h4 class="text-gray-500 text-sm font-semibold uppercase">Total Sales</h4>
-      <p class="text-3xl font-bold text-gray-800 mt-2">৳ 45,200</p>
+<div class="dashboard">
+
+  <!-- ===== SUPER ADMIN COMPANY SELECTOR ===== -->
+  <div class="company-selector-bar" *ngIf="isSuperAdmin">
+    <div class="selector-label">📊 Viewing Company:</div>
+    <div class="selector-wrap">
+      <select class="company-select" (change)="onCompanyIdChange($any($event.target).value)">
+        <option value="">— Select a Company —</option>
+        <option *ngFor="let c of companies" [value]="c.id" [selected]="selectedCompany?.id === c.id">
+          {{ c.name }} ({{ c.subdomain }})
+        </option>
+      </select>
+      <span class="selector-badge" *ngIf="selectedCompany">
+        {{ selectedCompany.isActive ? '🟢 Active' : '🔴 Inactive' }}
+      </span>
     </div>
-    
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-      <h4 class="text-gray-500 text-sm font-semibold uppercase">Total Orders</h4>
-      <p class="text-3xl font-bold text-gray-800 mt-2">124</p>
-    </div>
-    
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
-      <h4 class="text-gray-500 text-sm font-semibold uppercase">Low Stock Alerts</h4>
-      <p class="text-3xl font-bold text-gray-800 mt-2">8</p>
+    <div class="no-company-msg" *ngIf="!selectedCompany && !isLoading">
+      ☝️ Please select a company to view its dashboard.
     </div>
   </div>
+
+  <!-- ===== LOADING ===== -->
+  <div class="loading-screen" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- ===== ERROR ===== -->
+  <div class="error-screen" *ngIf="statsError && !isLoading">
+    <div class="error-icon">⚠️</div>
+    <p>Failed to load dashboard data. Please check your connection.</p>
+    <button class="btn-primary" (click)="loadDashboard()">Retry</button>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <ng-container *ngIf="!isLoading && !statsError && stats">
+
+    <!-- Page Header -->
+    <div class="dash-header">
+      <div>
+        <h1 class="page-title">📈 Dashboard</h1>
+        <p class="page-subtitle">{{ isSuperAdmin ? selectedCompany?.name : 'Your store performance' }} — This Month</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="loadDashboard()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- ===== KPI CARDS ===== -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card revenue">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Monthly Revenue</div>
+          <div class="kpi-value">৳{{ stats.totalRevenue | number:'1.0-0' }}</div>
+          <div class="kpi-growth" [class]="getGrowthClass(stats.totalRevenueGrowth)">
+            {{ getGrowthIcon(stats.totalRevenueGrowth) }} {{ stats.totalRevenueGrowth | number:'1.1-1' }}% vs last month
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card orders">
+        <div class="kpi-icon">🛒</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Monthly Orders</div>
+          <div class="kpi-value">{{ stats.totalOrders | number }}</div>
+          <div class="kpi-growth" [class]="getGrowthClass(stats.totalOrdersGrowth)">
+            {{ getGrowthIcon(stats.totalOrdersGrowth) }} {{ stats.totalOrdersGrowth | number:'1.1-1' }}% vs last month
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card products">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Total Products</div>
+          <div class="kpi-value">{{ stats.totalProducts | number }}</div>
+          <div class="kpi-sub">
+            <span class="warn-badge" *ngIf="stats.lowStockProducts > 0">⚠️ {{ stats.lowStockProducts }} low stock</span>
+            <span class="danger-badge" *ngIf="stats.outOfStockProducts > 0">❌ {{ stats.outOfStockProducts }} out</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card customers">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-body">
+          <div class="kpi-label">Staff / Customers</div>
+          <div class="kpi-value">{{ stats.totalCustomers | number }}</div>
+          <div class="kpi-sub">Registered users</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== ORDER PIPELINE ===== -->
+    <div class="pipeline-section">
+      <div class="section-title">🔄 Order Pipeline</div>
+      <div class="pipeline-grid">
+        <div class="pipe-item pipe-pending">
+          <div class="pipe-count">{{ stats.pendingOrders }}</div>
+          <div class="pipe-label">Pending</div>
+        </div>
+        <div class="pipe-item pipe-processing">
+          <div class="pipe-count">{{ stats.processingOrders }}</div>
+          <div class="pipe-label">Processing</div>
+        </div>
+        <div class="pipe-item pipe-completed">
+          <div class="pipe-count">{{ stats.completedOrders }}</div>
+          <div class="pipe-label">Completed</div>
+        </div>
+        <div class="pipe-item pipe-cancelled">
+          <div class="pipe-count">{{ stats.cancelledOrders }}</div>
+          <div class="pipe-label">Cancelled</div>
+        </div>
+        <div class="pipe-item pipe-pos">
+          <div class="pipe-count">{{ stats.posOrders }}</div>
+          <div class="pipe-label">🧾 POS</div>
+        </div>
+        <div class="pipe-item pipe-ecom">
+          <div class="pipe-count">{{ stats.ecomOrders }}</div>
+          <div class="pipe-label">🛍️ E-Com</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN GRID: Chart + Top Products ===== -->
+    <div class="main-grid">
+
+      <!-- Sales Chart -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>📊 {{ chartDays }}-Day Sales Chart</h3>
+          <div class="chart-toggle">
+            <button [class.active]="chartDays === 7" (click)="chartDays = 7; loadDashboard()">7D</button>
+            <button [class.active]="chartDays === 14" (click)="chartDays = 14; loadDashboard()">14D</button>
+            <button [class.active]="chartDays === 30" (click)="chartDays = 30; loadDashboard()">30D</button>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div class="bar-chart">
+            <div class="bar-group" *ngFor="let point of chartData">
+              <div class="bar-wrap">
+                <div class="bar-tooltip">
+                  ৳{{ point.revenue | number:'1.0-0' }}<br>{{ point.orders }} orders
+                </div>
+                <div class="bar" [style.height.px]="getChartBarHeight(point.revenue)"
+                     [class.bar-empty]="point.revenue === 0"></div>
+              </div>
+              <div class="bar-label">{{ point.label }}</div>
+            </div>
+          </div>
+          <div class="chart-empty" *ngIf="chartData.length === 0">No sales data for this period.</div>
+        </div>
+      </div>
+
+      <!-- Top Products -->
+      <div class="card top-products-card">
+        <div class="card-header">
+          <h3>🏆 Top Products</h3>
+        </div>
+        <div class="top-products-list">
+          <div class="top-product-item" *ngFor="let p of topProducts; let i = index">
+            <div class="rank-badge">{{ i + 1 }}</div>
+            <img *ngIf="p.imageUrl" [src]="p.imageUrl" class="product-thumb" alt="" />
+            <div class="no-img" *ngIf="!p.imageUrl">📦</div>
+            <div class="product-info">
+              <div class="product-name">{{ p.productName }}</div>
+              <div class="product-meta">৳{{ p.price | number:'1.0-0' }} · {{ p.totalSold }} sold</div>
+            </div>
+            <div class="product-revenue">৳{{ p.totalRevenue | number:'1.0-0' }}</div>
+          </div>
+          <div class="empty-state" *ngIf="topProducts.length === 0">
+            <span>No product sales yet.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== RECENT ORDERS TABLE ===== -->
+    <div class="card recent-orders-card">
+      <div class="card-header">
+        <h3>🕐 Recent Orders</h3>
+        <span class="see-all">{{ recentOrders.length }} orders</span>
+      </div>
+      <div class="table-card" style="border:none;border-radius:0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of recentOrders">
+              <td><strong>{{ o.orderNumber }}</strong></td>
+              <td>{{ o.customerName || 'Walk-in' }}<br><small style="color:#6b7280">{{ o.customerPhone }}</small></td>
+              <td>
+                <span class="type-badge" [class.pos]="o.saleType==='POS'" [class.ecom]="o.saleType==='ECOMMERCE'">
+                  {{ o.saleType === 'POS' ? '🧾 POS' : '🛍️ E-Com' }}
+                </span>
+              </td>
+              <td><strong>৳{{ o.total | number:'1.0-0' }}</strong></td>
+              <td>{{ o.paymentMethod }}</td>
+              <td><span [class]="getStatusClass(o.status)">{{ o.status }}</span></td>
+              <td>{{ o.createdAt | date:'dd MMM, HH:mm' }}</td>
+            </tr>
+            <tr *ngIf="recentOrders.length === 0">
+              <td colspan="7" class="empty-row">No orders yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </ng-container>
 </div>

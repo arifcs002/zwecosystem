@@ -1234,4 +1234,199 @@ namespace Ecommerce.Api.Controllers
             return Ok(company);
         }
     }
+
+    // ============================================================
+    // DASHBOARD CONTROLLER
+    // ============================================================
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class DashboardController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public DashboardController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        /// <summary>
+        /// GET /api/dashboard/stats
+        /// Returns KPI stats for a company. Super Admin can pass ?companyId=xxx to view any company.
+        /// </summary>
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats([FromQuery] Guid? companyId)
+        {
+            var resolvedCompanyId = ResolveCompanyId(companyId);
+            if (resolvedCompanyId == null)
+                return BadRequest(new { message = "companyId required for Super Admin" });
+
+            var now = DateTime.UtcNow;
+            var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var startOfLastMonth = startOfMonth.AddMonths(-1);
+
+            var orders = await _context.Orders
+                .Where(o => o.CompanyId == resolvedCompanyId)
+                .ToListAsync();
+
+            var products = await _context.Products
+                .Where(p => p.CompanyId == resolvedCompanyId)
+                .ToListAsync();
+
+            var customers = await _context.Users
+                .Where(u => u.CompanyId == resolvedCompanyId)
+                .CountAsync();
+
+            // This month
+            var thisMonthOrders = orders.Where(o => o.CreatedAt >= startOfMonth).ToList();
+            var lastMonthOrders = orders.Where(o => o.CreatedAt >= startOfLastMonth && o.CreatedAt < startOfMonth).ToList();
+
+            var thisMonthRevenue = thisMonthOrders
+                .Where(o => o.Status != "CANCELLED")
+                .Sum(o => o.Total);
+
+            var lastMonthRevenue = lastMonthOrders
+                .Where(o => o.Status != "CANCELLED")
+                .Sum(o => o.Total);
+
+            var revenueGrowth = lastMonthRevenue == 0 ? 100.0 :
+                Math.Round(((double)(thisMonthRevenue - lastMonthRevenue) / (double)lastMonthRevenue) * 100, 1);
+
+            var ordersGrowth = lastMonthOrders.Count == 0 ? 100.0 :
+                Math.Round(((double)(thisMonthOrders.Count - lastMonthOrders.Count) / (double)lastMonthOrders.Count) * 100, 1);
+
+            var lowStockCount = products.Count(p => p.StockQuantity > 0 && p.StockQuantity <= 10);
+            var outOfStockCount = products.Count(p => p.StockQuantity == 0);
+
+            return Ok(new
+            {
+                totalRevenue = Math.Round(thisMonthRevenue, 2),
+                totalRevenueGrowth = revenueGrowth,
+                totalOrders = thisMonthOrders.Count,
+                totalOrdersGrowth = ordersGrowth,
+                totalProducts = products.Count,
+                lowStockProducts = lowStockCount,
+                outOfStockProducts = outOfStockCount,
+                totalCustomers = customers,
+                pendingOrders = orders.Count(o => o.Status == "PENDING"),
+                processingOrders = orders.Count(o => o.Status == "PROCESSING"),
+                completedOrders = orders.Count(o => o.Status == "COMPLETED"),
+                cancelledOrders = orders.Count(o => o.Status == "CANCELLED"),
+                posOrders = orders.Count(o => o.SaleType == "POS"),
+                ecomOrders = orders.Count(o => o.SaleType == "ECOMMERCE"),
+            });
+        }
+
+        /// <summary>
+        /// GET /api/dashboard/sales-chart
+        /// Returns last 7 days daily sales totals
+        /// </summary>
+        [HttpGet("sales-chart")]
+        public async Task<IActionResult> GetSalesChart([FromQuery] Guid? companyId, [FromQuery] int days = 7)
+        {
+            var resolvedCompanyId = ResolveCompanyId(companyId);
+            if (resolvedCompanyId == null)
+                return BadRequest(new { message = "companyId required for Super Admin" });
+
+            var from = DateTime.UtcNow.Date.AddDays(-(days - 1));
+
+            var orders = await _context.Orders
+                .Where(o => o.CompanyId == resolvedCompanyId && o.CreatedAt >= from && o.Status != "CANCELLED")
+                .ToListAsync();
+
+            var chart = Enumerable.Range(0, days).Select(i =>
+            {
+                var day = from.AddDays(i);
+                var dayOrders = orders.Where(o => o.CreatedAt.Date == day).ToList();
+                return new
+                {
+                    date = day.ToString("MM/dd"),
+                    label = day.ToString("ddd"),
+                    revenue = Math.Round(dayOrders.Sum(o => o.Total), 2),
+                    orders = dayOrders.Count
+                };
+            }).ToList();
+
+            return Ok(chart);
+        }
+
+        /// <summary>
+        /// GET /api/dashboard/top-products
+        /// Returns top 5 selling products
+        /// </summary>
+        [HttpGet("top-products")]
+        public async Task<IActionResult> GetTopProducts([FromQuery] Guid? companyId, [FromQuery] int limit = 5)
+        {
+            var resolvedCompanyId = ResolveCompanyId(companyId);
+            if (resolvedCompanyId == null)
+                return BadRequest(new { message = "companyId required for Super Admin" });
+
+            var topProducts = await _context.OrderItems
+                .Include(oi => oi.Product)
+                .Include(oi => oi.Order)
+                .Where(oi => oi.Order!.CompanyId == resolvedCompanyId && oi.Order.Status != "CANCELLED")
+                .GroupBy(oi => new { oi.ProductId, oi.Product!.Name, oi.Product.ImageUrl, oi.Product.Price })
+                .Select(g => new
+                {
+                    productId = g.Key.ProductId,
+                    productName = g.Key.Name,
+                    imageUrl = g.Key.ImageUrl,
+                    price = g.Key.Price,
+                    totalSold = g.Sum(x => x.Quantity),
+                    totalRevenue = Math.Round(g.Sum(x => x.TotalPrice), 2)
+                })
+                .OrderByDescending(x => x.totalSold)
+                .Take(limit)
+                .ToListAsync();
+
+            return Ok(topProducts);
+        }
+
+        /// <summary>
+        /// GET /api/dashboard/recent-orders
+        /// Returns last 10 orders
+        /// </summary>
+        [HttpGet("recent-orders")]
+        public async Task<IActionResult> GetRecentOrders([FromQuery] Guid? companyId, [FromQuery] int limit = 10)
+        {
+            var resolvedCompanyId = ResolveCompanyId(companyId);
+            if (resolvedCompanyId == null)
+                return BadRequest(new { message = "companyId required for Super Admin" });
+
+            var orders = await _context.Orders
+                .Where(o => o.CompanyId == resolvedCompanyId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(limit)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.OrderNumber,
+                    o.CustomerName,
+                    o.CustomerPhone,
+                    o.Total,
+                    o.Status,
+                    o.PaymentMethod,
+                    o.PaymentStatus,
+                    o.SaleType,
+                    o.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(orders);
+        }
+
+        // Resolves companyId: company users get their own; super admin passes via query
+        private Guid? ResolveCompanyId(Guid? queryCompanyId)
+        {
+            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            if (isSuperAdmin)
+                return queryCompanyId;
+
+            var companyIdClaim = User.FindFirst("companyId")?.Value;
+            if (Guid.TryParse(companyIdClaim, out var cid))
+                return cid;
+
+            return null;
+        }
+    }
 }
