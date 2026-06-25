@@ -5,16 +5,25 @@
     
     <!-- Header / Logo -->
     <div class="text-center mb-8 flex flex-col items-center">
-      <!-- Dynamic Logo: Show company logo if subdomian, else show shield -->
-      <ng-container *ngIf="logoUrl; else defaultLogo">
-        <img [src]="logoUrl" alt="Company Logo" class="h-16 w-auto mb-4 rounded-lg shadow-lg">
+      <!-- Dynamic Logo: Show ZW logo, company logo, or default shield -->
+      <ng-container [ngSwitch]="logoUrl">
+        <!-- ZW Logo -->
+        <div *ngSwitchCase="'ZW'" class="h-16 w-16 mb-5 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 border border-violet-400/20">
+          <span class="text-2xl font-black text-white tracking-wider">ZW</span>
+        </div>
+        
+        <!-- Default Logo (Empty or unrecognized) -->
+        <ng-container *ngSwitchCase="''">
+          <svg class="h-14 w-14 mb-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </ng-container>
+        
+        <!-- Company Uploaded Logo -->
+        <ng-container *ngSwitchDefault>
+          <img [src]="logoUrl" alt="Company Logo" class="h-16 w-auto mb-4 rounded-lg shadow-lg">
+        </ng-container>
       </ng-container>
-      <ng-template #defaultLogo>
-        <!-- Purple Shield Icon -->
-        <svg class="h-14 w-14 mb-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-      </ng-template>
 
       <h2 class="text-[22px] font-extrabold text-white tracking-tight">
         {{ companyName }}

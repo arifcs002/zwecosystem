@@ -19,8 +19,8 @@ export class LoginComponent implements OnInit {
   error = '';
   isLoading = false;
 
-  companyName = 'Retailer Application Monitor & Alerts (RAMA)';
-  logoUrl = ''; // If empty, show shield icon
+  companyName = 'ZW ECOSYSTEM';
+  logoUrl = ''; // If 'ZW', show custom ZW logo, if empty show default, else show image
   companyLogoUrl: string = '';
   isCompanySubdomain: boolean = false;
   loginContext: string = 'admin'; // 'admin' or companySlug
@@ -41,34 +41,40 @@ export class LoginComponent implements OnInit {
     if (url.includes('/admin/login')) {
       this.loginContext = 'admin';
       this.isCompanySubdomain = false;
-      this.companyName = 'Zaira\'s World Admin';
+      this.companyName = 'ZW ECOSYSTEM';
+      this.logoUrl = 'ZW';
       this.themeService.applyTheme('deep-royal-amethyst');
     } else {
       // Must be /:companySlug/login
       this.route.paramMap.subscribe(params => {
         const slug = params.get('companySlug');
         if (slug) {
-         this.loginContext = slug;
-         if (this.loginContext === 'admin') {
-          this.companyName = 'Admin Dashboard';
-        } else {
-          this.companyService.getCompanies().subscribe({
-            next: (companies: any[]) => {
-              const company = companies.find((c: any) => c.subdomain === this.loginContext);
-              if (company) {
-                this.companyName = company.name;
-                localStorage.setItem('tenant_company_id', company.id);
-                if (company.logoUrl) {
-                  this.companyLogoUrl = company.logoUrl;
+          this.loginContext = slug;
+          if (this.loginContext === 'admin') {
+            this.companyName = 'ZW ECOSYSTEM';
+            this.logoUrl = 'ZW';
+          } else {
+            this.companyService.getCompanies().subscribe({
+              next: (companies: any[]) => {
+                const company = companies.find((c: any) => c.subdomain === this.loginContext);
+                if (company) {
+                  this.companyName = company.name;
+                  localStorage.setItem('tenant_company_id', company.id);
+                  if (company.logoUrl) {
+                    this.logoUrl = company.logoUrl;
+                    this.companyLogoUrl = company.logoUrl;
+                  } else {
+                    this.logoUrl = '';
+                  }
+                } else {
+                  this.companyName = 'Store Not Found';
+                  this.loginContext = 'invalid';
                 }
-              } else {
-                this.companyName = 'Store Not Found';
-                this.loginContext = 'invalid';
-              }
-            },
-            error: (err: any) => console.error('Error fetching companies:', err)
-          });
-        }  this.themeService.applyTheme('cyberpunk-teal'); // Fallback or dynamic
+              },
+              error: (err: any) => console.error('Error fetching companies:', err)
+            });
+          }
+          this.themeService.applyTheme('cyberpunk-teal'); // Fallback or dynamic
         }
       });
     }
