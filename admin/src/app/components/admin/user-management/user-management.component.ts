@@ -34,6 +34,7 @@ export class UserManagementComponent implements OnInit {
   currentUser: any = this.getEmptyUser();
   successMsg = '';
   errorMsg = '';
+  showPassword = false;
 
   get filteredRoles(): string[] {
     if (this.authService.isSuperAdmin()) {

@@ -31,6 +31,7 @@ export class CompanyRegisterComponent {
   loading = false;
   successMessage = '';
   errorMessage = '';
+  showPassword = false;
 
   onSubmit() {
     this.loading = true;
