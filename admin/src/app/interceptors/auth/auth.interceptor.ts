@@ -24,7 +24,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       error: (error) => {
         if (error.status === 401) {
           authService.logout();
-          window.location.href = '/login';
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith('/admin')) {
+            window.location.href = '/admin/login';
+          } else {
+            const parts = currentPath.split('/');
+            if (parts.length > 1 && parts[1] && parts[1] !== 'company') {
+              window.location.href = `/${parts[1]}/login`;
+            } else {
+              window.location.href = '/admin/login';
+            }
+          }
         }
       }
     })
