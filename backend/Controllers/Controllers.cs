@@ -82,7 +82,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("register-company")]
         public async Task<IActionResult> RegisterCompany([FromBody] CompanyRegisterDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == dto.OwnerEmail))
+            if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.OwnerEmail))
                 return BadRequest(new { message = "Email already registered" });
 
             var subdomain = dto.Subdomain.ToLower().Replace(" ", "");
@@ -141,7 +141,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
                 return BadRequest(new { message = "Email already registered" });
 
             Guid? companyId = null;
@@ -202,6 +202,7 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var user = await _context.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -222,7 +223,9 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _context.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null)
                 return BadRequest(new { message = "User with this email does not exist." });
 
