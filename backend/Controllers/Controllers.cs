@@ -940,7 +940,14 @@ namespace Ecommerce.Api.Controllers
         {
             var companyId = _context.CompanyId;
             var suppliers = await _context.Suppliers
-                .FromSqlRaw("SELECT * FROM fn_get_suppliers({0})", companyId)
+                .Select(s => new
+                {
+                    id = s.Id,
+                    name = s.Name,
+                    address = s.Address,
+                    phoneNumber = s.PhoneNumber,
+                    createdAt = s.CreatedDate
+                })
                 .ToListAsync();
             return Ok(suppliers);
         }
@@ -987,7 +994,16 @@ namespace Ecommerce.Api.Controllers
         {
             var companyId = _context.CompanyId;
             var categories = await _context.Categories
-                .FromSqlRaw("SELECT * FROM fn_get_categories({0})", companyId)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    name = c.Name,
+                    slug = c.Slug,
+                    description = c.Description,
+                    parentId = c.ParentId,
+                    sizes = c.Sizes,
+                    createdAt = c.CreatedDate
+                })
                 .ToListAsync();
             return Ok(categories);
         }
@@ -1035,7 +1051,16 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> GetCompanies()
         {
             var companies = await _context.Companies
-                .FromSqlRaw("SELECT * FROM fn_get_companies()")
+                .Select(c => new
+                {
+                    id = c.Id,
+                    name = c.Name,
+                    subdomain = c.Subdomain,
+                    logoUrl = c.LogoUrl,
+                    isActive = c.IsActive,
+                    approvalStatus = c.ApprovalStatus,
+                    createdAt = c.CreatedDate
+                })
                 .ToListAsync();
             return Ok(companies);
         }

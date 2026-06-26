@@ -22,7 +22,7 @@
           <!-- Public Auth Links -->
           <div class="hidden sm:flex items-center space-x-2 border-l pl-4 ml-2">
             <a [routerLink]="['/', companySlug, 'login']" class="text-sm font-semibold text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Sign In</a>
-            <a href="#" class="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full shadow-sm transition-colors">Register</a>
+            <a routerLink="/company/register" class="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full shadow-sm transition-colors">Register</a>
           </div>
 
           <button (click)="toggleCart()" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors ml-2">
@@ -131,7 +131,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           Register Now / এখনই নিবন্ধন করুন
         </button>
-        <button class="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-neutral-700 hover:border-neutral-500 text-white font-bold rounded-xl transition-all">
+        <button type="button" (click)="navigateToRegister()" class="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-neutral-700 hover:border-neutral-500 text-white font-bold rounded-xl transition-all">
           Pay your payment
         </button>
       </div>

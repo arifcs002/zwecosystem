@@ -20,13 +20,13 @@ namespace Ecommerce.Api.Domain
         [Column("created_by")]
         public int? CreatedBy { get; set; }
 
-        [Column("created_at")]
+        [Column("created_date")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         [Column("updated_by")]
         public int? UpdatedBy { get; set; }
 
-        [Column("updated_at")]
+        [Column("updated_date")]
         public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
 
         [Column("deleted_by")]

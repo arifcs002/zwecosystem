@@ -2,6 +2,7 @@ import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
+import { environment } from '../environments/environment';
 
 interface Product {
   id: string;
@@ -63,9 +64,7 @@ interface LoggedInUser {
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppComponent implements OnInit {
-  apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5500/api'
-    : `http://${window.location.hostname}:5050/api`;
+  apiUrl = environment.apiUrl;
   
   // App View Modes
   viewMode: 'admin' | 'shop' = 'admin';
