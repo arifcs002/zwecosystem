@@ -71,7 +71,7 @@
           </td>
           <td>
             <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
-              {{ user.roles?.[0] || user.role }}
+              {{ getRoleDisplay(user.roles?.[0] || user.role) }}
             </span>
             <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="ml-2 text-xs px-2.5 py-1 rounded-full font-semibold border">
               {{ user.isActive ? 'Active' : 'Inactive' }}
@@ -82,6 +82,7 @@
               <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
               </button>
+              <button (click)="openResetPasswordModal(user)" class="text-violet-400 hover:text-violet-300 font-medium text-sm transition mr-3">Reset Password</button>
               <button (click)="editUser(user)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
               <button (click)="deleteUser(user)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
             </div>
@@ -156,13 +157,38 @@
           <label>Role</label>
           <select [(ngModel)]="currentUser.role" class="form-input">
             <option value="">-- Select Role --</option>
-            <option *ngFor="let role of filteredRoles" [value]="role">{{ role }}</option>
+            <option *ngFor="let role of filteredRoles" [value]="role.name">{{ role.value }}</option>
           </select>
         </div>
       </div>
       <div class="modal-footer">
         <button (click)="closeModal()" class="btn-secondary">Cancel</button>
         <button (click)="saveUser()" class="btn-primary">Save User</button>
+      </div>
+    </div>
+  <!-- Reset Password Modal -->
+  <div *ngIf="showResetPasswordModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Reset Password for {{ selectedUserForReset?.email }}</h2>
+        <button (click)="closeResetPasswordModal()" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body space-y-4">
+        <div class="alert-error" *ngIf="resetPasswordErrorMsg">❌ {{ resetPasswordErrorMsg }}</div>
+        
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" [(ngModel)]="newPassword" class="form-input" placeholder="Enter new password">
+        </div>
+
+        <div class="form-group">
+          <label>Re-type Password</label>
+          <input type="password" [(ngModel)]="confirmPassword" class="form-input" placeholder="Confirm new password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="closeResetPasswordModal()" class="btn-secondary">Cancel</button>
+        <button (click)="submitResetPassword()" class="btn-primary">Confirm & Update</button>
       </div>
     </div>
   </div>

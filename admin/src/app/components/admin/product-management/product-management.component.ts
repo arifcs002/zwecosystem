@@ -52,7 +52,7 @@ export class ProductManagementComponent implements OnInit {
     }
   }
 
-  deleteProduct(id: string) {
+  deleteProduct(id: number) {
     if (confirm('Are you sure you want to delete this product?')) {
       this.productService.deleteProduct(id).subscribe({
         next: () => {

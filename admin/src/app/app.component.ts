@@ -64,7 +64,7 @@ interface LoggedInUser {
 })
 export class AppComponent implements OnInit {
   apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5279/api'
+    ? 'http://localhost:5500/api'
     : `http://${window.location.hostname}:5050/api`;
   
   // App View Modes
@@ -201,9 +201,11 @@ export class AppComponent implements OnInit {
   }
 
   getHeaders() {
+    const token = localStorage.getItem('SaaS_Token');
     return {
       'Content-Type': 'application/json',
-      'X-Tenant-ID': this.selectedTenantId
+      'X-Tenant-ID': this.selectedTenantId,
+      'Authorization': token ? `Bearer ${token}` : ''
     };
   }
 
@@ -647,7 +649,7 @@ export class AppComponent implements OnInit {
     if (!url) return '';
     if (url.startsWith('/')) {
       const backendBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5279'
+        ? 'http://localhost:5500'
         : `http://${window.location.hostname}:5050`;
       return `${backendBase}${url}`;
     }
@@ -1216,7 +1218,7 @@ export class AppComponent implements OnInit {
   }
 
   fetchStats() {
-    fetch(`${this.apiUrl}/stats`, { headers: this.getHeaders() })
+    fetch(`${this.apiUrl}/dashboard/stats`, { headers: this.getHeaders() })
       .then(res => res.json())
       .then(data => {
         this.stats = data;

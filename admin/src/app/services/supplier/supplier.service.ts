@@ -4,11 +4,11 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Supplier {
-  id?: string;
+  id?: number;
   name: string;
   phoneNumber?: string;
   address?: string;
-  companyId?: string;
+  companyId?: number;
   createdAt?: string;
 }
 
@@ -25,11 +25,11 @@ export class SupplierService {
     return this.http.post<Supplier>(this.apiUrl, supplier);
   }
 
-  updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier> {
+  updateSupplier(id: number, supplier: Partial<Supplier>): Observable<Supplier> {
     return this.http.put<Supplier>(`${this.apiUrl}/${id}`, supplier);
   }
 
-  deleteSupplier(id: string): Observable<void> {
+  deleteSupplier(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

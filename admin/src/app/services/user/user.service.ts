@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface User {
-  id: string;
+  id: number;
   firstName?: string;
   lastName?: string;
   fullName?: string;
@@ -13,7 +13,7 @@ export interface User {
   mobile?: string;
   role?: string;
   roles?: string[];
-  companyId?: string;
+  companyId?: number;
   isActive?: boolean;
   status?: 'Active' | 'Inactive';
   password?: string;
@@ -30,7 +30,7 @@ export class UserService {
     return this.http.get<any[]>(this.apiUrl);
   }
 
-  getUserById(id: string): Observable<any> {
+  getUserById(id: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
 
@@ -38,11 +38,19 @@ export class UserService {
     return this.http.post<any>(this.apiUrl, user);
   }
 
-  updateUser(id: string, user: any): Observable<any> {
+  updateUser(id: number, user: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/${id}`, user);
   }
 
-  deleteUser(id: string): Observable<void> {
+  deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getRoles(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/roles`);
+  }
+
+  adminResetPassword(userId: number, data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${userId}/admin-reset-password`, data);
   }
 }

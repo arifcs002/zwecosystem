@@ -44,7 +44,8 @@ export class CompanyFormComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
-      this.companyService.getCompanyById(id).subscribe({
+      const parsedId = parseInt(id, 10);
+      this.companyService.getCompanyById(parsedId).subscribe({
         next: (company) => {
           if (company) {
             this.currentCompany = { ...company };
@@ -61,7 +62,7 @@ export class CompanyFormComponent implements OnInit {
 
   getEmptyCompany(): Company {
     return { 
-      id: '', name: '', subdomain: '', contactEmail: '', 
+      id: 0, name: '', subdomain: '', contactEmail: '', 
       companyMobile: '', ownerName: '', ownerMobile: '', 
       division: '', district: '', thana: '', address: '', 
       facebookLink: '', instagramLink: '', 
@@ -111,12 +112,7 @@ export class CompanyFormComponent implements OnInit {
       });
     } else {
       const companyToCreate = { ...this.currentCompany };
-      // Generate a new unique Guid for the new company to avoid C# Guid deserialization errors
-      companyToCreate.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+      companyToCreate.id = 0;
 
       this.companyService.addCompany(companyToCreate).subscribe({
         next: () => {

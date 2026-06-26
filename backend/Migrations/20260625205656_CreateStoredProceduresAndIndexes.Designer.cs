@@ -3,6 +3,7 @@ using System;
 using Ecommerce.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ecommerce.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260625205656_CreateStoredProceduresAndIndexes")]
+    partial class CreateStoredProceduresAndIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1173,7 +1176,7 @@ namespace Ecommerce.Api.Migrations
                             IsActive = true,
                             LastName = "Owner",
                             PasswordHash = "$2b$11$f1FDqBdveY.KIotMM1fKM.OoZUEGh1tnXTAlWX6aGj3zZHsW2KCrK",
-                            UpdatedAt = new DateTime(2026, 6, 25, 21, 1, 37, 111, DateTimeKind.Utc).AddTicks(3001),
+                            UpdatedAt = new DateTime(2026, 6, 25, 20, 56, 51, 212, DateTimeKind.Utc).AddTicks(1999),
                             UserType = "SuperAdmin"
                         },
                         new
@@ -1186,7 +1189,7 @@ namespace Ecommerce.Api.Migrations
                             IsActive = true,
                             LastName = "User",
                             PasswordHash = "$2a$11$Y7M1r2zZ9n2L8T9eW5uV.uN1rT2C8O4pT5Q8aA7qT8I2kL9jH6W2S",
-                            UpdatedAt = new DateTime(2026, 6, 25, 21, 1, 37, 111, DateTimeKind.Utc).AddTicks(3996),
+                            UpdatedAt = new DateTime(2026, 6, 25, 20, 56, 51, 212, DateTimeKind.Utc).AddTicks(3004),
                             UserType = "CompanyUser"
                         });
                 });

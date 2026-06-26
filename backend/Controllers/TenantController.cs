@@ -44,7 +44,7 @@ namespace Ecommerce.Api.Controllers
         }
         
         [HttpPost("{companyId}/settings")]
-        public async Task<IActionResult> SaveSettings(Guid companyId, [FromBody] System.Collections.Generic.Dictionary<string, string> newSettings)
+        public async Task<IActionResult> SaveSettings(int companyId, [FromBody] System.Collections.Generic.Dictionary<string, string> newSettings)
         {
             var existingSettings = await _context.CompanySettings.Where(s => s.CompanyId == companyId).ToListAsync();
             

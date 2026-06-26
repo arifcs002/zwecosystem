@@ -77,7 +77,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onCompanyIdChange(companyId: string) {
-    const company = this.companyContext.allCompanies().find(c => c.id === companyId) ?? null;
+    const parsedId = companyId ? parseInt(companyId, 10) : null;
+    const company = this.companyContext.allCompanies().find(c => c.id === parsedId) ?? null;
     this.onCompanyChange(company);
   }
 

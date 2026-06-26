@@ -61,7 +61,7 @@ export class SupplierManagementComponent implements OnInit {
     });
   }
 
-  delete(id: string) {
+  delete(id: number) {
     if (!confirm('Delete this supplier?')) return;
     this.supplierService.deleteSupplier(id).subscribe({
       next: () => { this.successMsg = 'Supplier deleted!'; this.load(); setTimeout(() => this.successMsg = '', 3000); },

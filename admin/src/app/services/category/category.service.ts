@@ -4,12 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Category {
-  id?: string;
+  id?: number;
   name: string;
   slug?: string;
   description?: string;
   sizes?: string;
-  companyId?: string;
+  companyId?: number;
   createdAt?: string;
 }
 
@@ -28,7 +28,7 @@ export class CategoryService {
     return this.http.post<Category>(this.apiUrl, category);
   }
 
-  deleteCategory(id: string): Observable<void> {
+  deleteCategory(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

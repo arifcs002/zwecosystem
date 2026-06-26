@@ -67,42 +67,42 @@ export class DashboardService {
   private apiUrl = `${environment.apiUrl}/dashboard`;
 
   // Signal to hold the currently selected company for Super Admin
-  selectedCompanyId = signal<string | null>(null);
+  selectedCompanyId = signal<number | null>(null);
 
   /** Return current company id to pass to API calls */
-  getActiveCompanyId(): string | null {
+  getActiveCompanyId(): number | null {
     if (this.authService.isSuperAdmin()) {
       return this.selectedCompanyId();
     }
     return this.authService.currentUserValue?.companyId ?? null;
   }
 
-  setSelectedCompany(companyId: string | null) {
+  setSelectedCompany(companyId: number | null) {
     this.selectedCompanyId.set(companyId);
   }
 
-  getStats(companyId?: string): Observable<DashboardStats> {
+  getStats(companyId?: number): Observable<DashboardStats> {
     const cid = companyId ?? this.getActiveCompanyId();
     const params: any = {};
     if (cid) params.companyId = cid;
     return this.http.get<DashboardStats>(`${this.apiUrl}/stats`, { params });
   }
 
-  getSalesChart(companyId?: string, days = 7): Observable<SalesChartPoint[]> {
+  getSalesChart(companyId?: number, days = 7): Observable<SalesChartPoint[]> {
     const cid = companyId ?? this.getActiveCompanyId();
     const params: any = { days };
     if (cid) params.companyId = cid;
     return this.http.get<SalesChartPoint[]>(`${this.apiUrl}/sales-chart`, { params });
   }
 
-  getTopProducts(companyId?: string, limit = 5): Observable<TopProduct[]> {
+  getTopProducts(companyId?: number, limit = 5): Observable<TopProduct[]> {
     const cid = companyId ?? this.getActiveCompanyId();
     const params: any = { limit };
     if (cid) params.companyId = cid;
     return this.http.get<TopProduct[]>(`${this.apiUrl}/top-products`, { params });
   }
 
-  getRecentOrders(companyId?: string, limit = 10): Observable<RecentOrder[]> {
+  getRecentOrders(companyId?: number, limit = 10): Observable<RecentOrder[]> {
     const cid = companyId ?? this.getActiveCompanyId();
     const params: any = { limit };
     if (cid) params.companyId = cid;

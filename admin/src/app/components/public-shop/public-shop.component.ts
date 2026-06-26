@@ -8,7 +8,7 @@ import { ProductService } from '../../services/product/product.service';
 import { SettingsService } from '../../services/settings/settings.service';
 
 interface Product {
-  id: string;
+  id: number;
   name: string;
   price: number;
   image: string;
@@ -100,12 +100,12 @@ export class PublicShopComponent implements OnInit {
 
         this.categoryService.getCategories().subscribe({
           next: (allCats) => {
-            const filteredCats = allCats.filter(c => visibleCategoryIds.includes(c.id || ''));
+            const filteredCats = allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()));
             this.categories = ['All', ...filteredCats.map(c => c.name)];
 
             this.productService.getProducts().subscribe({
               next: (allProds) => {
-                const filteredProds = allProds.filter(p => visibleCategoryIds.includes(p.categoryId || ''));
+                const filteredProds = allProds.filter(p => visibleCategoryIds.includes((p.categoryId || '').toString()));
                 this.products = filteredProds.map(p => ({
                   id: p.id,
                   name: p.name,

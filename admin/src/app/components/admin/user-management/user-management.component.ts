@@ -19,7 +19,7 @@ export class UserManagementComponent implements OnInit {
   public authService = inject(AuthService);
 
   companies: Company[] = [];
-  selectedCompanyContext: string = 'all';
+  selectedCompanyContext: any = 'all';
   
   // Custom Select2-like state
   isDropdownOpen = false;
@@ -36,15 +36,25 @@ export class UserManagementComponent implements OnInit {
   errorMsg = '';
   showPassword = false;
 
-  get filteredRoles(): string[] {
+  // Reset Password Modal State
+  showResetPasswordModal = false;
+  selectedUserForReset: any = null;
+  newPassword = '';
+  confirmPassword = '';
+  resetPasswordErrorMsg = '';
+
+  allRoles: any[] = [];
+
+  get filteredRoles(): any[] {
     if (this.authService.isSuperAdmin()) {
-      return ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'SALES', 'ACCOUNTANT', 'CASHIER'];
+      return this.allRoles.filter(r => r.name !== 'customer');
     } else {
-      return ['MANAGER', 'SALES', 'ACCOUNTANT', 'CASHIER'];
+      return this.allRoles.filter(r => r.name !== 'superadmin' && r.name !== 'companyadmin' && r.name !== 'customer');
     }
   }
 
   ngOnInit() {
+    this.loadRoles();
     if (this.authService.isSuperAdmin()) {
       this.selectedCompanyContext = 'all';
       this.loadCompanies();
@@ -52,6 +62,15 @@ export class UserManagementComponent implements OnInit {
       this.selectedCompanyContext = this.authService.currentUserValue?.companyId || '';
     }
     this.loadUsers();
+  }
+
+  loadRoles() {
+    this.userService.getRoles().subscribe({
+      next: (data) => {
+        this.allRoles = data;
+      },
+      error: (err) => console.error(err)
+    });
   }
 
   loadCompanies() {
@@ -89,7 +108,7 @@ export class UserManagementComponent implements OnInit {
     this.filteredCompanies = this.companies.filter(c => c.name.toLowerCase().includes(query));
   }
 
-  selectCompany(compId: string) {
+  selectCompany(compId: any) {
     this.selectedCompanyContext = compId;
     this.isDropdownOpen = false;
     this.onCompanyContextChange();
@@ -137,7 +156,7 @@ export class UserManagementComponent implements OnInit {
 
   editUser(user: any) {
     this.isEditMode = true;
-    this.currentUser = { ...user, role: user.roles?.[0] || 'COMPANY_ADMIN', password: '' };
+    this.currentUser = { ...user, role: user.roles?.[0] || 'companyadmin', password: '' };
     this.errorMsg = '';
     this.showModal = true;
   }
@@ -160,7 +179,7 @@ export class UserManagementComponent implements OnInit {
       this.currentUser.companyId = this.authService.currentUserValue?.companyId;
       
       // Prevent assigning forbidden roles
-      if (this.currentUser.role === 'SUPER_ADMIN' || this.currentUser.role === 'COMPANY_ADMIN') {
+      if (this.currentUser.role === 'superadmin' || this.currentUser.role === 'companyadmin') {
         this.errorMsg = 'You are not authorized to assign Super Admin or Company Admin roles.';
         return;
       }
@@ -194,7 +213,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   toggleStatus(user: any) {
-    const payload = { ...user, role: user.roles?.[0] || 'COMPANY_ADMIN', isActive: !user.isActive };
+    const payload = { ...user, role: user.roles?.[0] || 'companyadmin', isActive: !user.isActive };
     if(confirm(`Are you sure you want to change status for ${user.firstName}?`)) {
       this.userService.updateUser(user.id, payload).subscribe({
         next: () => this.loadUsers(),
@@ -210,5 +229,52 @@ export class UserManagementComponent implements OnInit {
         error: (err) => alert('Failed to delete user')
       });
     }
+  }
+
+  getRoleDisplay(roleName: string): string {
+    if (!roleName) return '—';
+    const role = this.allRoles.find(r => r.name.toLowerCase() === roleName.toLowerCase());
+    return role ? role.value : roleName;
+  }
+
+  openResetPasswordModal(user: any) {
+    this.selectedUserForReset = user;
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.resetPasswordErrorMsg = '';
+    this.showResetPasswordModal = true;
+  }
+
+  closeResetPasswordModal() {
+    this.showResetPasswordModal = false;
+    this.selectedUserForReset = null;
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.resetPasswordErrorMsg = '';
+  }
+
+  submitResetPassword() {
+    if (!this.newPassword || !this.confirmPassword) {
+      this.resetPasswordErrorMsg = 'Both password fields are required.';
+      return;
+    }
+    if (this.newPassword !== this.confirmPassword) {
+      this.resetPasswordErrorMsg = 'Passwords do not match.';
+      return;
+    }
+
+    this.userService.adminResetPassword(this.selectedUserForReset.id, {
+      newPassword: this.newPassword,
+      confirmPassword: this.confirmPassword
+    }).subscribe({
+      next: (res) => {
+        this.successMsg = 'Password reset successfully.';
+        this.closeResetPasswordModal();
+        setTimeout(() => this.successMsg = '', 3000);
+      },
+      error: (err) => {
+        this.resetPasswordErrorMsg = err.error?.message || 'Failed to reset password.';
+      }
+    });
   }
 }

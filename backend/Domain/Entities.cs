@@ -8,19 +8,43 @@ namespace Ecommerce.Api.Domain
 {
     public enum RoleName
     {
-        SUPER_ADMIN,
-        COMPANY_ADMIN,
-        COMPANY_MANAGER,
-        SALES_STAFF,
-        CUSTOMER
+        superadmin,
+        companyadmin,
+        companymanager,
+        salesstaff,
+        customer
+    }
+
+    public abstract class AuditEntity
+    {
+        [Column("created_by")]
+        public int? CreatedBy { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_by")]
+        public int? UpdatedBy { get; set; }
+
+        [Column("updated_at")]
+        public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("deleted_by")]
+        public int? DeletedBy { get; set; }
+
+        [Column("deleted_date")]
+        public DateTime? DeletedDate { get; set; }
+
+        [Column("is_deleted")]
+        public int IsDeleted { get; set; } = 0;
     }
 
     [Table("subscription_plans")]
-    public class SubscriptionPlan
+    public class SubscriptionPlan : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Required]
         [Column("name")]
@@ -37,22 +61,16 @@ namespace Ecommerce.Api.Domain
         [Column("features", TypeName = "jsonb")]
         public string? Features { get; set; } // JSON string
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         [JsonIgnore]
         public List<Company> Companies { get; set; } = new();
     }
 
     [Table("companies")]
-    public class Company
+    public class Company : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Required]
         [Column("name")]
@@ -84,7 +102,7 @@ namespace Ecommerce.Api.Domain
         public bool IsActive { get; set; } = true;
 
         [Column("subscription_plan_id")]
-        public Guid? SubscriptionPlanId { get; set; }
+        public int? SubscriptionPlanId { get; set; }
 
         [ForeignKey(nameof(SubscriptionPlanId))]
         public SubscriptionPlan? SubscriptionPlan { get; set; }
@@ -132,12 +150,6 @@ namespace Ecommerce.Api.Domain
         [Column("thana")]
         public string? Thana { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         // Navigation properties
         [JsonIgnore]
         public List<User> Users { get; set; } = new();
@@ -158,21 +170,22 @@ namespace Ecommerce.Api.Domain
     }
 
     [Table("roles")]
-    public class Role
+    public class Role : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Required]
         [Column("name")]
-        public string Name { get; set; } = string.Empty; // 'SUPER_ADMIN', 'COMPANY_ADMIN', etc.
+        public string Name { get; set; } = string.Empty; // 'superadmin', 'companyadmin', etc.
+
+        [Required]
+        [Column("value")]
+        public string Value { get; set; } = string.Empty; // 'Super Admin', 'Company Admin', etc.
 
         [Column("description")]
         public string? Description { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
         public List<UserRole> UserRoles { get; set; } = new();
@@ -181,11 +194,11 @@ namespace Ecommerce.Api.Domain
     }
 
     [Table("permissions")]
-    public class Permission
+    public class Permission : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Required]
         [Column("name")]
@@ -194,54 +207,51 @@ namespace Ecommerce.Api.Domain
         [Column("description")]
         public string? Description { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         [JsonIgnore]
         public List<RolePermission> RolePermissions { get; set; } = new();
     }
 
     [Table("user_roles")]
-    public class UserRole
+    public class UserRole : AuditEntity
     {
         [Column("user_id")]
-        public Guid UserId { get; set; }
+        public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
 
         [Column("role_id")]
-        public Guid RoleId { get; set; }
+        public int RoleId { get; set; }
 
         [ForeignKey(nameof(RoleId))]
         public Role? Role { get; set; }
     }
 
     [Table("role_permissions")]
-    public class RolePermission
+    public class RolePermission : AuditEntity
     {
         [Column("role_id")]
-        public Guid RoleId { get; set; }
+        public int RoleId { get; set; }
 
         [ForeignKey(nameof(RoleId))]
         public Role? Role { get; set; }
 
         [Column("permission_id")]
-        public Guid PermissionId { get; set; }
+        public int PermissionId { get; set; }
 
         [ForeignKey(nameof(PermissionId))]
         public Permission? Permission { get; set; }
     }
 
     [Table("users")]
-    public class User
+    public class User : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid? CompanyId { get; set; } // Nullable for Super Admin
+        public int? CompanyId { get; set; } // Nullable for Super Admin
 
         [ForeignKey(nameof(CompanyId))]
         public Company? Company { get; set; }
@@ -283,27 +293,22 @@ namespace Ecommerce.Api.Domain
         [Column("otp_expires_at")]
         public DateTime? OtpExpiresAt { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         public List<UserRole> UserRoles { get; set; } = new();
         [JsonIgnore]
         public List<Order> Orders { get; set; } = new();
         [JsonIgnore]
         public List<AuditLog> AuditLogs { get; set; } = new();
     }
+
     [Table("suppliers")]
-    public class Supplier
+    public class Supplier : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
@@ -318,23 +323,17 @@ namespace Ecommerce.Api.Domain
 
         [Column("phone_number")]
         public string? PhoneNumber { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     [Table("categories")]
-    public class Category
+    public class Category : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [Column("sizes")]
         public string? Sizes { get; set; }
@@ -355,7 +354,7 @@ namespace Ecommerce.Api.Domain
         public string? Description { get; set; }
 
         [Column("parent_id")]
-        public Guid? ParentId { get; set; }
+        public int? ParentId { get; set; }
 
         [ForeignKey(nameof(ParentId))]
         [JsonIgnore]
@@ -365,23 +364,17 @@ namespace Ecommerce.Api.Domain
         
         [JsonIgnore]
         public List<Product> Products { get; set; } = new();
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     [Table("brands")]
-    public class Brand
+    public class Brand : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
@@ -401,25 +394,19 @@ namespace Ecommerce.Api.Domain
         [Column("logo_url")]
         public string? LogoUrl { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         [JsonIgnore]
         public List<Product> Products { get; set; } = new();
     }
 
     [Table("products")]
-    public class Product
+    public class Product : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
@@ -462,13 +449,13 @@ namespace Ecommerce.Api.Domain
         public string? ImageUrl { get; set; }
 
         [Column("category_id")]
-        public Guid? CategoryId { get; set; }
+        public int? CategoryId { get; set; }
 
         [ForeignKey(nameof(CategoryId))]
         public Category? Category { get; set; }
 
         [Column("brand_id")]
-        public Guid? BrandId { get; set; }
+        public int? BrandId { get; set; }
 
         [ForeignKey(nameof(BrandId))]
         public Brand? Brand { get; set; }
@@ -477,27 +464,21 @@ namespace Ecommerce.Api.Domain
         public string? Size { get; set; }
 
         [Column("supplier_id")]
-        public Guid? SupplierId { get; set; }
+        public int? SupplierId { get; set; }
 
         [ForeignKey(nameof(SupplierId))]
         public Supplier? Supplier { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     [Table("orders")]
-    public class Order
+    public class Order : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
@@ -512,7 +493,7 @@ namespace Ecommerce.Api.Domain
         public string SaleType { get; set; } = "ECOMMERCE"; // 'ECOMMERCE', 'POS'
 
         [Column("sales_staff_id")]
-        public Guid? SalesStaffId { get; set; }
+        public int? SalesStaffId { get; set; }
 
         [ForeignKey(nameof(SalesStaffId))]
         public User? SalesStaff { get; set; }
@@ -548,32 +529,26 @@ namespace Ecommerce.Api.Domain
         [Column("payment_status")]
         public string PaymentStatus { get; set; } = "PENDING"; // 'PENDING', 'PAID', 'FAILED'
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();
     }
 
     [Table("order_items")]
-    public class OrderItem
+    public class OrderItem : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("order_id")]
-        public Guid OrderId { get; set; }
+        public int OrderId { get; set; }
 
         [ForeignKey(nameof(OrderId))]
         [JsonIgnore]
         public Order? Order { get; set; }
 
         [Column("product_id")]
-        public Guid ProductId { get; set; }
+        public int ProductId { get; set; }
 
         [ForeignKey(nameof(ProductId))]
         public Product? Product { get; set; }
@@ -586,27 +561,24 @@ namespace Ecommerce.Api.Domain
 
         [Column("total_price")]
         public decimal TotalPrice { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
     [Table("payments")]
-    public class Payment
+    public class Payment : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
         public Company? Company { get; set; }
 
         [Column("order_id")]
-        public Guid OrderId { get; set; }
+        public int OrderId { get; set; }
 
         [ForeignKey(nameof(OrderId))]
         [JsonIgnore]
@@ -633,19 +605,13 @@ namespace Ecommerce.Api.Domain
 
         [Column("reference_log")]
         public string? ReferenceLog { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     [Table("company_settings")]
-    public class CompanySetting
+    public class CompanySetting : AuditEntity
     {
         [Column("company_id")]
-        public Guid CompanyId { get; set; }
+        public int CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
@@ -664,21 +630,21 @@ namespace Ecommerce.Api.Domain
     }
 
     [Table("audit_logs")]
-    public class AuditLog
+    public class AuditLog : AuditEntity
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
 
         [Column("company_id")]
-        public Guid? CompanyId { get; set; }
+        public int? CompanyId { get; set; }
 
         [ForeignKey(nameof(CompanyId))]
         [JsonIgnore]
         public Company? Company { get; set; }
 
         [Column("user_id")]
-        public Guid? UserId { get; set; }
+        public int? UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
         [JsonIgnore]
@@ -696,8 +662,5 @@ namespace Ecommerce.Api.Domain
 
         [Column("user_agent")]
         public string? UserAgent { get; set; }
-
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

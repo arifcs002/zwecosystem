@@ -38,7 +38,7 @@ namespace Ecommerce.Api.Controllers
         public string LastName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
-        public Guid? CompanyId { get; set; }
+        public int? CompanyId { get; set; }
         public bool IsActive { get; set; } = true;
     }
 
@@ -49,22 +49,22 @@ namespace Ecommerce.Api.Controllers
         public string LastName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
-        public Guid? CompanyId { get; set; }
+        public int? CompanyId { get; set; }
         public bool IsActive { get; set; }
         public string? Password { get; set; }
     }
     public record LoginDto(string Email, string Password, string? LoginContext);
-    public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, Guid? CompanyId, List<string> Roles, string? UserType);
-    public record ProductCreateDto(string Name, string SKU, decimal Price, decimal WholesalePrice, int StockQuantity, string? Description, Guid? CategoryId, Guid? BrandId, string? Barcode, string? ImageUrl);
+    public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, int? CompanyId, List<string> Roles, string? UserType);
+    public record ProductCreateDto(string Name, string SKU, decimal Price, decimal WholesalePrice, int StockQuantity, string? Description, int? CategoryId, int? BrandId, string? Barcode, string? ImageUrl);
     public record SizeQtyDto(string Size, int Quantity);
-    public record BatchProductCreateDto(string Name, decimal Price, decimal WholesalePrice, string? Description, Guid? CategoryId, Guid? SupplierId, string? ImageUrl, List<SizeQtyDto> Sizes);
-    public record OrderItemDto(Guid ProductId, int Quantity);
+    public record BatchProductCreateDto(string Name, decimal Price, decimal WholesalePrice, string? Description, int? CategoryId, int? SupplierId, string? ImageUrl, List<SizeQtyDto> Sizes);
+    public record OrderItemDto(int ProductId, int Quantity);
     public record POSCheckoutDto(List<OrderItemDto> Items, decimal Discount, string PaymentMethod, string? CustomerName, string? CustomerPhone, string? TransactionId);
     public record CompanyUpdateDto(string Name, string? LogoUrl, string? BannerUrl, string? ContactEmail, string? ContactPhone, string? Address, decimal DeliveryCharge);
-    public record MfsPaymentVerifyDto(Guid OrderId, string TransactionId, string Provider, decimal Amount, string SenderNumber, string? ReferenceLog);
+    public record MfsPaymentVerifyDto(int OrderId, string TransactionId, string Provider, decimal Amount, string SenderNumber, string? ReferenceLog);
     public record ForgotPasswordDto(string Email);
     public record ResetPasswordOtpDto(string Email, string Otp, string NewPassword);
-    public record AdminResetPasswordDto(string NewPassword);
+    public record AdminResetPasswordDto(string NewPassword, string ConfirmPassword);
 
     [ApiController]
     [Route("api/[controller]")]
@@ -90,52 +90,18 @@ namespace Ecommerce.Api.Controllers
                 return BadRequest(new { message = $"Subdomain '{subdomain}' is already taken." });
 
             var basicPlan = await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Name == "Basic Plan");
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "companyadmin");
 
-            var company = new Company
-            {
-                Name = dto.CompanyName,
-                Subdomain = subdomain,
-                IsActive = false, // Pending approval
-                ApprovalStatus = "Pending",
-                Address = dto.Address,
-                Division = dto.Division,
-                District = dto.District,
-                Thana = dto.Thana,
-                OwnerName = $"{dto.OwnerFirstName} {dto.OwnerLastName}",
-                ContactEmail = dto.OwnerEmail,
-                ContactPhone = dto.OwnerPhone,
-                SubscriptionPlanId = basicPlan?.Id,
-                SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1)
-            };
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
+            var companyId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_register_company({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12})",
+                dto.CompanyName, subdomain, dto.Address, dto.Division, dto.District, dto.Thana,
+                dto.OwnerFirstName, dto.OwnerLastName, dto.OwnerEmail, dto.OwnerPhone, passwordHash,
+                basicPlan?.Id ?? 0, role?.Id ?? 0
+            ).ToListAsync()).FirstOrDefault();
 
-            var user = new User
-            {
-                Email = dto.OwnerEmail,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                FirstName = dto.OwnerFirstName,
-                LastName = dto.OwnerLastName,
-                PhoneNumber = dto.OwnerPhone,
-                Address = dto.Address,
-                CompanyId = company.Id,
-                IsActive = true,
-                UserType = "CompanyAdmin",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "COMPANY_ADMIN");
-            if (role != null)
-            {
-                user.UserRoles.Add(new UserRole { User = user, RoleId = role.Id });
-            }
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = user.Email, companyId = company.Id });
+            return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = dto.OwnerEmail, companyId = companyId });
         }
 
         [HttpPost("register")]
@@ -144,9 +110,8 @@ namespace Ecommerce.Api.Controllers
             if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
                 return BadRequest(new { message = "Email already registered" });
 
-            Guid? companyId = null;
+            int? companyId = null;
 
-            // If CompanyName is provided, perform SaaS tenant signup (Legacy or secondary way)
             if (!string.IsNullOrEmpty(dto.CompanyName))
             {
                 var subdomain = dto.Subdomain ?? dto.CompanyName.ToLower().Replace(" ", "");
@@ -154,48 +119,32 @@ namespace Ecommerce.Api.Controllers
                     return BadRequest(new { message = $"Subdomain '{subdomain}' is already taken." });
 
                 var basicPlan = await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Name == "Basic Plan");
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "companyadmin");
 
-                var company = new Company
-                {
-                    Name = dto.CompanyName,
-                    Subdomain = subdomain,
-                    IsActive = false,
-                    ApprovalStatus = "Pending",
-                    SubscriptionPlanId = basicPlan?.Id,
-                    SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(1)
-                };
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-                _context.Companies.Add(company);
-                await _context.SaveChangesAsync();
-                companyId = company.Id;
+                companyId = (await _context.Database.SqlQueryRaw<int>(
+                    "SELECT sp_register_company({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12})",
+                    dto.CompanyName, subdomain, "", "", "", "", "",
+                    dto.FirstName, dto.LastName, dto.Email, dto.PhoneNumber ?? "", passwordHash,
+                    basicPlan?.Id ?? 0, role?.Id ?? 0
+                ).ToListAsync()).FirstOrDefault();
+
+                return Ok(new { message = "Registration successful. Awaiting Super Admin approval.", email = dto.Email, companyId });
             }
-
-            var user = new User
+            else
             {
-                Email = dto.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                PhoneNumber = dto.PhoneNumber,
-                CompanyId = companyId,
-                IsActive = true,
-                UserType = companyId.HasValue ? "CompanyAdmin" : "SalesStaff",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "salesstaff");
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-            // Assign proper role (COMPANY_ADMIN if company was created, otherwise sales/customer)
-            var roleName = companyId.HasValue ? "COMPANY_ADMIN" : "SALES_STAFF";
-            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-            if (role != null)
-            {
-                user.UserRoles.Add(new UserRole { User = user, RoleId = role.Id });
+                var userId = (await _context.Database.SqlQueryRaw<int>(
+                    "SELECT sp_create_user({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9})",
+                    null, dto.Email, passwordHash, dto.FirstName, dto.LastName,
+                    dto.PhoneNumber ?? "", "salesstaff", true, role?.Id, null
+                ).ToListAsync()).FirstOrDefault();
+
+                return Ok(new { message = "Registration successful", email = dto.Email, companyId = (int?)null });
             }
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = companyId.HasValue ? "Registration successful. Awaiting Super Admin approval." : "Registration successful", email = user.Email, companyId });
         }
 
         [HttpPost("login")]
@@ -217,7 +166,9 @@ namespace Ecommerce.Api.Controllers
             // Validate login context to prevent cross-login (Admin or Company isolation)
             if (dto.LoginContext == "admin")
             {
-                if (user.UserType != "SuperAdmin")
+                var userRoles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
+                if (!string.Equals(user.UserType, "superadmin", StringComparison.OrdinalIgnoreCase) &&
+                    !userRoles.Contains("superadmin"))
                 {
                     return Unauthorized(new { message = "Only platform administrators can log in here." });
                 }
@@ -402,23 +353,19 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] string? search)
         {
-            var query = _context.Products
+            var companyId = _context.CompanyId;
+            var items = await _context.Products
+                .FromSqlRaw("SELECT * FROM fn_get_products({0}, {1})", companyId, search ?? "")
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.Supplier)
-                .AsQueryable();
+                .ToListAsync();
 
-            if (!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(p => p.Name.Contains(search) || p.Sku.Contains(search) || p.Barcode.Contains(search));
-            }
-
-            var items = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
             return Ok(items);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetProduct(Guid id)
+        public async Task<IActionResult> GetProduct(int id)
         {
             var product = await _context.Products
                 .Include(p => p.Category)
@@ -452,29 +399,15 @@ namespace Ecommerce.Api.Controllers
 
             var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
-            var product = new Product
-            {
-                CompanyId = currentCompanyId.Value,
-                Name = dto.Name,
-                Slug = slug,
-                Sku = dto.SKU,
-                Barcode = barcode,
-                Description = dto.Description,
-                Price = dto.Price,
-                WholesalePrice = dto.WholesalePrice,
-                StockQuantity = dto.StockQuantity,
-                ImageUrl = dto.ImageUrl,
-                CategoryId = dto.CategoryId,
-                BrandId = dto.BrandId,
-                Status = "PUBLISHED",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            var productId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_create_product({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15})",
+                currentCompanyId.Value, dto.Name, slug, dto.SKU, barcode, dto.Description ?? "",
+                dto.Price, dto.WholesalePrice, dto.StockQuantity, dto.ImageUrl ?? "", dto.CategoryId,
+                dto.BrandId, "PUBLISHED", "", (int?)null, _context.CurrentUserId
+            ).ToListAsync()).FirstOrDefault();
 
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            var product = await _context.Products.FindAsync(productId);
+            return CreatedAtAction(nameof(GetProduct), new { id = productId }, product);
         }
 
         [HttpPost("batch")]
@@ -502,36 +435,22 @@ namespace Ecommerce.Api.Controllers
                 var slugName = $"{dto.Name.ToLower().Replace(" ", "-").Replace("/", "-")}-{sizeQty.Size.ToLower()}";
                 var sku = $"{dto.Name.Replace(" ", "-").ToUpper()}-{sizeQty.Size.ToUpper()}";
 
-                var product = new Product
-                {
-                    CompanyId = currentCompanyId.Value,
-                    Name = $"{cleanName} (Size {sizeQty.Size})",
-                    Slug = slugName,
-                    Sku = sku,
-                    Barcode = barcode,
-                    Description = dto.Description,
-                    Price = dto.Price,
-                    WholesalePrice = dto.WholesalePrice,
-                    StockQuantity = sizeQty.Quantity,
-                    Size = sizeQty.Size,
-                    SupplierId = dto.SupplierId,
-                    CategoryId = dto.CategoryId,
-                    Status = "PUBLISHED",
-                    ImageUrl = dto.ImageUrl,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                var productId = (await _context.Database.SqlQueryRaw<int>(
+                    "SELECT sp_create_product({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15})",
+                    currentCompanyId.Value, $"{cleanName} (Size {sizeQty.Size})", slugName, sku, barcode,
+                    dto.Description ?? "", dto.Price, dto.WholesalePrice, sizeQty.Quantity, dto.ImageUrl ?? "",
+                    dto.CategoryId, (int?)null, "PUBLISHED", sizeQty.Size, dto.SupplierId, _context.CurrentUserId
+                ).ToListAsync()).FirstOrDefault();
 
-                _context.Products.Add(product);
-                createdProducts.Add(product);
+                var product = await _context.Products.FindAsync(productId);
+                if (product != null) createdProducts.Add(product);
             }
 
-            await _context.SaveChangesAsync();
             return Ok(createdProducts);
         }
 
         [HttpPost("{id}/print-barcode")]
-        public async Task<IActionResult> PrintBarcode(Guid id, [FromQuery] string ipAddress = "192.168.1.100", [FromQuery] int port = 9100)
+        public async Task<IActionResult> PrintBarcode(int id, [FromQuery] string ipAddress = "192.168.1.100", [FromQuery] int port = 9100)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound();
@@ -561,38 +480,29 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductCreateDto dto)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductCreateDto dto)
         {
+            if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_product({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12})",
+                id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity, dto.Description ?? "",
+                dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId, "", (int?)null, _context.CurrentUserId);
+
             var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
-
-            product.Name = dto.Name;
-            product.Sku = dto.SKU;
-            product.Price = dto.Price;
-            product.WholesalePrice = dto.WholesalePrice;
-            product.StockQuantity = dto.StockQuantity;
-            product.Description = dto.Description;
-            product.ImageUrl = dto.ImageUrl;
-            product.CategoryId = dto.CategoryId;
-            product.BrandId = dto.BrandId;
-            product.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
             return Ok(product);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(Guid id)
+        public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+            if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_delete_product({0})", id);
             return NoContent();
         }
 
-        private string GenerateCode128Barcode(Guid companyId)
+        private string GenerateCode128Barcode(int companyId)
         {
             var prefix = "ZW";
             var rand = new Random();
@@ -635,14 +545,17 @@ namespace Ecommerce.Api.Controllers
 
             // Resolve cashier user (claims)
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            Guid? cashierId = null;
-            if (Guid.TryParse(userIdClaim, out var parsedId))
+            int? cashierId = null;
+            int parsedId = 0;
+            if (int.TryParse(userIdClaim, out parsedId))
             {
                 cashierId = parsedId;
             }
 
             decimal subtotal = 0;
-            var orderItems = new List<OrderItem>();
+            var productIds = new List<int>();
+            var quantities = new List<int>();
+            var prices = new List<decimal>();
 
             foreach (var itemDto in dto.Items)
             {
@@ -653,67 +566,34 @@ namespace Ecommerce.Api.Controllers
                 if (product.StockQuantity < itemDto.Quantity)
                     return BadRequest(new { message = $"Insufficient stock for product '{product.Name}'. Available: {product.StockQuantity}" });
 
-                // Deduct inventory
-                product.StockQuantity -= itemDto.Quantity;
-                var totalItemPrice = product.Price * itemDto.Quantity;
-                subtotal += totalItemPrice;
-
-                orderItems.Add(new OrderItem
-                {
-                    ProductId = itemDto.ProductId,
-                    Quantity = itemDto.Quantity,
-                    Price = product.Price,
-                    TotalPrice = totalItemPrice,
-                    CreatedAt = DateTime.UtcNow
-                });
+                subtotal += product.Price * itemDto.Quantity;
+                productIds.Add(itemDto.ProductId);
+                quantities.Add(itemDto.Quantity);
+                prices.Add(product.Price);
             }
 
             var total = subtotal - dto.Discount;
             if (total < 0) total = 0;
 
-            var order = new Order
-            {
-                CompanyId = companyId.Value,
-                OrderNumber = $"POS-{DateTime.UtcNow.Ticks}",
-                SaleType = "POS",
-                SalesStaffId = cashierId,
-                CustomerName = dto.CustomerName ?? "Walk-in Customer",
-                CustomerPhone = dto.CustomerPhone,
-                Status = "COMPLETED",
-                Subtotal = subtotal,
-                Discount = dto.Discount,
-                Total = total,
-                PaymentMethod = dto.PaymentMethod,
-                PaymentStatus = dto.PaymentMethod == "CASH" ? "PAID" : "PENDING",
-                Items = orderItems,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            var orderNumber = $"POS-{DateTime.UtcNow.Ticks}";
+            var paymentStatus = dto.PaymentMethod == "CASH" ? "PAID" : "PENDING";
 
-            _context.Orders.Add(order);
+            // Call sp_checkout_order
+            var orderId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_checkout_order({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15})",
+                companyId.Value, orderNumber, "POS", cashierId, dto.CustomerName ?? "Walk-in Customer",
+                dto.CustomerPhone ?? "", "COMPLETED", subtotal, dto.Discount, total, dto.PaymentMethod, paymentStatus,
+                productIds.ToArray(), quantities.ToArray(), prices.ToArray(), parsedId
+            ).ToListAsync()).FirstOrDefault();
 
-            // Log payment transactions immediately for POS Checkouts
             if (dto.PaymentMethod != "CASH" && !string.IsNullOrEmpty(dto.TransactionId))
             {
-                var payment = new Payment
-                {
-                    CompanyId = companyId.Value,
-                    Order = order,
-                    TransactionId = dto.TransactionId,
-                    Provider = dto.PaymentMethod,
-                    Amount = total,
-                    Status = "SUCCESS",
-                    PaymentType = "AUTOMATED",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                order.PaymentStatus = "PAID";
-                _context.Payments.Add(payment);
+                var paymentId = (await _context.Database.SqlQueryRaw<int>(
+                    "SELECT sp_verify_payment({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
+                    companyId.Value, orderId, dto.TransactionId, dto.PaymentMethod, total, "SUCCESS", "AUTOMATED", "", ""
+                ).ToListAsync()).FirstOrDefault();
             }
 
-            await _context.SaveChangesAsync();
-
-            // Return receipt data
             var settings = await _context.CompanySettings
                 .Where(s => s.CompanyId == companyId.Value && s.GroupName == "POS")
                 .ToDictionaryAsync(s => s.Key, s => s.Value);
@@ -724,17 +604,17 @@ namespace Ecommerce.Api.Controllers
             return Ok(new
             {
                 message = "POS Transaction completed successfully",
-                orderId = order.Id,
-                orderNumber = order.OrderNumber,
+                orderId = orderId,
+                orderNumber = orderNumber,
                 receipt = new
                 {
                     header,
                     footer,
-                    orderNumber = order.OrderNumber,
-                    subtotal = order.Subtotal,
-                    discount = order.Discount,
-                    total = order.Total,
-                    paymentMethod = order.PaymentMethod,
+                    orderNumber = orderNumber,
+                    subtotal = subtotal,
+                    discount = dto.Discount,
+                    total = total,
+                    paymentMethod = dto.PaymentMethod,
                     cashierName = User.FindFirst("name")?.Value ?? "Cashier"
                 }
             });
@@ -759,31 +639,18 @@ namespace Ecommerce.Api.Controllers
             if (!companyId.HasValue)
                 return BadRequest("Company context is required.");
 
-            var order = await _context.Orders.FindAsync(dto.OrderId);
-            if (order == null) return NotFound("Order not found");
+            if (!await _context.Orders.AnyAsync(o => o.Id == dto.OrderId))
+                return NotFound("Order not found");
 
-            var payment = new Payment
-            {
-                CompanyId = companyId.Value,
-                OrderId = dto.OrderId,
-                TransactionId = dto.TransactionId,
-                Provider = dto.Provider.ToUpper(),
-                Amount = dto.Amount,
-                Status = "SUCCESS", // Mock verify auto succeeds
-                PaymentType = "MANUAL",
-                SenderNumber = dto.SenderNumber,
-                ReferenceLog = dto.ReferenceLog ?? $"Manual MFS Verification for TrxID {dto.TransactionId}",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            var referenceLog = dto.ReferenceLog ?? $"Manual MFS Verification for TrxID {dto.TransactionId}";
 
-            order.PaymentStatus = "PAID";
-            order.Status = "PROCESSING";
+            var paymentId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_verify_payment({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
+                companyId.Value, dto.OrderId, dto.TransactionId, dto.Provider.ToUpper(),
+                dto.Amount, "SUCCESS", "MANUAL", dto.SenderNumber, referenceLog
+            ).ToListAsync()).FirstOrDefault();
 
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "MFS Transaction successfully logged and verified", status = payment.Status, paymentId = payment.Id });
+            return Ok(new { message = "MFS Transaction successfully logged and verified", status = "SUCCESS", paymentId = paymentId });
         }
     }
 
@@ -857,7 +724,7 @@ namespace Ecommerce.Api.Controllers
             company.ContactPhone = dto.ContactPhone;
             company.Address = dto.Address;
             company.DeliveryCharge = dto.DeliveryCharge;
-            company.UpdatedAt = DateTime.UtcNow;
+            company.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(company);
@@ -879,21 +746,14 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var isSuperAdmin = User.IsInRole("superadmin");
             var companyId = _context.CompanyId;
 
-            // Use IgnoreQueryFilters if Super Admin to see all users globally
-            var query = isSuperAdmin 
-                ? _context.Users.IgnoreQueryFilters().Include(u => u.UserRoles).ThenInclude(ur => ur.Role).AsQueryable()
-                : _context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).AsQueryable();
+            var rawUsers = isSuperAdmin
+                ? await _context.Users.FromSqlRaw("SELECT * FROM fn_get_users({0})", (int?)null).IgnoreQueryFilters().Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToListAsync()
+                : await _context.Users.FromSqlRaw("SELECT * FROM fn_get_users({0})", companyId).Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToListAsync();
 
-            if (!isSuperAdmin)
-            {
-                if (!companyId.HasValue) return Forbid();
-                query = query.Where(u => u.CompanyId == companyId.Value);
-            }
-
-            var list = await query.Select(u => new {
+            var list = rawUsers.Select(u => new {
                 u.Id,
                 u.Email,
                 u.FirstName,
@@ -902,16 +762,25 @@ namespace Ecommerce.Api.Controllers
                 u.IsActive,
                 CompanyId = u.CompanyId,
                 Roles = u.UserRoles.Select(ur => ur.Role!.Name).ToList()
-            }).ToListAsync();
+            }).ToList();
 
             return Ok(list);
         }
 
-        [HttpPost("{userId}/admin-reset-password")]
-        public async Task<IActionResult> AdminResetPassword(Guid userId, [FromBody] AdminResetPasswordDto dto)
+        [HttpGet("roles")]
+        public async Task<IActionResult> GetRoles()
         {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
-            var isCompanyAdmin = User.IsInRole("COMPANY_ADMIN");
+            var roles = await _context.Roles
+                .Select(r => new { r.Id, r.Name, r.Value })
+                .ToListAsync();
+            return Ok(roles);
+        }
+
+        [HttpPost("{userId}/admin-reset-password")]
+        public async Task<IActionResult> AdminResetPassword(int userId, [FromBody] AdminResetPasswordDto dto)
+        {
+            var isSuperAdmin = User.IsInRole("superadmin");
+            var isCompanyAdmin = User.IsInRole("companyadmin");
 
             if (!isSuperAdmin && !isCompanyAdmin)
                 return Forbid();
@@ -931,6 +800,9 @@ namespace Ecommerce.Api.Controllers
                     return Forbid();
             }
 
+            if (dto.NewPassword != dto.ConfirmPassword)
+                return BadRequest(new { message = "New password and confirm password do not match." });
+
             targetUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             await _context.SaveChangesAsync();
 
@@ -941,96 +813,34 @@ namespace Ecommerce.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var isSuperAdmin = User.IsInRole("superadmin");
             var companyId = _context.CompanyId;
 
             if (!isSuperAdmin)
             {
                 if (!companyId.HasValue) return Forbid();
-                if (dto.CompanyId != companyId.Value) return Forbid(); // Cannot create user for another company
+                if (dto.CompanyId != companyId.Value) return Forbid();
             }
 
             if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
                 return BadRequest(new { message = "Email already exists" });
 
-            var user = new User
-            {
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                PhoneNumber = dto.PhoneNumber,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                CompanyId = dto.CompanyId,
-                IsActive = dto.IsActive,
-                UserType = dto.Role
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.Role);
-            if (role != null)
-            {
-                _context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
-                await _context.SaveChangesAsync();
-            }
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-            return Ok(new { user.Id, user.Email, user.FirstName, user.LastName, user.IsActive, user.CompanyId });
+            var userId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_create_user({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9})",
+                dto.CompanyId, dto.Email, passwordHash, dto.FirstName, dto.LastName,
+                dto.PhoneNumber, dto.Role, dto.IsActive, role?.Id, _context.CurrentUserId
+            ).ToListAsync()).FirstOrDefault();
+
+            return Ok(new { Id = userId, dto.Email, dto.FirstName, dto.LastName, dto.IsActive, dto.CompanyId });
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDto dto)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto)
         {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
-            var companyId = _context.CompanyId;
-
-            var targetUser = isSuperAdmin
-                ? await _context.Users.IgnoreQueryFilters().Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Id == id)
-                : await _context.Users.Include(u => u.UserRoles).FirstOrDefaultAsync(u => u.Id == id);
-
-            if (targetUser == null) return NotFound("User not found");
-
-            if (!isSuperAdmin && targetUser.CompanyId != companyId)
-                return Forbid();
-
-            targetUser.Email = dto.Email;
-            targetUser.FirstName = dto.FirstName;
-            targetUser.LastName = dto.LastName;
-            targetUser.PhoneNumber = dto.PhoneNumber;
-            targetUser.IsActive = dto.IsActive;
-            targetUser.UserType = dto.Role;
-
-            if (!string.IsNullOrEmpty(dto.Password))
-            {
-                targetUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-            }
-
-            if (isSuperAdmin && dto.CompanyId.HasValue)
-            {
-                targetUser.CompanyId = dto.CompanyId.Value;
-            }
-
-            // Update Role
-            var currentRole = targetUser.UserRoles.FirstOrDefault();
-            var newRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.Role);
-            
-            if (newRole != null)
-            {
-                if (currentRole != null)
-                {
-                    _context.UserRoles.Remove(currentRole);
-                }
-                _context.UserRoles.Add(new UserRole { UserId = targetUser.Id, RoleId = newRole.Id });
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok(new { targetUser.Id, targetUser.Email, targetUser.FirstName, targetUser.LastName, targetUser.IsActive, targetUser.CompanyId });
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
-        {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
+            var isSuperAdmin = User.IsInRole("superadmin");
             var companyId = _context.CompanyId;
 
             var targetUser = isSuperAdmin
@@ -1042,8 +852,37 @@ namespace Ecommerce.Api.Controllers
             if (!isSuperAdmin && targetUser.CompanyId != companyId)
                 return Forbid();
 
-            _context.Users.Remove(targetUser);
-            await _context.SaveChangesAsync();
+            var passwordHash = !string.IsNullOrEmpty(dto.Password) ? BCrypt.Net.BCrypt.HashPassword(dto.Password) : null;
+            var targetCompanyId = isSuperAdmin ? dto.CompanyId : targetUser.CompanyId;
+            var newRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.Role);
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_user({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10})",
+                id, dto.Email, dto.FirstName, dto.LastName, dto.PhoneNumber, dto.IsActive,
+                dto.Role, passwordHash, targetCompanyId, newRole?.Id, _context.CurrentUserId);
+
+            return Ok(new { Id = id, dto.Email, dto.FirstName, dto.LastName, dto.IsActive, CompanyId = targetCompanyId });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var isSuperAdmin = User.IsInRole("superadmin");
+            var companyId = _context.CompanyId;
+
+            var targetUser = isSuperAdmin
+                ? await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == id)
+                : await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+            if (targetUser == null) return NotFound("User not found");
+
+            if (string.Equals(targetUser.Email, "arif", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "System user arif cannot be deleted." });
+
+            if (!isSuperAdmin && targetUser.CompanyId != companyId)
+                return Forbid();
+
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_delete_user({0}, {1})", id, _context.CurrentUserId);
 
             return Ok(new { message = "User deleted successfully" });
         }
@@ -1099,7 +938,10 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSuppliers()
         {
-            var suppliers = await _context.Suppliers.OrderBy(s => s.Name).ToListAsync();
+            var companyId = _context.CompanyId;
+            var suppliers = await _context.Suppliers
+                .FromSqlRaw("SELECT * FROM fn_get_suppliers({0})", companyId)
+                .ToListAsync();
             return Ok(suppliers);
         }
 
@@ -1110,25 +952,21 @@ namespace Ecommerce.Api.Controllers
             if (!companyId.HasValue)
                 return BadRequest("Company context is required.");
 
-            supplier.CompanyId = companyId.Value;
-            supplier.CreatedAt = DateTime.UtcNow;
-            supplier.UpdatedAt = DateTime.UtcNow;
+            var supplierId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_create_supplier({0}, {1}, {2}, {3}, {4})",
+                companyId.Value, supplier.Name, supplier.PhoneNumber ?? "", supplier.Address ?? "", _context.CurrentUserId
+            ).ToListAsync()).FirstOrDefault();
 
-            _context.Suppliers.Add(supplier);
-            await _context.SaveChangesAsync();
-
-            return Ok(supplier);
+            var created = await _context.Suppliers.FindAsync(supplierId);
+            return Ok(created);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSupplier(Guid id)
+        public async Task<IActionResult> DeleteSupplier(int id)
         {
-            var supplier = await _context.Suppliers.FindAsync(id);
-            if (supplier == null) return NotFound();
+            if (!await _context.Suppliers.AnyAsync(s => s.Id == id)) return NotFound();
 
-            _context.Suppliers.Remove(supplier);
-            await _context.SaveChangesAsync();
-
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_delete_supplier({0}, {1})", id, _context.CurrentUserId);
             return NoContent();
         }
     }
@@ -1147,7 +985,10 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCategories()
         {
-            var categories = await _context.Categories.OrderBy(c => c.Name).ToListAsync();
+            var companyId = _context.CompanyId;
+            var categories = await _context.Categories
+                .FromSqlRaw("SELECT * FROM fn_get_categories({0})", companyId)
+                .ToListAsync();
             return Ok(categories);
         }
 
@@ -1158,26 +999,23 @@ namespace Ecommerce.Api.Controllers
             if (!companyId.HasValue)
                 return BadRequest("Company context is required.");
 
-            category.CompanyId = companyId.Value;
-            category.Slug = category.Name.ToLower().Replace(" ", "-").Replace("/", "-");
-            category.CreatedAt = DateTime.UtcNow;
-            category.UpdatedAt = DateTime.UtcNow;
+            var slug = category.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
+            var categoryId = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_create_category({0}, {1}, {2}, {3}, {4}, {5})",
+                companyId.Value, category.Name, slug, category.Description ?? "", category.Sizes ?? "", _context.CurrentUserId
+            ).ToListAsync()).FirstOrDefault();
 
-            return Ok(category);
+            var created = await _context.Categories.FindAsync(categoryId);
+            return Ok(created);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(Guid id)
+        public async Task<IActionResult> DeleteCategory(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category == null) return NotFound();
+            if (!await _context.Categories.AnyAsync(c => c.Id == id)) return NotFound();
 
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
-
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_delete_category({0}, {1})", id, _context.CurrentUserId);
             return NoContent();
         }
     }
@@ -1196,12 +1034,14 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
-            var companies = await _context.Companies.OrderBy(c => c.Name).ToListAsync();
+            var companies = await _context.Companies
+                .FromSqlRaw("SELECT * FROM fn_get_companies()")
+                .ToListAsync();
             return Ok(companies);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetCompany(Guid id)
+        public async Task<IActionResult> GetCompany(int id)
         {
             var company = await _context.Companies.FindAsync(id);
             if (company == null) return NotFound();
@@ -1211,59 +1051,38 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] Company company)
         {
-            company.CreatedAt = DateTime.UtcNow;
-            company.UpdatedAt = DateTime.UtcNow;
+            company.CreatedDate = DateTime.UtcNow;
+            company.UpdatedDate = DateTime.UtcNow;
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return Ok(company);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCompany(Guid id, [FromBody] Company updateDto)
+        public async Task<IActionResult> UpdateCompany(int id, [FromBody] Company updateDto)
         {
+            if (!await _context.Companies.AnyAsync(c => c.Id == id)) return NotFound();
+
+            var targetCompany = await _context.Companies.FindAsync(id);
+            var isSuperAdmin = User.IsInRole("superadmin");
+
+            if (targetCompany != null && string.Equals(targetCompany.Subdomain, "zw", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!isSuperAdmin)
+                {
+                    return Forbid();
+                }
+            }
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_company({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20})",
+                id, updateDto.Name, updateDto.Subdomain, updateDto.ContactEmail ?? "", updateDto.CompanyMobile ?? "",
+                updateDto.OwnerName ?? "", updateDto.OwnerMobile ?? "", updateDto.Division ?? "", updateDto.District ?? "",
+                updateDto.Thana ?? "", updateDto.Address ?? "", updateDto.FacebookLink ?? "", updateDto.InstagramLink ?? "",
+                updateDto.BkashNumber ?? "", updateDto.NagadNumber ?? "", updateDto.BankName ?? "", updateDto.BankAccountName ?? "",
+                updateDto.IsActive, updateDto.ApprovalStatus, updateDto.LogoUrl ?? "", _context.CurrentUserId);
+
             var company = await _context.Companies.FindAsync(id);
-            if (company == null) return NotFound();
-
-            company.Name = updateDto.Name;
-            company.Subdomain = updateDto.Subdomain;
-            company.ContactEmail = updateDto.ContactEmail;
-            company.CompanyMobile = updateDto.CompanyMobile;
-            company.OwnerName = updateDto.OwnerName;
-            company.OwnerMobile = updateDto.OwnerMobile;
-            company.Division = updateDto.Division;
-            company.District = updateDto.District;
-            company.Thana = updateDto.Thana;
-            company.Address = updateDto.Address;
-            company.FacebookLink = updateDto.FacebookLink;
-            company.InstagramLink = updateDto.InstagramLink;
-            company.BkashNumber = updateDto.BkashNumber;
-            company.NagadNumber = updateDto.NagadNumber;
-            company.BankName = updateDto.BankName;
-            company.BankAccountName = updateDto.BankAccountName;
-            company.IsActive = updateDto.IsActive;
-            company.ApprovalStatus = updateDto.ApprovalStatus;
-            company.LogoUrl = updateDto.LogoUrl;
-            company.UpdatedAt = DateTime.UtcNow;
-
-            // If approved and active, we should make sure the owner user is active too.
-            if (company.ApprovalStatus == "Approved" && company.IsActive)
-            {
-                var ownerUser = await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.UserType == "CompanyAdmin");
-                if (ownerUser != null && !ownerUser.IsActive)
-                {
-                    ownerUser.IsActive = true;
-                }
-            }
-            else if (company.ApprovalStatus == "Rejected" || !company.IsActive)
-            {
-                var ownerUser = await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.UserType == "CompanyAdmin");
-                if (ownerUser != null && ownerUser.IsActive)
-                {
-                    ownerUser.IsActive = false; // Suspend owner login
-                }
-            }
-
-            await _context.SaveChangesAsync();
             return Ok(company);
         }
     }
@@ -1288,11 +1107,27 @@ namespace Ecommerce.Api.Controllers
         /// Returns KPI stats for a company. Super Admin can pass ?companyId=xxx to view any company.
         /// </summary>
         [HttpGet("stats")]
-        public async Task<IActionResult> GetStats([FromQuery] Guid? companyId)
+        public async Task<IActionResult> GetStats([FromQuery] int? companyId)
         {
             var resolvedCompanyId = ResolveCompanyId(companyId);
             if (resolvedCompanyId == null)
-                return BadRequest(new { message = "companyId required for Super Admin" });
+                return Ok(new
+                {
+                    totalRevenue = 0.0,
+                    totalRevenueGrowth = 0.0,
+                    totalOrders = 0,
+                    totalOrdersGrowth = 0.0,
+                    totalProducts = 0,
+                    lowStockProducts = 0,
+                    outOfStockProducts = 0,
+                    totalCustomers = 0,
+                    pendingOrders = 0,
+                    processingOrders = 0,
+                    completedOrders = 0,
+                    cancelledOrders = 0,
+                    posOrders = 0,
+                    ecomOrders = 0
+                });
 
             var now = DateTime.UtcNow;
             var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -1311,8 +1146,8 @@ namespace Ecommerce.Api.Controllers
                 .CountAsync();
 
             // This month
-            var thisMonthOrders = orders.Where(o => o.CreatedAt >= startOfMonth).ToList();
-            var lastMonthOrders = orders.Where(o => o.CreatedAt >= startOfLastMonth && o.CreatedAt < startOfMonth).ToList();
+            var thisMonthOrders = orders.Where(o => o.CreatedDate >= startOfMonth).ToList();
+            var lastMonthOrders = orders.Where(o => o.CreatedDate >= startOfLastMonth && o.CreatedDate < startOfMonth).ToList();
 
             var thisMonthRevenue = thisMonthOrders
                 .Where(o => o.Status != "CANCELLED")
@@ -1355,22 +1190,22 @@ namespace Ecommerce.Api.Controllers
         /// Returns last 7 days daily sales totals
         /// </summary>
         [HttpGet("sales-chart")]
-        public async Task<IActionResult> GetSalesChart([FromQuery] Guid? companyId, [FromQuery] int days = 7)
+        public async Task<IActionResult> GetSalesChart([FromQuery] int? companyId, [FromQuery] int days = 7)
         {
             var resolvedCompanyId = ResolveCompanyId(companyId);
             if (resolvedCompanyId == null)
-                return BadRequest(new { message = "companyId required for Super Admin" });
+                return Ok(new List<object>());
 
             var from = DateTime.UtcNow.Date.AddDays(-(days - 1));
 
             var orders = await _context.Orders
-                .Where(o => o.CompanyId == resolvedCompanyId && o.CreatedAt >= from && o.Status != "CANCELLED")
-                .ToListAsync();
+                 .Where(o => o.CompanyId == resolvedCompanyId && o.CreatedDate >= from && o.Status != "CANCELLED")
+                 .ToListAsync();
 
             var chart = Enumerable.Range(0, days).Select(i =>
             {
                 var day = from.AddDays(i);
-                var dayOrders = orders.Where(o => o.CreatedAt.Date == day).ToList();
+                var dayOrders = orders.Where(o => o.CreatedDate.Date == day).ToList();
                 return new
                 {
                     date = day.ToString("MM/dd"),
@@ -1388,11 +1223,11 @@ namespace Ecommerce.Api.Controllers
         /// Returns top 5 selling products
         /// </summary>
         [HttpGet("top-products")]
-        public async Task<IActionResult> GetTopProducts([FromQuery] Guid? companyId, [FromQuery] int limit = 5)
+        public async Task<IActionResult> GetTopProducts([FromQuery] int? companyId, [FromQuery] int limit = 5)
         {
             var resolvedCompanyId = ResolveCompanyId(companyId);
             if (resolvedCompanyId == null)
-                return BadRequest(new { message = "companyId required for Super Admin" });
+                return Ok(new List<object>());
 
             var topProducts = await _context.OrderItems
                 .Include(oi => oi.Product)
@@ -1420,15 +1255,15 @@ namespace Ecommerce.Api.Controllers
         /// Returns last 10 orders
         /// </summary>
         [HttpGet("recent-orders")]
-        public async Task<IActionResult> GetRecentOrders([FromQuery] Guid? companyId, [FromQuery] int limit = 10)
+        public async Task<IActionResult> GetRecentOrders([FromQuery] int? companyId, [FromQuery] int limit = 10)
         {
             var resolvedCompanyId = ResolveCompanyId(companyId);
             if (resolvedCompanyId == null)
-                return BadRequest(new { message = "companyId required for Super Admin" });
+                return Ok(new List<object>());
 
             var orders = await _context.Orders
                 .Where(o => o.CompanyId == resolvedCompanyId)
-                .OrderByDescending(o => o.CreatedAt)
+                .OrderByDescending(o => o.CreatedDate)
                 .Take(limit)
                 .Select(o => new
                 {
@@ -1441,7 +1276,7 @@ namespace Ecommerce.Api.Controllers
                     o.PaymentMethod,
                     o.PaymentStatus,
                     o.SaleType,
-                    o.CreatedAt
+                    o.CreatedDate
                 })
                 .ToListAsync();
 
@@ -1449,17 +1284,84 @@ namespace Ecommerce.Api.Controllers
         }
 
         // Resolves companyId: company users get their own; super admin passes via query
-        private Guid? ResolveCompanyId(Guid? queryCompanyId)
+        private int? ResolveCompanyId(int? queryCompanyId)
         {
-            var isSuperAdmin = User.IsInRole("SUPER_ADMIN");
-            if (isSuperAdmin)
+            var isSuperAdmin = User.IsInRole("superadmin");
+            if (isSuperAdmin && queryCompanyId.HasValue && queryCompanyId.Value > 0)
                 return queryCompanyId;
 
-            var companyIdClaim = User.FindFirst("companyId")?.Value;
-            if (Guid.TryParse(companyIdClaim, out var cid))
+            var companyIdClaim = User.FindFirst("companyId")?.Value ?? User.FindFirst("company_id")?.Value;
+            if (int.TryParse(companyIdClaim, out var cid))
                 return cid;
 
             return null;
         }
+    }
+
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class OrdersController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public OrdersController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetOrders()
+        {
+            var companyId = _context.CompanyId;
+            var orders = await _context.Orders
+                .FromSqlRaw("SELECT * FROM fn_get_orders({0})", companyId)
+                .Include(o => o.Items)
+                .ThenInclude(oi => oi.Product)
+                .ToListAsync();
+            return Ok(orders);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetOrder(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null) return NotFound();
+            return Ok(order);
+        }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] StatusUpdateDto dto)
+        {
+            if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
+
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_order_status({0}, {1}, {2})",
+                id, dto.Status, dto.Notes ?? "");
+
+            var order = await _context.Orders.FindAsync(id);
+            return Ok(order);
+        }
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> CancelOrder(int id)
+        {
+            if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
+
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_cancel_order({0})", id);
+
+            var order = await _context.Orders.FindAsync(id);
+            return Ok(order);
+        }
+    }
+
+    public class StatusUpdateDto
+    {
+        public string Status { get; set; } = string.Empty;
+        public string? Notes { get; set; }
     }
 }

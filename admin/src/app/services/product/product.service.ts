@@ -13,14 +13,14 @@ export interface BatchProductCreateDto {
   price: number;
   wholesalePrice: number;
   description?: string;
-  categoryId?: string;
-  supplierId?: string;
+  categoryId?: number;
+  supplierId?: number;
   imageUrl?: string;
   sizes: SizeQtyDto[];
 }
 
 export interface Product {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   sku: string;
@@ -31,9 +31,9 @@ export interface Product {
   stockQuantity: number;
   size?: string;
   imageUrl?: string;
-  categoryId?: string;
-  brandId?: string;
-  supplierId?: string;
+  categoryId?: number;
+  brandId?: number;
+  supplierId?: number;
   status: string;
   createdAt: string;
   category?: any;
@@ -54,7 +54,7 @@ export class ProductService {
     return this.http.get<Product[]>(this.apiUrl, { params });
   }
 
-  getProduct(id: string): Observable<Product> {
+  getProduct(id: number): Observable<Product> {
     return this.http.get<Product>(`${this.apiUrl}/${id}`);
   }
 
@@ -62,11 +62,11 @@ export class ProductService {
     return this.http.post<Product[]>(`${this.apiUrl}/batch`, dto);
   }
 
-  updateProduct(id: string, product: any): Observable<Product> {
+  updateProduct(id: number, product: any): Observable<Product> {
     return this.http.put<Product>(`${this.apiUrl}/${id}`, product);
   }
 
-  deleteProduct(id: string): Observable<void> {
+  deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
   

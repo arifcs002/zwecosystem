@@ -5,7 +5,7 @@ import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface CompanyOption {
-  id: string;
+  id: number;
   name: string;
   subdomain: string;
   logoUrl?: string;
@@ -40,7 +40,7 @@ export class CompanyContextService {
     this.selectedCompany.set(company);
   }
 
-  getSelectedId(): string | null {
+  getSelectedId(): number | null {
     return this.selectedCompany()?.id ?? null;
   }
 }

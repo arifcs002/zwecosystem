@@ -23,8 +23,8 @@ export class AddProductComponent implements OnInit {
   categories: Category[] = [];
 
   formData: BatchProductCreateDto = {
-    supplierId: '',
-    categoryId: '',
+    supplierId: undefined,
+    categoryId: undefined,
     name: '',
     price: 0,
     wholesalePrice: 0,

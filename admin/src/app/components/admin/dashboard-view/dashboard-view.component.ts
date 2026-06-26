@@ -49,12 +49,12 @@ export class DashboardViewComponent implements OnInit {
     this.categoryService.getCategories().subscribe({
       next: (allCats) => {
         // Only keep categories that are in the configured visible list
-        this.categories = allCats.filter(c => this.visibleCategoryIds.includes(c.id || ''));
+        this.categories = allCats.filter(c => this.visibleCategoryIds.includes((c.id || '').toString()));
         
         this.productService.getProducts().subscribe({
           next: (allProds) => {
             // Keep products that belong to the configured visible categories
-            this.products = allProds.filter(p => this.visibleCategoryIds.includes(p.categoryId || ''));
+            this.products = allProds.filter(p => this.visibleCategoryIds.includes((p.categoryId || '').toString()));
             this.filterProducts('All');
             this.isLoading = false;
           },

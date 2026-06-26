@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Company {
-  id: string;
+  id: number;
   name: string;
   subdomain: string; // Used for multi-tenant URL e.g. /fashion/login
   databaseConnectionString?: string; // Optional: For physical DB isolation
@@ -40,7 +40,7 @@ export class CompanyService {
     return this.http.get<Company[]>(this.apiUrl);
   }
 
-  getCompanyById(id: string): Observable<Company> {
+  getCompanyById(id: number): Observable<Company> {
     return this.http.get<Company>(`${this.apiUrl}/${id}`);
   }
 
@@ -52,7 +52,7 @@ export class CompanyService {
     return this.http.put<Company>(`${this.apiUrl}/${updatedCompany.id}`, updatedCompany);
   }
 
-  deleteCompany(id: string): Observable<void> {
+  deleteCompany(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

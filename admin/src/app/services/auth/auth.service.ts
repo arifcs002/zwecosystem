@@ -4,10 +4,10 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   fullName: string;
-  companyId: string | null;
+  companyId: number | null;
   loginContext: string; // The subdomain where they logged in (or 'admin')
   roles: string[];
 }
@@ -17,7 +17,7 @@ export interface LoginResponse {
   refreshToken: string;
   email: string;
   fullName: string;
-  companyId: string | null;
+  companyId: number | null;
   roles: string[];
 }
 
@@ -47,7 +47,7 @@ export class AuthService {
             localStorage.setItem('token', token);
             
             const user: User = {
-              id: response.id || response.Id || '', 
+              id: response.id || response.Id || 0, 
               email: response.email || response.Email,
               fullName: response.fullName || response.FullName,
               companyId: response.companyId !== undefined ? response.companyId : response.CompanyId,
@@ -76,18 +76,20 @@ export class AuthService {
   }
 
   isSuperAdmin(): boolean {
-    return this.currentUserValue?.roles.includes('SUPER_ADMIN') ?? false;
+    const roles = this.currentUserValue?.roles || [];
+    return roles.some(r => r.toLowerCase() === 'superadmin' || r.toLowerCase() === 'super_admin');
   }
 
   isCompanyAdmin(): boolean {
-    return this.currentUserValue?.roles.includes('COMPANY_ADMIN') ?? false;
+    const roles = this.currentUserValue?.roles || [];
+    return roles.some(r => r.toLowerCase() === 'companyadmin' || r.toLowerCase() === 'company_admin');
   }
 
   getUserRights(): string[] {
     const roles = this.currentUserValue?.roles || [];
     const rights: string[] = [];
     roles.forEach(role => {
-      const roleRights = ROLE_RIGHTS[role.toUpperCase()] || [];
+      const roleRights = ROLE_RIGHTS[role.toUpperCase()] || ROLE_RIGHTS[role.toLowerCase()] || [];
       roleRights.forEach(r => {
         if (!rights.includes(r)) rights.push(r);
       });
@@ -118,7 +120,30 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_STORE_CONFIG',
     'PAGE_DASHBOARD_VIEW'
   ],
+  'superadmin': [
+    'PAGE_SUPER_DASHBOARD',
+    'PAGE_COMPANY_MANAGEMENT',
+    'PAGE_USER_MANAGEMENT',
+    'PAGE_ROLE_MANAGEMENT',
+    'PAGE_SHOP_DASHBOARD',
+    'PAGE_POS',
+    'PAGE_PRODUCTS',
+    'PAGE_CATEGORIES',
+    'PAGE_REPORTS',
+    'PAGE_STORE_CONFIG',
+    'PAGE_DASHBOARD_VIEW'
+  ],
   'COMPANY_ADMIN': [
+    'PAGE_SHOP_DASHBOARD',
+    'PAGE_POS',
+    'PAGE_PRODUCTS',
+    'PAGE_CATEGORIES',
+    'PAGE_REPORTS',
+    'PAGE_STORE_CONFIG',
+    'PAGE_USER_MANAGEMENT',
+    'PAGE_DASHBOARD_VIEW'
+  ],
+  'companyadmin': [
     'PAGE_SHOP_DASHBOARD',
     'PAGE_POS',
     'PAGE_PRODUCTS',
@@ -136,6 +161,14 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_REPORTS',
     'PAGE_DASHBOARD_VIEW'
   ],
+  'companymanager': [
+    'PAGE_SHOP_DASHBOARD',
+    'PAGE_POS',
+    'PAGE_PRODUCTS',
+    'PAGE_CATEGORIES',
+    'PAGE_REPORTS',
+    'PAGE_DASHBOARD_VIEW'
+  ],
   'MANAGER': [
     'PAGE_SHOP_DASHBOARD',
     'PAGE_POS',
@@ -145,6 +178,11 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_DASHBOARD_VIEW'
   ],
   'SALES_STAFF': [
+    'PAGE_SHOP_DASHBOARD',
+    'PAGE_POS',
+    'PAGE_DASHBOARD_VIEW'
+  ],
+  'salesstaff': [
     'PAGE_SHOP_DASHBOARD',
     'PAGE_POS',
     'PAGE_DASHBOARD_VIEW'

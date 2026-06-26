@@ -13,14 +13,15 @@ namespace Ecommerce.Api.Infrastructure
     {
         private readonly IHttpContextAccessor? _httpContextAccessor;
 
-        public Guid? CompanyId { get; private set; }
+        public int? CompanyId { get; private set; }
+        public int? CurrentUserId { get; private set; }
 
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options,
             IHttpContextAccessor? httpContextAccessor = null) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
-            ResolveTenantId();
+            ResolveTenantAndUser();
         }
 
         public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
@@ -40,26 +41,32 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
 
-        private void ResolveTenantId()
+        private void ResolveTenantAndUser()
         {
             if (_httpContextAccessor?.HttpContext != null)
             {
-                // Try to resolve from JWT claims
                 var claimsPrincipal = _httpContextAccessor.HttpContext.User;
+                
+                // Resolve CompanyId (Tenant)
                 var tenantClaim = claimsPrincipal?.FindFirst("company_id")?.Value;
-                if (Guid.TryParse(tenantClaim, out var tokenTenantId))
+                if (int.TryParse(tenantClaim, out var tokenTenantId))
                 {
                     CompanyId = tokenTenantId;
-                    return;
                 }
-
-                // Try to resolve from HTTP Header
-                if (_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Tenant-ID", out var headerTenant))
+                else if (_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Tenant-ID", out var headerTenant))
                 {
-                    if (Guid.TryParse(headerTenant.ToString(), out var headerTenantId))
+                    if (int.TryParse(headerTenant.ToString(), out var headerTenantId))
                     {
                         CompanyId = headerTenantId;
                     }
+                }
+
+                // Resolve UserId
+                var subClaim = claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                               ?? claimsPrincipal?.FindFirst("sub")?.Value;
+                if (int.TryParse(subClaim, out var parsedUserId))
+                {
+                    CurrentUserId = parsedUserId;
                 }
             }
         }
@@ -132,16 +139,22 @@ namespace Ecommerce.Api.Infrastructure
                 }
             }
 
-            // Global Query Filters (only filter if CompanyId context is resolved)
-            modelBuilder.Entity<User>().HasQueryFilter(u => !CompanyId.HasValue || u.CompanyId == CompanyId);
-            modelBuilder.Entity<Category>().HasQueryFilter(c => !CompanyId.HasValue || c.CompanyId == CompanyId);
-            modelBuilder.Entity<Brand>().HasQueryFilter(b => !CompanyId.HasValue || b.CompanyId == CompanyId);
-            modelBuilder.Entity<Product>().HasQueryFilter(p => !CompanyId.HasValue || p.CompanyId == CompanyId);
-            modelBuilder.Entity<Order>().HasQueryFilter(o => !CompanyId.HasValue || o.CompanyId == CompanyId);
-            modelBuilder.Entity<Payment>().HasQueryFilter(p => !CompanyId.HasValue || p.CompanyId == CompanyId);
-            modelBuilder.Entity<CompanySetting>().HasQueryFilter(cs => !CompanyId.HasValue || cs.CompanyId == CompanyId);
-            modelBuilder.Entity<AuditLog>().HasQueryFilter(a => !CompanyId.HasValue || a.CompanyId == CompanyId);
-            modelBuilder.Entity<Supplier>().HasQueryFilter(s => !CompanyId.HasValue || s.CompanyId == CompanyId);
+            // Global Query Filters (Active Tenant & Soft Delete Filters)
+            modelBuilder.Entity<User>().HasQueryFilter(u => u.IsDeleted == 0 && (!CompanyId.HasValue || u.CompanyId == CompanyId));
+            modelBuilder.Entity<Category>().HasQueryFilter(c => c.IsDeleted == 0 && (!CompanyId.HasValue || c.CompanyId == CompanyId));
+            modelBuilder.Entity<Brand>().HasQueryFilter(b => b.IsDeleted == 0 && (!CompanyId.HasValue || b.CompanyId == CompanyId));
+            modelBuilder.Entity<Product>().HasQueryFilter(p => p.IsDeleted == 0 && (!CompanyId.HasValue || p.CompanyId == CompanyId));
+            modelBuilder.Entity<Order>().HasQueryFilter(o => o.IsDeleted == 0 && (!CompanyId.HasValue || o.CompanyId == CompanyId));
+            modelBuilder.Entity<Payment>().HasQueryFilter(p => p.IsDeleted == 0 && (!CompanyId.HasValue || p.CompanyId == CompanyId));
+            modelBuilder.Entity<CompanySetting>().HasQueryFilter(cs => cs.IsDeleted == 0 && (!CompanyId.HasValue || cs.CompanyId == CompanyId));
+            modelBuilder.Entity<AuditLog>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
+            modelBuilder.Entity<Supplier>().HasQueryFilter(s => s.IsDeleted == 0 && (!CompanyId.HasValue || s.CompanyId == CompanyId));
+            modelBuilder.Entity<Company>().HasQueryFilter(c => c.IsDeleted == 0);
+            modelBuilder.Entity<SubscriptionPlan>().HasQueryFilter(sp => sp.IsDeleted == 0);
+            modelBuilder.Entity<Role>().HasQueryFilter(r => r.IsDeleted == 0);
+            modelBuilder.Entity<Permission>().HasQueryFilter(p => p.IsDeleted == 0);
+            modelBuilder.Entity<UserRole>().HasQueryFilter(ur => ur.IsDeleted == 0);
+            modelBuilder.Entity<RolePermission>().HasQueryFilter(rp => rp.IsDeleted == 0);
 
             // Seed SeedData
             SeedInitialData(modelBuilder);
@@ -152,52 +165,52 @@ namespace Ecommerce.Api.Infrastructure
             var staticDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             // Seed Subscription Plans
-            var basicPlanId = new Guid("11111111-1111-1111-1111-111111111111");
-            var premiumPlanId = new Guid("22222222-2222-2222-2222-222222222222");
+            var basicPlanId = 1;
+            var premiumPlanId = 2;
 
             modelBuilder.Entity<SubscriptionPlan>().HasData(
-                new SubscriptionPlan { Id = basicPlanId, Name = "Basic Plan", Price = 1500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 200, \"pos_enabled\": true, \"ecommerce_enabled\": true}", CreatedAt = staticDate, UpdatedAt = staticDate },
-                new SubscriptionPlan { Id = premiumPlanId, Name = "Premium Plan", Price = 3500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 5000, \"pos_enabled\": true, \"ecommerce_enabled\": true, \"multi_staff\": true}", CreatedAt = staticDate, UpdatedAt = staticDate }
+                new SubscriptionPlan { Id = basicPlanId, Name = "Basic Plan", Price = 1500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 200, \"pos_enabled\": true, \"ecommerce_enabled\": true}", CreatedDate = staticDate, UpdatedDate = staticDate },
+                new SubscriptionPlan { Id = premiumPlanId, Name = "Premium Plan", Price = 3500.00m, BillingCycle = "monthly", Features = "{\"max_products\": 5000, \"pos_enabled\": true, \"ecommerce_enabled\": true, \"multi_staff\": true}", CreatedDate = staticDate, UpdatedDate = staticDate }
             );
 
             // Seed Roles
-            var superAdminRoleId = new Guid("33333333-3333-3333-3333-333333333333");
-            var companyAdminRoleId = new Guid("44444444-4444-4444-4444-444444444444");
-            var companyManagerRoleId = new Guid("55555555-5555-5555-5555-555555555555");
-            var salesStaffRoleId = new Guid("66666666-6666-6666-6666-666666666666");
-            var customerRoleId = new Guid("77777777-7777-7777-7777-777777777777");
+            var superAdminRoleId = 1;
+            var companyAdminRoleId = 2;
+            var companyManagerRoleId = 3;
+            var salesStaffRoleId = 4;
+            var customerRoleId = 5;
 
             modelBuilder.Entity<Role>().HasData(
-                new Role { Id = superAdminRoleId, Name = "SUPER_ADMIN", Description = "Platform Owner", CreatedAt = staticDate },
-                new Role { Id = companyAdminRoleId, Name = "COMPANY_ADMIN", Description = "Company Owner", CreatedAt = staticDate },
-                new Role { Id = companyManagerRoleId, Name = "COMPANY_MANAGER", Description = "Store Manager", CreatedAt = staticDate },
-                new Role { Id = salesStaffRoleId, Name = "SALES_STAFF", Description = "POS Checkout Operator", CreatedAt = staticDate },
-                new Role { Id = customerRoleId, Name = "CUSTOMER", Description = "Public Customer", CreatedAt = staticDate }
+                new Role { Id = superAdminRoleId, Name = "superadmin", Value = "Super Admin", Description = "Platform Owner", CreatedDate = staticDate },
+                new Role { Id = companyAdminRoleId, Name = "companyadmin", Value = "Company Admin", Description = "Company Owner", CreatedDate = staticDate },
+                new Role { Id = companyManagerRoleId, Name = "companymanager", Value = "Company Manager", Description = "Store Manager", CreatedDate = staticDate },
+                new Role { Id = salesStaffRoleId, Name = "salesstaff", Value = "Sales Staff", Description = "POS Checkout Operator", CreatedDate = staticDate },
+                new Role { Id = customerRoleId, Name = "customer", Value = "Customer", Description = "Public Customer", CreatedDate = staticDate }
             );
 
             // Seed Permissions
-            var diagPermId = new Guid("a1111111-1111-1111-1111-111111111111");
-            var compPermId = new Guid("a2222222-2222-2222-2222-222222222222");
-            var subsPermId = new Guid("a3333333-3333-3333-3333-333333333333");
-            var settPermId = new Guid("a4444444-4444-4444-4444-444444444444");
-            var staffPermId = new Guid("a5555555-5555-5555-5555-555555555555");
-            var invPermId = new Guid("a6666666-6666-6666-6666-666666666666");
-            var posPermId = new Guid("a7777777-7777-7777-7777-777777777777");
-            var repFullPermId = new Guid("a8888888-8888-8888-8888-888888888888");
-            var repOpPermId = new Guid("a9999999-9999-9999-9999-999999999999");
-            var buyPermId = new Guid("a0000000-0000-0000-0000-000000000000"); // Customer perm
+            var diagPermId = 1;
+            var compPermId = 2;
+            var subsPermId = 3;
+            var settPermId = 4;
+            var staffPermId = 5;
+            var invPermId = 6;
+            var posPermId = 7;
+            var repFullPermId = 8;
+            var repOpPermId = 9;
+            var buyPermId = 10;
 
             modelBuilder.Entity<Permission>().HasData(
-                new Permission { Id = diagPermId, Name = "platform:diagnostics", Description = "Access SaaS metrics and platform logs", CreatedAt = staticDate },
-                new Permission { Id = compPermId, Name = "manage:companies", Description = "Add, suspend, or upgrade tenant companies", CreatedAt = staticDate },
-                new Permission { Id = subsPermId, Name = "manage:subscriptions", Description = "Configure billing plans", CreatedAt = staticDate },
-                new Permission { Id = settPermId, Name = "company:settings", Description = "Update company-wide configuration", CreatedAt = staticDate },
-                new Permission { Id = staffPermId, Name = "manage:staff", Description = "Create/deactivate managers and checkout staff", CreatedAt = staticDate },
-                new Permission { Id = invPermId, Name = "manage:inventory", Description = "Create products and trigger barcode generation", CreatedAt = staticDate },
-                new Permission { Id = posPermId, Name = "pos:checkout", Description = "Scan barcodes and complete POS checkout", CreatedAt = staticDate },
-                new Permission { Id = repFullPermId, Name = "reports:full", Description = "Access full company financial and inventory audits", CreatedAt = staticDate },
-                new Permission { Id = repOpPermId, Name = "reports:operational", Description = "Access daily operational reports", CreatedAt = staticDate },
-                new Permission { Id = buyPermId, Name = "store:buy", Description = "Purchase products online", CreatedAt = staticDate }
+                new Permission { Id = diagPermId, Name = "platform:diagnostics", Description = "Access SaaS metrics and platform logs", CreatedDate = staticDate },
+                new Permission { Id = compPermId, Name = "manage:companies", Description = "Add, suspend, or upgrade tenant companies", CreatedDate = staticDate },
+                new Permission { Id = subsPermId, Name = "manage:subscriptions", Description = "Configure billing plans", CreatedDate = staticDate },
+                new Permission { Id = settPermId, Name = "company:settings", Description = "Update company-wide configuration", CreatedDate = staticDate },
+                new Permission { Id = staffPermId, Name = "manage:staff", Description = "Create/deactivate managers and checkout staff", CreatedDate = staticDate },
+                new Permission { Id = invPermId, Name = "manage:inventory", Description = "Create products and trigger barcode generation", CreatedDate = staticDate },
+                new Permission { Id = posPermId, Name = "pos:checkout", Description = "Scan barcodes and complete POS checkout", CreatedDate = staticDate },
+                new Permission { Id = repFullPermId, Name = "reports:full", Description = "Access full company financial and inventory audits", CreatedDate = staticDate },
+                new Permission { Id = repOpPermId, Name = "reports:operational", Description = "Access daily operational reports", CreatedDate = staticDate },
+                new Permission { Id = buyPermId, Name = "store:buy", Description = "Purchase products online", CreatedDate = staticDate }
             );
 
             // Role-Permissions Map
@@ -222,9 +235,23 @@ namespace Ecommerce.Api.Infrastructure
                 new RolePermission { RoleId = customerRoleId, PermissionId = buyPermId }
             );
 
-            // Seed Demo Company
-            var demoCompanyId = new Guid("b1111111-1111-1111-1111-111111111111");
+            // Seed Companies
+            var zwCompanyId = 1;
+            var demoCompanyId = 2;
             modelBuilder.Entity<Company>().HasData(
+                new Company
+                {
+                    Id = zwCompanyId,
+                    Name = "ZW Ecosystem",
+                    Subdomain = "zw",
+                    ContactEmail = "info@zwecosystem.com",
+                    IsActive = true,
+                    ApprovalStatus = "Approved",
+                    SubscriptionPlanId = premiumPlanId,
+                    SubscriptionExpiresAt = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedDate = staticDate,
+                    UpdatedDate = staticDate
+                },
                 new Company
                 {
                     Id = demoCompanyId,
@@ -239,14 +266,15 @@ namespace Ecommerce.Api.Infrastructure
                     ApprovalStatus = "Approved",
                     SubscriptionPlanId = premiumPlanId,
                     SubscriptionExpiresAt = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                    CreatedAt = staticDate,
-                    UpdatedAt = staticDate
+                    CreatedDate = staticDate,
+                    UpdatedDate = staticDate
                 }
             );
 
-            // Seed Super Admin User (Password is hashed: '123456' using BCrypt)
-            var superAdminUserId = new Guid("99999999-9999-9999-9999-999999999999");
-            var compAdminUserId = new Guid("88888888-8888-8888-8888-888888888888");
+            // Seed Users (Password is hashed: '123456' using BCrypt)
+            var arifUserId = 1;
+            var superAdminUserId = 2;
+            var compAdminUserId = 3;
 
             var superAdminPasswordHash = "$2b$11$f1FDqBdveY.KIotMM1fKM.OoZUEGh1tnXTAlWX6aGj3zZHsW2KCrK"; // 123456
             var passwordHash = "$2a$11$Y7M1r2zZ9n2L8T9eW5uV.uN1rT2C8O4pT5Q8aA7qT8I2kL9jH6W2S"; // admin123
@@ -254,32 +282,45 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
+                    Id = arifUserId,
+                    CompanyId = zwCompanyId,
+                    UserType = "superadmin",
+                    Email = "arif",
+                    PasswordHash = superAdminPasswordHash,
+                    FirstName = "Arif",
+                    LastName = "SystemUser",
+                    IsActive = true,
+                    CreatedDate = staticDate
+                },
+                new User
+                {
                     Id = superAdminUserId,
                     CompanyId = null, // Global
-                    UserType = "SuperAdmin",
+                    UserType = "superadmin",
                     Email = "arifsuperadmin",
                     PasswordHash = superAdminPasswordHash,
                     FirstName = "Platform",
                     LastName = "Owner",
                     IsActive = true,
-                    CreatedAt = staticDate
+                    CreatedDate = staticDate
                 },
                 new User
                 {
                     Id = compAdminUserId,
                     CompanyId = demoCompanyId, // Bound to Demo Company
-                    UserType = "CompanyUser",
+                    UserType = "companyadmin",
                     Email = "admin@zairasworld.com",
                     PasswordHash = passwordHash,
                     FirstName = "Admin",
                     LastName = "User",
                     IsActive = true,
-                    CreatedAt = staticDate
+                    CreatedDate = staticDate
                 }
             );
 
             // User-Roles Assignment
             modelBuilder.Entity<UserRole>().HasData(
+                new UserRole { UserId = arifUserId, RoleId = superAdminRoleId },
                 new UserRole { UserId = superAdminUserId, RoleId = superAdminRoleId },
                 new UserRole { UserId = compAdminUserId, RoleId = companyAdminRoleId }
             );
@@ -292,32 +333,32 @@ namespace Ecommerce.Api.Infrastructure
             );
 
             // Seed Demo Suppliers
-            var supplierApexId = new Guid("51111111-1111-1111-1111-111111111111");
-            var supplierBataId = new Guid("52222222-2222-2222-2222-222222222222");
+            var supplierApexId = 1;
+            var supplierBataId = 2;
             modelBuilder.Entity<Supplier>().HasData(
-                new Supplier { Id = supplierApexId, CompanyId = demoCompanyId, Name = "Apex Bangladesh", PhoneNumber = "01711122233", Address = "Dhaka", CreatedAt = staticDate, UpdatedAt = staticDate },
-                new Supplier { Id = supplierBataId, CompanyId = demoCompanyId, Name = "Bata Bangladesh", PhoneNumber = "01799887766", Address = "Tongi, Gazipur", CreatedAt = staticDate, UpdatedAt = staticDate }
+                new Supplier { Id = supplierApexId, CompanyId = demoCompanyId, Name = "Apex Bangladesh", PhoneNumber = "01711122233", Address = "Dhaka", CreatedDate = staticDate, UpdatedDate = staticDate },
+                new Supplier { Id = supplierBataId, CompanyId = demoCompanyId, Name = "Bata Bangladesh", PhoneNumber = "01799887766", Address = "Tongi, Gazipur", CreatedDate = staticDate, UpdatedDate = staticDate }
             );
 
             // Seed Demo Category & Brand & Product
-            var clothingCatId = new Guid("c1111111-1111-1111-1111-111111111111");
-            var babyShoesCatId = new Guid("c2222222-2222-2222-2222-222222222222");
-            var teenageShoesCatId = new Guid("c3333333-3333-3333-3333-333333333333");
-            var olderShoesCatId = new Guid("c4444444-4444-4444-4444-444444444444");
+            var clothingCatId = 1;
+            var babyShoesCatId = 2;
+            var teenageShoesCatId = 3;
+            var olderShoesCatId = 4;
 
             modelBuilder.Entity<Category>().HasData(
-                new Category { Id = clothingCatId, CompanyId = demoCompanyId, Name = "Sports Shoes", Slug = "sports-shoes", Description = "Running, tennis and sportswear shoes", Sizes = "39,40,41,42,43,44", CreatedAt = staticDate, UpdatedAt = staticDate },
-                new Category { Id = babyShoesCatId, CompanyId = demoCompanyId, Name = "Baby Shoes", Slug = "baby-shoes", Description = "Shoe sizes 1 to 6 for toddlers", Sizes = "1,2,3,4,5,6", CreatedAt = staticDate, UpdatedAt = staticDate },
-                new Category { Id = teenageShoesCatId, CompanyId = demoCompanyId, Name = "Teenage Shoes", Slug = "teenage-shoes", Description = "Shoe sizes 6 to 10 for kids & teens", Sizes = "6,7,8,9,10", CreatedAt = staticDate, UpdatedAt = staticDate },
-                new Category { Id = olderShoesCatId, CompanyId = demoCompanyId, Name = "Casual Sneakers", Slug = "casual-sneakers", Description = "Shoe sizes 39 to 45 for adults", Sizes = "39,40,41,42,43,44,45", CreatedAt = staticDate, UpdatedAt = staticDate }
+                new Category { Id = clothingCatId, CompanyId = demoCompanyId, Name = "Sports Shoes", Slug = "sports-shoes", Description = "Running, tennis and sportswear shoes", Sizes = "39,40,41,42,43,44", CreatedDate = staticDate, UpdatedDate = staticDate },
+                new Category { Id = babyShoesCatId, CompanyId = demoCompanyId, Name = "Baby Shoes", Slug = "baby-shoes", Description = "Shoe sizes 1 to 6 for toddlers", Sizes = "1,2,3,4,5,6", CreatedDate = staticDate, UpdatedDate = staticDate },
+                new Category { Id = teenageShoesCatId, CompanyId = demoCompanyId, Name = "Teenage Shoes", Slug = "teenage-shoes", Description = "Shoe sizes 6 to 10 for kids & teens", Sizes = "6,7,8,9,10", CreatedDate = staticDate, UpdatedDate = staticDate },
+                new Category { Id = olderShoesCatId, CompanyId = demoCompanyId, Name = "Casual Sneakers", Slug = "casual-sneakers", Description = "Shoe sizes 39 to 45 for adults", Sizes = "39,40,41,42,43,44,45", CreatedDate = staticDate, UpdatedDate = staticDate }
             );
 
-            var ecotexBrandId = new Guid("d1111111-1111-1111-1111-111111111111");
+            var ecotexBrandId = 1;
             modelBuilder.Entity<Brand>().HasData(
-                new Brand { Id = ecotexBrandId, CompanyId = demoCompanyId, Name = "Zaira Brand", Slug = "zaira-brand", Description = "Zaira's World Premium Shoe Selection", CreatedAt = staticDate, UpdatedAt = staticDate }
+                new Brand { Id = ecotexBrandId, CompanyId = demoCompanyId, Name = "Zaira Brand", Slug = "zaira-brand", Description = "Zaira's World Premium Shoe Selection", CreatedDate = staticDate, UpdatedDate = staticDate }
             );
 
-            var poloProductId = new Guid("f1111111-1111-1111-1111-111111111111");
+            var poloProductId = 1;
             modelBuilder.Entity<Product>().HasData(
                 new Product
                 {
@@ -336,8 +377,8 @@ namespace Ecommerce.Api.Infrastructure
                     BrandId = ecotexBrandId,
                     Size = "42",
                     ImageUrl = "/uploads/zairas_world_logo.png",
-                    CreatedAt = staticDate,
-                    UpdatedAt = staticDate
+                    CreatedDate = staticDate,
+                    UpdatedDate = staticDate
                 }
             );
         }
@@ -345,12 +386,14 @@ namespace Ecommerce.Api.Infrastructure
         public override int SaveChanges()
         {
             PopulateTenantId();
+            PopulateAuditAndSoftDeleteFields();
             return base.SaveChanges();
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             PopulateTenantId();
+            PopulateAuditAndSoftDeleteFields();
             return base.SaveChangesAsync(cancellationToken);
         }
 
@@ -363,21 +406,55 @@ namespace Ecommerce.Api.Infrastructure
                 if (entry.State == EntityState.Added)
                 {
                     var companyIdProp = entry.Entity.GetType().GetProperty("CompanyId");
-                    if (companyIdProp != null && companyIdProp.PropertyType == typeof(Guid))
+                    if (companyIdProp != null && companyIdProp.PropertyType == typeof(int))
                     {
-                        var currentVal = (Guid)companyIdProp.GetValue(entry.Entity);
-                        if (currentVal == Guid.Empty)
+                        var currentVal = (int)companyIdProp.GetValue(entry.Entity);
+                        if (currentVal == 0)
                         {
                             companyIdProp.SetValue(entry.Entity, CompanyId.Value);
                         }
                     }
-                    else if (companyIdProp != null && companyIdProp.PropertyType == typeof(Guid?))
+                    else if (companyIdProp != null && companyIdProp.PropertyType == typeof(int?))
                     {
-                        var currentVal = (Guid?)companyIdProp.GetValue(entry.Entity);
-                        if (currentVal == null || currentVal == Guid.Empty)
+                        var currentVal = (int?)companyIdProp.GetValue(entry.Entity);
+                        if (currentVal == null || currentVal == 0)
                         {
                             companyIdProp.SetValue(entry.Entity, CompanyId);
                         }
+                    }
+                }
+            }
+        }
+
+        private void PopulateAuditAndSoftDeleteFields()
+        {
+            var userId = CurrentUserId;
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                // Soft delete
+                if (entry.State == EntityState.Deleted && entry.Entity is AuditEntity auditEntityDeleted)
+                {
+                    entry.State = EntityState.Modified; // Intercept deletion and turn into modification
+                    auditEntityDeleted.DeletedDate = now;
+                    auditEntityDeleted.DeletedBy = userId;
+                    auditEntityDeleted.IsDeleted = 1;
+                }
+
+                if (entry.Entity is AuditEntity auditEntity)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        auditEntity.CreatedDate = now;
+                        auditEntity.CreatedBy = userId;
+                        auditEntity.UpdatedDate = now;
+                        auditEntity.UpdatedBy = userId;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        auditEntity.UpdatedDate = now;
+                        auditEntity.UpdatedBy = userId;
                     }
                 }
             }
