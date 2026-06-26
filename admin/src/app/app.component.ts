@@ -66,6 +66,7 @@ interface LoggedInUser {
 })
 export class AppComponent implements OnInit {
   apiUrl = environment.apiUrl;
+  private backendBaseUrl = this.apiUrl.replace(/\/api$/, '');
   
   // App View Modes
   viewMode: 'admin' | 'shop' = 'admin';
@@ -646,10 +647,7 @@ export class AppComponent implements OnInit {
   getMediaUrl(url: string | undefined): string {
     if (!url) return '';
     if (url.startsWith('/')) {
-      const backendBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5500'
-        : `http://${window.location.hostname}:5050`;
-      return `${backendBase}${url}`;
+      return `${this.backendBaseUrl}${url}`;
     }
     return url;
   }
@@ -688,7 +686,7 @@ export class AppComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
 
-    fetch(`${this.apiUrl.replace('/api', '')}/api/upload`, {
+    fetch(`${this.backendBaseUrl}/api/upload`, {
       method: 'POST',
       body: formData
     })

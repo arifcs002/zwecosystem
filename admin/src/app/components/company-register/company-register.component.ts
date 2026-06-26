@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import { RequiredErrorComponent } from '../../shared/required-error/required-error.component';
 
 @Component({
@@ -39,7 +40,7 @@ export class CompanyRegisterComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.http.post('http://localhost:5279/api/auth/register-company', this.formData).subscribe({
+    this.http.post(`${environment.apiUrl}/auth/register-company`, this.formData).subscribe({
       next: (res: any) => {
         this.loading = false;
         this.successMessage = res.message || 'Registration successful. Awaiting Super Admin approval.';
