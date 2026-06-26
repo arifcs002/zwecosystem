@@ -72,11 +72,13 @@ namespace Ecommerce.Api.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _config;
+        private readonly IFileTextLogger _fileLogger;
 
-        public AuthController(ApplicationDbContext context, IConfiguration config)
+        public AuthController(ApplicationDbContext context, IConfiguration config, IFileTextLogger fileLogger)
         {
             _context = context;
             _config = config;
+            _fileLogger = fileLogger;
         }
 
         [HttpPost("register-company")]
@@ -150,55 +152,69 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            Console.WriteLine($"[LOGIN DEBUG] Attempt for email: '{dto.Email}' under context: '{dto.LoginContext}'");
-            var user = await _context.Users
-                .IgnoreQueryFilters()
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
-
-            if (user == null)
+            try
             {
-                Console.WriteLine($"[LOGIN DEBUG] User NOT found for email: '{dto.Email}'");
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-
-            // Validate login context to prevent cross-login (Admin or Company isolation)
-            if (dto.LoginContext == "admin")
-            {
-                var userRoles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
-                if (!string.Equals(user.UserType, "superadmin", StringComparison.OrdinalIgnoreCase) &&
-                    !userRoles.Contains("superadmin"))
-                {
-                    return Unauthorized(new { message = "Only platform administrators can log in here." });
-                }
-            }
-            else if (!string.IsNullOrEmpty(dto.LoginContext))
-            {
-                var company = await _context.Companies
+                var user = await _context.Users
                     .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(c => EF.Functions.ILike(c.Subdomain, dto.LoginContext));
-                
-                if (company == null || user.CompanyId != company.Id)
+                    .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+                if (user == null)
                 {
-                    return Unauthorized(new { message = "You do not have access to this store dashboard." });
+                    _fileLogger.LogError("LOGIN", $"User not found for email '{dto.Email}' with context '{dto.LoginContext}'");
+                    return Unauthorized(new { message = "Invalid email or password" });
                 }
+
+                if (dto.LoginContext == "admin")
+                {
+                    var userRoles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
+                    if (!string.Equals(user.UserType, "superadmin", StringComparison.OrdinalIgnoreCase) &&
+                        !userRoles.Contains("superadmin"))
+                    {
+                        _fileLogger.LogError("LOGIN", $"Admin login denied for '{dto.Email}' due to role mismatch. UserType='{user.UserType}', Roles='{string.Join(",", userRoles)}'");
+                        return Unauthorized(new { message = "Only platform administrators can log in here." });
+                    }
+                }
+                else if (!string.IsNullOrEmpty(dto.LoginContext))
+                {
+                    var company = await _context.Companies
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(c => EF.Functions.ILike(c.Subdomain, dto.LoginContext));
+                    
+                    if (company == null || user.CompanyId != company.Id)
+                    {
+                        _fileLogger.LogError("LOGIN", $"Company login denied for '{dto.Email}'. Context='{dto.LoginContext}', UserCompanyId='{user.CompanyId}', MatchedCompanyId='{company?.Id}'");
+                        return Unauthorized(new { message = "You do not have access to this store dashboard." });
+                    }
+                }
+
+                bool passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+
+                if (!passwordMatch)
+                {
+                    _fileLogger.LogError("LOGIN", $"Password mismatch for '{dto.Email}' with context '{dto.LoginContext}'");
+                    return Unauthorized(new { message = "Invalid email or password" });
+                }
+
+                if (!user.IsActive)
+                {
+                    _fileLogger.LogError("LOGIN", $"Inactive account blocked for '{dto.Email}'");
+                    return BadRequest(new { message = "User account is suspended" });
+                }
+
+                var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
+                var token = GenerateJwtToken(user, roles);
+                var refreshToken = Guid.NewGuid().ToString();
+
+                _fileLogger.LogInfo("LOGIN", $"Login success for '{dto.Email}' with context '{dto.LoginContext}'");
+                return Ok(new LoginResponse(token, refreshToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
             }
-
-            bool passwordMatch = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-            Console.WriteLine($"[LOGIN DEBUG] User found. Password match: {passwordMatch} (Password entered: '{dto.Password}')");
-
-            if (!passwordMatch)
-                return Unauthorized(new { message = "Invalid email or password" });
-
-            if (!user.IsActive)
-                return BadRequest(new { message = "User account is suspended" });
-
-            var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
-            var token = GenerateJwtToken(user, roles);
-            var refreshToken = Guid.NewGuid().ToString();
-
-            return Ok(new LoginResponse(token, refreshToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
+            catch (Exception ex)
+            {
+                _fileLogger.LogError("LOGIN", $"Unhandled login exception for '{dto.Email}'", ex);
+                throw;
+            }
         }
 
         [HttpPost("forgot-password")]

@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
 
 // Configure Swagger with JWT support
 builder.Services.AddSwaggerGen(options =>
@@ -102,6 +103,24 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+var fileLogger = app.Services.GetRequiredService<IFileTextLogger>();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        fileLogger.LogError(
+            "UNHANDLED",
+            $"{context.Request.Method} {context.Request.Path} failed with status {context.Response.StatusCode}",
+            ex);
+        throw;
+    }
+});
+
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -135,6 +154,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"--> Error setting up database: {ex.Message}");
+        fileLogger.LogError("STARTUP", "Database setup failed", ex);
     }
 }
 
