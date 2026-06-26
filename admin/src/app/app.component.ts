@@ -195,8 +195,6 @@ export class AppComponent implements OnInit {
   currentProduct: any = this.getEmptyProduct();
 
   ngOnInit() {
-    this.refreshAllData();
-    this.loadPrintedStatus();
   }
 
   getHeaders() {
