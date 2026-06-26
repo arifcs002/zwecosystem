@@ -157,8 +157,7 @@ jobs:
 
             # Pull latest pre-built images and restart containers
             docker compose pull
-            docker compose down
-            docker compose up -d
+            docker compose up -d --remove-orphans
 
             # Clean up old images and source directories to keep only docker-compose and .env
             docker image prune -f
