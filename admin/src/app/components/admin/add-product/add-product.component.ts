@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { ProductService, BatchProductCreateDto, SizeQtyDto } from '../../../services/product/product.service';
+import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
   selector: 'app-add-product',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RequiredErrorComponent],
   templateUrl: './add-product.component.html',
   styleUrl: './add-product.component.css'
 })

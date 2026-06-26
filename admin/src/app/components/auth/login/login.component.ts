@@ -5,11 +5,12 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ThemeService } from '../../../services/theme/theme.service';
 import { CompanyService } from '../../../services/company/company.service';
+import { RequiredErrorComponent } from '../../../../app/shared/required-error/required-error.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RequiredErrorComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })

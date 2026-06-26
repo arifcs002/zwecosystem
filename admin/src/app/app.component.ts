@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { environment } from '../environments/environment';
+import { GlobalErrorToastComponent } from './components/global-error-toast/global-error-toast.component';
 
 interface Product {
   id: string;
@@ -58,7 +59,7 @@ interface LoggedInUser {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet],
+  imports: [CommonModule, FormsModule, RouterOutlet, GlobalErrorToastComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

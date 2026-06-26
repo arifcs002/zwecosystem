@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
+import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
   selector: 'app-supplier-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RequiredErrorComponent],
   templateUrl: './supplier-management.component.html',
   styleUrl: './supplier-management.component.css'
 })

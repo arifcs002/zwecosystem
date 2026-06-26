@@ -35,15 +35,18 @@
         <div class="space-y-4">
           <div class="form-group">
             <label>Company Name *</label>
-            <input [(ngModel)]="currentCompany.name" type="text" class="form-input" placeholder="e.g. Super Shop">
+            <input #companyNameModel="ngModel" [(ngModel)]="currentCompany.name" name="companyName" type="text" required class="form-input" placeholder="e.g. Super Shop">
+            <app-required-error [control]="companyNameModel"></app-required-error>
           </div>
           <div class="form-group">
             <label>Subdomain *</label>
-            <input [(ngModel)]="currentCompany.subdomain" type="text" class="form-input" placeholder="e.g. shop">
+            <input #companySubdomainModel="ngModel" [(ngModel)]="currentCompany.subdomain" name="companySubdomain" type="text" required class="form-input" placeholder="e.g. shop">
+            <app-required-error [control]="companySubdomainModel"></app-required-error>
           </div>
           <div class="form-group">
             <label>Company Email *</label>
-            <input [(ngModel)]="currentCompany.contactEmail" type="email" class="form-input" placeholder="admin@shop.com">
+            <input #companyEmailModel="ngModel" [(ngModel)]="currentCompany.contactEmail" name="companyEmail" type="email" required class="form-input" placeholder="admin@shop.com">
+            <app-required-error [control]="companyEmailModel"></app-required-error>
           </div>
           <div class="form-group">
             <label>Company Logo (Upload)</label>
@@ -56,23 +59,23 @@
         <div class="space-y-4">
           <div class="form-group">
             <label>Company Mobile</label>
-            <input [(ngModel)]="currentCompany.companyMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.companyMobile" name="companyMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
           <div class="form-group">
             <label>Owner Name</label>
-            <input [(ngModel)]="currentCompany.ownerName" type="text" class="form-input" placeholder="Owner Name">
+            <input [(ngModel)]="currentCompany.ownerName" name="ownerName" type="text" class="form-input" placeholder="Owner Name">
           </div>
           <div class="form-group">
             <label>Owner Mobile</label>
-            <input [(ngModel)]="currentCompany.ownerMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.ownerMobile" name="ownerMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
           <div class="form-group">
             <label>Facebook Link</label>
-            <input [(ngModel)]="currentCompany.facebookLink" type="text" class="form-input" placeholder="https://facebook.com/...">
+            <input [(ngModel)]="currentCompany.facebookLink" name="facebookLink" type="text" class="form-input" placeholder="https://facebook.com/...">
           </div>
           <div class="form-group">
             <label>Instagram Link</label>
-            <input [(ngModel)]="currentCompany.instagramLink" type="text" class="form-input" placeholder="https://instagram.com/...">
+            <input [(ngModel)]="currentCompany.instagramLink" name="instagramLink" type="text" class="form-input" placeholder="https://instagram.com/...">
           </div>
           
           <div class="pt-4 border-t border-white/10">
@@ -108,21 +111,21 @@
         <div class="space-y-4">
           <div class="form-group">
             <label>Division</label>
-            <select [(ngModel)]="currentCompany.division" (change)="onDivisionChange()" class="form-input">
+            <select [(ngModel)]="currentCompany.division" name="division" (change)="onDivisionChange()" class="form-input">
               <option value="">Select Division</option>
               <option *ngFor="let div of divisions" [value]="div">{{ div }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>District</label>
-            <select [(ngModel)]="currentCompany.district" (change)="onDistrictChange()" class="form-input" [disabled]="!currentCompany.division">
+            <select [(ngModel)]="currentCompany.district" name="district" (change)="onDistrictChange()" class="form-input" [disabled]="!currentCompany.division">
               <option value="">Select District</option>
               <option *ngFor="let dist of availableDistricts" [value]="dist">{{ dist }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Thana / Upazila</label>
-            <select [(ngModel)]="currentCompany.thana" class="form-input" [disabled]="!currentCompany.district">
+            <select [(ngModel)]="currentCompany.thana" name="thana" class="form-input" [disabled]="!currentCompany.district">
               <option value="">Select Thana</option>
               <option *ngFor="let th of availableThanas" [value]="th">{{ th }}</option>
             </select>
@@ -131,7 +134,7 @@
         <div class="space-y-4">
           <div class="form-group">
             <label>Detailed Address</label>
-            <textarea [(ngModel)]="currentCompany.address" rows="5" class="form-input" placeholder="House no, Road no, Area..."></textarea>
+            <textarea [(ngModel)]="currentCompany.address" name="address" rows="5" class="form-input" placeholder="House no, Road no, Area..."></textarea>
           </div>
         </div>
       </div>
@@ -142,18 +145,18 @@
           <h4 class="font-bold text-violet-400 mb-2 border-b border-white/10 pb-1">Mobile Banking</h4>
           <div class="form-group">
             <label>bKash Number</label>
-            <input [(ngModel)]="currentCompany.bkashNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.bkashNumber" name="bkashNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
           <div class="form-group">
             <label>Nagad Number</label>
-            <input [(ngModel)]="currentCompany.nagadNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.nagadNumber" name="nagadNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
         </div>
         <div class="space-y-4">
           <h4 class="font-bold text-violet-400 mb-2 border-b border-white/10 pb-1">Bank Account</h4>
           <div class="form-group">
             <label>Bank Name</label>
-            <input [(ngModel)]="currentCompany.bankName" type="text" class="form-input" placeholder="e.g. City Bank">
+            <input [(ngModel)]="currentCompany.bankName" name="bankName" type="text" class="form-input" placeholder="e.g. City Bank">
           </div>
         </div>
       </div>

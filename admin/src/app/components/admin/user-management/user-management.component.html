@@ -54,31 +54,31 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>User Info</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th class="text-right">Actions</th>
+          <th class="text-center align-middle">User Info</th>
+          <th class="text-center align-middle">Role</th>
+          <th class="text-center align-middle">Status</th>
+          <th class="text-center align-middle">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let user of filteredUsers">
-          <td>
+          <td class="text-center align-middle">
             <div class="font-semibold text-gray-200">{{ user.firstName }} {{ user.lastName }}</div>
+            <div class="text-xs text-gray-500">{{ user.email }}</div>
+            <div class="text-xs text-gray-500">{{ user.phoneNumber || '—' }}</div>
           </td>
-          <td>
-            <div class="text-gray-300 font-medium">{{ user.email }}</div>
-            <div class="text-xs text-gray-500">{{ user.phoneNumber }}</div>
-          </td>
-          <td>
+          <td class="text-center align-middle">
             <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
               {{ getRoleDisplay(user.roles?.[0] || user.role) }}
             </span>
-            <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="ml-2 text-xs px-2.5 py-1 rounded-full font-semibold border">
+          </td>
+          <td class="text-center align-middle">
+            <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="text-xs px-2.5 py-1 rounded-full font-semibold border">
               {{ user.isActive ? 'Active' : 'Inactive' }}
             </span>
           </td>
-          <td>
-            <div class="flex justify-end gap-2">
+          <td class="text-center align-middle">
+            <div class="flex justify-center gap-2 flex-wrap">
               <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
                 {{ user.isActive ? 'Deactivate' : 'Activate' }}
               </button>

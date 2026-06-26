@@ -353,12 +353,29 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] string? search)
         {
-            var companyId = _context.CompanyId;
-            var items = await _context.Products
-                .FromSqlRaw("SELECT * FROM fn_get_products({0}, {1})", companyId, search ?? "")
+            var query = _context.Products
+                .IgnoreQueryFilters()
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.Supplier)
+                .AsQueryable();
+
+            if (_context.CompanyId.HasValue)
+            {
+                query = query.Where(p => p.CompanyId == _context.CompanyId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(term) ||
+                    p.Sku.ToLower().Contains(term) ||
+                    p.Barcode.ToLower().Contains(term));
+            }
+
+            var items = await query
+                .OrderByDescending(p => p.CreatedDate)
                 .ToListAsync();
 
             return Ok(items);
@@ -749,9 +766,20 @@ namespace Ecommerce.Api.Controllers
             var isSuperAdmin = User.IsInRole("superadmin");
             var companyId = _context.CompanyId;
 
-            var rawUsers = isSuperAdmin
-                ? await _context.Users.FromSqlRaw("SELECT * FROM fn_get_users({0})", (int?)null).IgnoreQueryFilters().Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToListAsync()
-                : await _context.Users.FromSqlRaw("SELECT * FROM fn_get_users({0})", companyId).Include(u => u.UserRoles).ThenInclude(ur => ur.Role).ToListAsync();
+            var query = _context.Users
+                .IgnoreQueryFilters()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .AsQueryable();
+
+            if (!isSuperAdmin && companyId.HasValue)
+            {
+                query = query.Where(u => u.CompanyId == companyId);
+            }
+
+            var rawUsers = await query
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
 
             var list = rawUsers.Select(u => new {
                 u.Id,
@@ -939,7 +967,15 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> GetSuppliers()
         {
             var companyId = _context.CompanyId;
-            var suppliers = await _context.Suppliers
+            var query = _context.Suppliers
+                .IgnoreQueryFilters()
+                .AsQueryable();
+
+            if (companyId.HasValue)
+                query = query.Where(s => s.CompanyId == companyId.Value);
+
+            var suppliers = await query
+                .OrderByDescending(s => s.CreatedDate)
                 .Select(s => new
                 {
                     id = s.Id,
@@ -993,7 +1029,15 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> GetCategories()
         {
             var companyId = _context.CompanyId;
-            var categories = await _context.Categories
+            var query = _context.Categories
+                .IgnoreQueryFilters()
+                .AsQueryable();
+
+            if (companyId.HasValue)
+                query = query.Where(c => c.CompanyId == companyId.Value);
+
+            var categories = await query
+                .OrderBy(c => c.Name)
                 .Select(c => new
                 {
                     id = c.Id,
@@ -1047,10 +1091,50 @@ namespace Ecommerce.Api.Controllers
             _context = context;
         }
 
+        internal static string? NormalizeStringForColumn(string? value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var normalized = value.Trim();
+            return normalized.Length > maxLength ? normalized[..maxLength] : normalized;
+        }
+
+        internal static string NormalizeRequiredStringForColumn(string? value, int maxLength)
+        {
+            var normalized = value?.Trim() ?? string.Empty;
+            return normalized.Length > maxLength ? normalized[..maxLength] : normalized;
+        }
+
+        private static void NormalizeCompanyPayload(Company company)
+        {
+            company.Name = NormalizeRequiredStringForColumn(company.Name, 255);
+            company.Subdomain = NormalizeRequiredStringForColumn(company.Subdomain, 100).ToLowerInvariant();
+            company.ContactEmail = NormalizeStringForColumn(company.ContactEmail, 255);
+            company.ContactPhone = NormalizeStringForColumn(company.ContactPhone, 50);
+            company.OwnerName = NormalizeStringForColumn(company.OwnerName, 255);
+            company.OwnerMobile = NormalizeStringForColumn(company.OwnerMobile, 50);
+            company.CompanyMobile = NormalizeStringForColumn(company.CompanyMobile, 50);
+            company.Division = NormalizeStringForColumn(company.Division, 100);
+            company.District = NormalizeStringForColumn(company.District, 100);
+            company.Thana = NormalizeStringForColumn(company.Thana, 100);
+            company.Address = string.IsNullOrWhiteSpace(company.Address) ? null : company.Address.Trim();
+            company.FacebookLink = NormalizeStringForColumn(company.FacebookLink, 500);
+            company.InstagramLink = NormalizeStringForColumn(company.InstagramLink, 500);
+            company.BkashNumber = NormalizeStringForColumn(company.BkashNumber, 50);
+            company.NagadNumber = NormalizeStringForColumn(company.NagadNumber, 50);
+            company.BankName = NormalizeStringForColumn(company.BankName, 255);
+            company.BankAccountName = NormalizeStringForColumn(company.BankAccountName, 255);
+            company.LogoUrl = NormalizeStringForColumn(company.LogoUrl, 500);
+            company.BannerUrl = NormalizeStringForColumn(company.BannerUrl, 500);
+            company.ApprovalStatus = NormalizeStringForColumn(company.ApprovalStatus, 50) ?? "Pending";
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
             var companies = await _context.Companies
+                .IgnoreQueryFilters()
                 .Select(c => new
                 {
                     id = c.Id,
@@ -1076,11 +1160,42 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] Company company)
         {
+            if (company == null)
+                return BadRequest(new { message = "Company payload is required." });
+
+            NormalizeCompanyPayload(company);
+
+            if (string.IsNullOrWhiteSpace(company.Name))
+                return BadRequest(new { message = "Company name is required." });
+
+            if (string.IsNullOrWhiteSpace(company.Subdomain))
+                return BadRequest(new { message = "Company subdomain is required." });
+
+            if (await _context.Companies.AnyAsync(c => c.Subdomain == company.Subdomain))
+                return Conflict(new { message = $"Subdomain '{company.Subdomain}' is already taken." });
+
             company.CreatedDate = DateTime.UtcNow;
             company.UpdatedDate = DateTime.UtcNow;
+            company.IsActive = true;
+            if (string.IsNullOrWhiteSpace(company.ApprovalStatus))
+                company.ApprovalStatus = "Pending";
+
             _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
-            return Ok(company);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(company);
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"[COMPANY CREATE ERROR] {ex.GetBaseException().Message}");
+                return BadRequest(new
+                {
+                    message = "Failed to create company.",
+                    detail = ex.GetBaseException().Message
+                });
+            }
         }
 
         [HttpPut("{id}")]
@@ -1098,17 +1213,57 @@ namespace Ecommerce.Api.Controllers
                     return Forbid();
                 }
             }
+            if (targetCompany == null)
+                return NotFound();
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "CALL sp_update_company({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20})",
-                id, updateDto.Name, updateDto.Subdomain, updateDto.ContactEmail ?? "", updateDto.CompanyMobile ?? "",
-                updateDto.OwnerName ?? "", updateDto.OwnerMobile ?? "", updateDto.Division ?? "", updateDto.District ?? "",
-                updateDto.Thana ?? "", updateDto.Address ?? "", updateDto.FacebookLink ?? "", updateDto.InstagramLink ?? "",
-                updateDto.BkashNumber ?? "", updateDto.NagadNumber ?? "", updateDto.BankName ?? "", updateDto.BankAccountName ?? "",
-                updateDto.IsActive, updateDto.ApprovalStatus, updateDto.LogoUrl ?? "", _context.CurrentUserId);
+            NormalizeCompanyPayload(updateDto);
 
-            var company = await _context.Companies.FindAsync(id);
-            return Ok(company);
+            var normalizedSubdomain = updateDto.Subdomain ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(updateDto.Name))
+                return BadRequest(new { message = "Company name is required." });
+
+            if (string.IsNullOrWhiteSpace(normalizedSubdomain))
+                return BadRequest(new { message = "Company subdomain is required." });
+
+            if (await _context.Companies.AnyAsync(c => c.Id != id && c.Subdomain == normalizedSubdomain))
+                return Conflict(new { message = $"Subdomain '{normalizedSubdomain}' is already taken." });
+
+            targetCompany.Name = updateDto.Name;
+            targetCompany.Subdomain = normalizedSubdomain;
+            targetCompany.ContactEmail = updateDto.ContactEmail;
+            targetCompany.ContactPhone = updateDto.ContactPhone;
+            targetCompany.OwnerName = updateDto.OwnerName;
+            targetCompany.OwnerMobile = updateDto.OwnerMobile;
+            targetCompany.CompanyMobile = updateDto.CompanyMobile;
+            targetCompany.Division = updateDto.Division;
+            targetCompany.District = updateDto.District;
+            targetCompany.Thana = updateDto.Thana;
+            targetCompany.Address = updateDto.Address;
+            targetCompany.FacebookLink = updateDto.FacebookLink;
+            targetCompany.InstagramLink = updateDto.InstagramLink;
+            targetCompany.BkashNumber = updateDto.BkashNumber;
+            targetCompany.NagadNumber = updateDto.NagadNumber;
+            targetCompany.BankName = updateDto.BankName;
+            targetCompany.BankAccountName = updateDto.BankAccountName;
+            targetCompany.IsActive = updateDto.IsActive;
+            targetCompany.ApprovalStatus = string.IsNullOrWhiteSpace(updateDto.ApprovalStatus) ? targetCompany.ApprovalStatus : updateDto.ApprovalStatus;
+            targetCompany.LogoUrl = string.IsNullOrWhiteSpace(updateDto.LogoUrl) ? targetCompany.LogoUrl : updateDto.LogoUrl;
+            targetCompany.UpdatedDate = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(targetCompany);
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"[COMPANY UPDATE ERROR] {ex.GetBaseException().Message}");
+                return BadRequest(new
+                {
+                    message = "Failed to update company.",
+                    detail = ex.GetBaseException().Message
+                });
+            }
         }
     }
 
@@ -1339,11 +1494,21 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> GetOrders()
         {
             var companyId = _context.CompanyId;
-            var orders = await _context.Orders
-                .FromSqlRaw("SELECT * FROM fn_get_orders({0})", companyId)
+            var query = _context.Orders
+                .IgnoreQueryFilters()
                 .Include(o => o.Items)
                 .ThenInclude(oi => oi.Product)
+                .AsQueryable();
+
+            if (companyId.HasValue)
+            {
+                query = query.Where(o => o.CompanyId == companyId.Value);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.CreatedDate)
                 .ToListAsync();
+
             return Ok(orders);
         }
 

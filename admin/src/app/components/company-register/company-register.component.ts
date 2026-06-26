@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
+import { RequiredErrorComponent } from '../../shared/required-error/required-error.component';
 
 @Component({
   selector: 'app-company-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, RequiredErrorComponent],
   templateUrl: './company-register.component.html'
 })
 export class CompanyRegisterComponent {

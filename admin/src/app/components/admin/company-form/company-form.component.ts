@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CompanyService, Company } from '../../../services/company/company.service';
+import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
   selector: 'app-company-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RequiredErrorComponent],
   templateUrl: './company-form.component.html',
   styleUrl: './company-form.component.css'
 })

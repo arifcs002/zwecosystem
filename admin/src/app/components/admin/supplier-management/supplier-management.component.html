@@ -59,15 +59,16 @@
         <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
         <div class="form-group">
           <label>Supplier Name *</label>
-          <input type="text" [(ngModel)]="currentSupplier.name" class="form-input" placeholder="Enter supplier name" />
+          <input #supplierNameModel="ngModel" type="text" [(ngModel)]="currentSupplier.name" name="supplierName" required class="form-input" placeholder="Enter supplier name" />
+          <app-required-error [control]="supplierNameModel"></app-required-error>
         </div>
         <div class="form-group">
           <label>Phone Number</label>
-          <input type="text" [(ngModel)]="currentSupplier.phoneNumber" class="form-input" placeholder="01XXXXXXXXX" />
+          <input type="text" [(ngModel)]="currentSupplier.phoneNumber" name="supplierPhone" class="form-input" placeholder="01XXXXXXXXX" />
         </div>
         <div class="form-group">
           <label>Address</label>
-          <textarea [(ngModel)]="currentSupplier.address" class="form-input" rows="3" placeholder="Full address"></textarea>
+          <textarea [(ngModel)]="currentSupplier.address" name="supplierAddress" class="form-input" rows="3" placeholder="Full address"></textarea>
         </div>
       </div>
       <div class="modal-footer">
