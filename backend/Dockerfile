@@ -14,6 +14,7 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build-env /app/out .
+COPY --from=build-env /app/StoredProcedures ./StoredProcedures
 
 # Expose port
 EXPOSE 8080

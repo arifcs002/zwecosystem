@@ -26,7 +26,7 @@ namespace Ecommerce.Api.Controllers
         {
             var companyId = _context.CompanyId;
             var result = await _context.Database
-                .SqlQueryRaw<dynamic>("SELECT * FROM sp_lookup_product({0},{1})", barcode, companyId)
+                .SqlQueryRaw<ProductLookupVm>("SELECT * FROM sp_lookup_product({0},{1})", barcode, companyId)
                 .ToListAsync();
 
             if (!result.Any()) return NotFound(new { message = "Product not found for the scanned barcode" });

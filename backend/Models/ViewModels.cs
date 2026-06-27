@@ -142,4 +142,28 @@ namespace Ecommerce.Api.Models
         public string?  SaleType      { get; set; }
         public DateTime CreatedDate   { get; set; }
     }
+
+    // ── Settings ────────────────────────────────────────────
+    public class SettingVm
+    {
+        public int     id        { get; set; }
+        public int     companyId { get; set; }
+        public string  key       { get; set; } = string.Empty;
+        public string  value     { get; set; } = string.Empty;
+        public string? groupName { get; set; }
+    }
+
+    // ── POS Product Lookup ───────────────────────────────────
+    public class ProductLookupVm
+    {
+        public int     id            { get; set; }
+        public string  name          { get; set; } = string.Empty;
+        public string  barcode       { get; set; } = string.Empty;
+        public string  sku           { get; set; } = string.Empty;
+        public decimal price         { get; set; }
+        public decimal wholesalePrice { get; set; }
+        public int     stockQuantity { get; set; }
+        public string? imageUrl      { get; set; }
+        public string? categoryName  { get; set; }
+    }
 }

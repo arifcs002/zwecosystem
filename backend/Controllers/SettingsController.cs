@@ -28,7 +28,7 @@ namespace Ecommerce.Api.Controllers
             if (!companyId.HasValue) return BadRequest("Company context is required.");
 
             var settings = await _context.Database
-                .SqlQueryRaw<dynamic>("SELECT * FROM sp_get_settings({0})", companyId.Value)
+                .SqlQueryRaw<SettingVm>("SELECT * FROM sp_get_settings({0})", companyId.Value)
                 .ToListAsync();
             return Ok(settings);
         }
