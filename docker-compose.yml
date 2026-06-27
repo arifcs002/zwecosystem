@@ -47,6 +47,8 @@ services:
       - SmtpSettings__FromAddress=${SMTP_FROM:-noreply@zwecosystem.com}
       - SmtpSettings__FromName=ZW Ecosystem
       - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - /data/apps/textlog:/data/apps/textlog
     depends_on:
       postgres:
         condition: service_healthy
