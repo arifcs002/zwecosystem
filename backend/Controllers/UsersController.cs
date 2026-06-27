@@ -20,6 +20,30 @@ namespace Ecommerce.Api.Controllers
             _fileLogger = fileLogger;
         }
 
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetUser(int id)
+        {
+            var isSuperAdmin = User.IsInRole("superadmin");
+            var companyId    = _context.CompanyId;
+
+            var user = isSuperAdmin
+                ? await _context.Users.IgnoreQueryFilters()
+                    .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Id == id)
+                : await _context.Users
+                    .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null) return NotFound();
+            if (!isSuperAdmin && user.CompanyId != companyId) return Forbid();
+
+            return Ok(new {
+                user.Id, user.Email, user.FirstName, user.LastName,
+                user.PhoneNumber, user.IsActive, user.CompanyId,
+                Roles = user.UserRoles.Where(ur => ur.IsDeleted == 0).Select(ur => ur.Role!.Name).ToList()
+            });
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {

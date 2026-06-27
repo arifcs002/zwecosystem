@@ -3,6 +3,44 @@
 -- Run once after DB creation. Safe to re-run (CREATE OR REPLACE).
 -- ============================================================
 
+-- Drop all existing SPs to allow signature/return-type changes
+DROP FUNCTION IF EXISTS sp_get_companies();
+DROP FUNCTION IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
+DROP PROCEDURE IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
+DROP PROCEDURE IF EXISTS sp_delete_company(INT);
+DROP FUNCTION IF EXISTS sp_toggle_company_status(INT);
+DROP FUNCTION IF EXISTS sp_get_users(INT,BOOLEAN);
+DROP FUNCTION IF EXISTS sp_get_roles();
+DROP FUNCTION IF EXISTS sp_get_suppliers(INT);
+DROP FUNCTION IF EXISTS sp_get_categories(INT);
+DROP FUNCTION IF EXISTS sp_get_orders(INT);
+DROP FUNCTION IF EXISTS sp_get_order(INT);
+DROP FUNCTION IF EXISTS sp_get_settings(INT);
+DROP PROCEDURE IF EXISTS sp_upsert_setting(INT,TEXT,TEXT,TEXT);
+DROP PROCEDURE IF EXISTS sp_update_company_profile(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL);
+DROP FUNCTION IF EXISTS sp_get_dashboard_stats(INT);
+DROP FUNCTION IF EXISTS sp_get_sales_chart(INT,INT);
+DROP FUNCTION IF EXISTS sp_get_top_products(INT,INT);
+DROP FUNCTION IF EXISTS sp_get_recent_orders(INT,INT);
+DROP FUNCTION IF EXISTS sp_lookup_product(TEXT,INT);
+DROP PROCEDURE IF EXISTS sp_generate_otp(TEXT,TEXT,TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS sp_register_company(TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,INT,INT);
+DROP FUNCTION IF EXISTS sp_create_user(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,INT,INT);
+DROP PROCEDURE IF EXISTS sp_update_user(INT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT,TEXT,INT,INT,INT);
+DROP PROCEDURE IF EXISTS sp_delete_user(INT,INT);
+DROP FUNCTION IF EXISTS sp_create_supplier(INT,TEXT,TEXT,TEXT,INT);
+DROP PROCEDURE IF EXISTS sp_update_supplier(INT,TEXT,TEXT,TEXT,INT);
+DROP PROCEDURE IF EXISTS sp_delete_supplier(INT,INT);
+DROP FUNCTION IF EXISTS sp_create_category(INT,TEXT,TEXT,TEXT,TEXT,INT);
+DROP PROCEDURE IF EXISTS sp_delete_category(INT,INT);
+DROP FUNCTION IF EXISTS sp_create_product(INT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,INT,INT,TEXT,TEXT,INT,INT);
+DROP PROCEDURE IF EXISTS sp_update_product(INT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,TEXT,INT,INT,TEXT,INT,INT);
+DROP PROCEDURE IF EXISTS sp_delete_product(INT);
+DROP PROCEDURE IF EXISTS sp_update_order_status(INT,TEXT,TEXT);
+DROP PROCEDURE IF EXISTS sp_cancel_order(INT);
+DROP FUNCTION IF EXISTS sp_checkout_order(INT,TEXT,TEXT,INT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,DECIMAL,TEXT,TEXT,INT[],INT[],DECIMAL[],INT);
+DROP FUNCTION IF EXISTS sp_verify_payment(INT,INT,TEXT,TEXT,DECIMAL,TEXT,TEXT,TEXT,TEXT);
+
 -- ── Companies ────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION sp_get_companies()
@@ -32,7 +70,8 @@ RETURNS TABLE(
     ORDER BY c.created_date DESC;
 $$;
 
-CREATE OR REPLACE FUNCTION sp_update_company(
+DROP FUNCTION IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
+CREATE OR REPLACE PROCEDURE sp_update_company(
     p_id INT, p_name TEXT, p_subdomain TEXT,
     p_contact_email TEXT, p_contact_phone TEXT,
     p_owner_name TEXT, p_owner_mobile TEXT, p_company_mobile TEXT,
@@ -42,7 +81,7 @@ CREATE OR REPLACE FUNCTION sp_update_company(
     p_bank_name TEXT, p_bank_account_name TEXT,
     p_logo_url TEXT, p_banner_url TEXT,
     p_is_active BOOLEAN, p_approval_status TEXT
-) RETURNS VOID LANGUAGE plpgsql AS $$
+) LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE companies SET
         name             = p_name,
@@ -203,7 +242,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION sp_get_settings(p_company_id INT)
 RETURNS TABLE(
-    "CompanyId" INT, "Key" TEXT, "Value" TEXT, "GroupName" TEXT
+    "companyId" INT, "key" TEXT, "value" TEXT, "groupName" TEXT
 ) LANGUAGE sql STABLE AS $$
     SELECT company_id, key, value, group_name
     FROM company_settings
@@ -333,12 +372,12 @@ CREATE OR REPLACE FUNCTION sp_get_recent_orders(p_company_id INT, p_limit INT DE
 RETURNS TABLE(
     "Id" INT, "OrderNumber" TEXT, "CustomerName" TEXT, "CustomerPhone" TEXT,
     "Total" DECIMAL, "Status" TEXT, "PaymentMethod" TEXT, "PaymentStatus" TEXT,
-    "SaleType" TEXT, "CreatedDate" TIMESTAMPTZ
+    "SaleType" TEXT, "CreatedDate" TIMESTAMPTZ, "createdAt" TIMESTAMPTZ
 ) LANGUAGE sql STABLE AS $$
     SELECT
         o.id, o.order_number, o.customer_name, o.customer_phone,
         o.total, o.status, o.payment_method, o.payment_status,
-        o.sale_type, o.created_date
+        o.sale_type, o.created_date, o.created_date
     FROM orders o
     WHERE o.company_id = p_company_id
     ORDER BY o.created_date DESC
@@ -377,5 +416,323 @@ CREATE OR REPLACE PROCEDURE sp_generate_otp(
 ) LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE users SET otp = p_otp, otp_expires_at = p_expires_at WHERE email = p_email;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sp_register_company(
+    p_company_name TEXT, p_subdomain TEXT, p_address TEXT,
+    p_division TEXT, p_district TEXT, p_thana TEXT,
+    p_owner_first_name TEXT, p_owner_last_name TEXT,
+    p_owner_email TEXT, p_owner_phone TEXT, p_password_hash TEXT,
+    p_plan_id INT, p_role_id INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE
+    v_company_id INT;
+    v_user_id INT;
+BEGIN
+    INSERT INTO companies (name, subdomain, address, division, district, thana,
+        owner_name, owner_mobile, contact_email, contact_phone,
+        is_active, approval_status, delivery_charge,
+        created_date, updated_date, is_deleted)
+    VALUES (p_company_name, lower(trim(p_subdomain)), p_address,
+        p_division, p_district, p_thana,
+        p_owner_first_name || ' ' || p_owner_last_name, p_owner_phone,
+        p_owner_email, p_owner_phone,
+        false, 'Pending', 0,
+        NOW(), NOW(), 0)
+    RETURNING id INTO v_company_id;
+
+    INSERT INTO users (company_id, email, password_hash, first_name, last_name,
+        phone_number, user_type, is_active, created_date, updated_date, is_deleted)
+    VALUES (v_company_id, p_owner_email, p_password_hash,
+        p_owner_first_name, p_owner_last_name, p_owner_phone,
+        'companyadmin', true, NOW(), NOW(), 0)
+    RETURNING id INTO v_user_id;
+
+    IF p_role_id > 0 THEN
+        INSERT INTO user_roles (user_id, role_id, created_date, updated_date, is_deleted)
+        VALUES (v_user_id, p_role_id, NOW(), NOW(), 0)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    RETURN v_company_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sp_create_user(
+    p_company_id INT, p_email TEXT, p_password_hash TEXT,
+    p_first_name TEXT, p_last_name TEXT, p_phone TEXT,
+    p_user_type TEXT, p_is_active BOOLEAN, p_role_id INT, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_user_id INT;
+BEGIN
+    INSERT INTO users (company_id, email, password_hash, first_name, last_name,
+        phone_number, user_type, is_active, created_by, created_date, updated_date, is_deleted)
+    VALUES (p_company_id, p_email, p_password_hash, p_first_name, p_last_name,
+        p_phone, p_user_type, p_is_active, p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_user_id;
+
+    IF p_role_id IS NOT NULL THEN
+        INSERT INTO user_roles (user_id, role_id, created_date, updated_date, is_deleted)
+        VALUES (v_user_id, p_role_id, NOW(), NOW(), 0)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    RETURN v_user_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_update_user(
+    p_id INT, p_email TEXT, p_first_name TEXT, p_last_name TEXT,
+    p_phone TEXT, p_is_active BOOLEAN, p_user_type TEXT,
+    p_password_hash TEXT, p_company_id INT, p_role_id INT, p_updated_by INT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE users SET
+        email         = p_email,
+        first_name    = p_first_name,
+        last_name     = p_last_name,
+        phone_number  = NULLIF(trim(p_phone), ''),
+        is_active     = p_is_active,
+        user_type     = p_user_type,
+        password_hash = COALESCE(p_password_hash, password_hash),
+        company_id    = p_company_id,
+        updated_by    = p_updated_by,
+        updated_date  = NOW()
+    WHERE id = p_id;
+
+    IF p_role_id IS NOT NULL THEN
+        UPDATE user_roles SET is_deleted = 1 WHERE user_id = p_id;
+        INSERT INTO user_roles (user_id, role_id, created_date, updated_date, is_deleted)
+        VALUES (p_id, p_role_id, NOW(), NOW(), 0)
+        ON CONFLICT DO NOTHING;
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_delete_user(p_id INT, p_deleted_by INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE users SET is_deleted = 1, deleted_date = NOW(), deleted_by = p_deleted_by WHERE id = p_id;
+    UPDATE user_roles SET is_deleted = 1 WHERE user_id = p_id;
+END;
+$$;
+
+-- ── Suppliers CRUD ───────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION sp_create_supplier(
+    p_company_id INT, p_name TEXT, p_phone TEXT, p_address TEXT, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_id INT;
+BEGIN
+    INSERT INTO suppliers (company_id, name, phone_number, address, created_by, created_date, updated_date, is_deleted)
+    VALUES (p_company_id, p_name, NULLIF(trim(p_phone),''), NULLIF(trim(p_address),''), p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_update_supplier(
+    p_id INT, p_name TEXT, p_phone TEXT, p_address TEXT, p_updated_by INT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE suppliers SET
+        name         = p_name,
+        phone_number = NULLIF(trim(p_phone), ''),
+        address      = NULLIF(trim(p_address), ''),
+        updated_by   = p_updated_by,
+        updated_date = NOW()
+    WHERE id = p_id AND is_deleted = 0;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_delete_supplier(p_id INT, p_deleted_by INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE suppliers SET is_deleted = 1, deleted_date = NOW(), deleted_by = p_deleted_by WHERE id = p_id;
+END;
+$$;
+
+-- ── Categories CRUD ──────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION sp_create_category(
+    p_company_id INT, p_name TEXT, p_slug TEXT,
+    p_description TEXT, p_sizes TEXT, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_id INT;
+BEGIN
+    INSERT INTO categories (company_id, name, slug, description, sizes, created_by, created_date, updated_date, is_deleted)
+    VALUES (p_company_id, p_name, p_slug, NULLIF(trim(p_description),''), NULLIF(trim(p_sizes),''), p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_delete_category(p_id INT, p_deleted_by INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE categories SET is_deleted = 1, deleted_date = NOW(), deleted_by = p_deleted_by WHERE id = p_id;
+END;
+$$;
+
+-- ── Products CRUD ────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION sp_create_product(
+    p_company_id INT, p_name TEXT, p_slug TEXT, p_sku TEXT, p_barcode TEXT,
+    p_description TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
+    p_stock_quantity INT, p_image_url TEXT,
+    p_category_id INT, p_brand_id INT, p_status TEXT,
+    p_size TEXT, p_supplier_id INT, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_id INT;
+BEGIN
+    INSERT INTO products (
+        company_id, name, slug, sku, barcode, description,
+        price, wholesale_price, stock_quantity, image_url,
+        category_id, brand_id, supplier_id, status, size,
+        created_by, created_date, updated_date, is_deleted)
+    VALUES (
+        p_company_id, p_name, p_slug, p_sku, p_barcode, NULLIF(trim(p_description),''),
+        p_price, p_wholesale_price, p_stock_quantity, NULLIF(trim(p_image_url),''),
+        NULLIF(p_category_id, 0), NULLIF(p_brand_id, 0), NULLIF(p_supplier_id, 0),
+        p_status, NULLIF(trim(p_size),''),
+        p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_update_product(
+    p_id INT, p_name TEXT, p_sku TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
+    p_stock_quantity INT, p_description TEXT, p_image_url TEXT,
+    p_category_id INT, p_brand_id INT, p_size TEXT, p_supplier_id INT, p_updated_by INT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE products SET
+        name            = p_name,
+        sku             = p_sku,
+        price           = p_price,
+        wholesale_price = p_wholesale_price,
+        stock_quantity  = p_stock_quantity,
+        description     = NULLIF(trim(p_description), ''),
+        image_url       = NULLIF(trim(p_image_url), ''),
+        category_id     = NULLIF(p_category_id, 0),
+        brand_id        = NULLIF(p_brand_id, 0),
+        supplier_id     = NULLIF(p_supplier_id, 0),
+        size            = NULLIF(trim(p_size), ''),
+        updated_by      = p_updated_by,
+        updated_date    = NOW()
+    WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_delete_product(p_id INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE products SET is_deleted = 1, deleted_date = NOW() WHERE id = p_id;
+END;
+$$;
+
+-- ── Orders CRUD ──────────────────────────────────────────────
+
+CREATE OR REPLACE PROCEDURE sp_update_order_status(
+    p_id INT, p_status TEXT, p_notes TEXT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE orders SET status = p_status, updated_date = NOW() WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_cancel_order(p_id INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE orders SET status = 'CANCELLED', updated_date = NOW() WHERE id = p_id;
+    -- Restore stock
+    UPDATE products p
+    SET stock_quantity = p.stock_quantity + oi.quantity
+    FROM order_items oi
+    WHERE oi.order_id = p_id AND oi.product_id = p.id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sp_checkout_order(
+    p_company_id INT, p_order_number TEXT, p_sale_type TEXT, p_cashier_id INT,
+    p_customer_name TEXT, p_customer_phone TEXT,
+    p_status TEXT, p_subtotal DECIMAL, p_discount DECIMAL, p_total DECIMAL,
+    p_payment_method TEXT, p_payment_status TEXT,
+    p_product_ids INT[], p_quantities INT[], p_prices DECIMAL[],
+    p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE
+    v_order_id INT;
+    i INT;
+BEGIN
+    INSERT INTO orders (
+        company_id, order_number, sale_type, sales_staff_id,
+        customer_name, customer_phone, status,
+        subtotal, discount, tax, shipping_fee, total,
+        payment_method, payment_status,
+        created_by, created_date, updated_date, is_deleted)
+    VALUES (
+        p_company_id, p_order_number, p_sale_type, p_cashier_id,
+        p_customer_name, p_customer_phone, p_status,
+        p_subtotal, p_discount, 0, 0, p_total,
+        p_payment_method, p_payment_status,
+        p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_order_id;
+
+    FOR i IN 1..array_length(p_product_ids, 1) LOOP
+        INSERT INTO order_items (order_id, product_id, quantity, price, total_price, created_date, updated_date, is_deleted)
+        VALUES (v_order_id, p_product_ids[i], p_quantities[i], p_prices[i],
+                p_prices[i] * p_quantities[i], NOW(), NOW(), 0);
+
+        UPDATE products SET
+            stock_quantity = stock_quantity - p_quantities[i],
+            updated_date   = NOW()
+        WHERE id = p_product_ids[i];
+    END LOOP;
+
+    RETURN v_order_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sp_verify_payment(
+    p_company_id INT, p_order_id INT, p_transaction_id TEXT,
+    p_provider TEXT, p_amount DECIMAL, p_status TEXT,
+    p_verification_type TEXT, p_sender_number TEXT, p_reference_log TEXT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_id INT;
+BEGIN
+    UPDATE orders SET payment_status = p_status, updated_date = NOW() WHERE id = p_order_id;
+
+    -- Insert into payment_logs if table exists, else just return 1
+    BEGIN
+        INSERT INTO payment_logs (
+            company_id, order_id, transaction_id, provider, amount,
+            status, verification_type, sender_number, reference_log,
+            created_date, updated_date, is_deleted)
+        VALUES (
+            p_company_id, p_order_id, p_transaction_id, p_provider, p_amount,
+            p_status, p_verification_type, p_sender_number, p_reference_log,
+            NOW(), NOW(), 0)
+        RETURNING id INTO v_id;
+    EXCEPTION WHEN undefined_table THEN
+        v_id := 1;
+    END;
+
+    RETURN COALESCE(v_id, 1);
+END;
+$$;
+
+-- ── Unique constraint for settings upsert ────────────────────
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'uq_company_settings_company_key'
+    ) THEN
+        ALTER TABLE company_settings
+        ADD CONSTRAINT uq_company_settings_company_key UNIQUE (company_id, key);
+    END IF;
 END;
 $$;

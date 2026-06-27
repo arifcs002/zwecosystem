@@ -68,7 +68,7 @@ namespace Ecommerce.Api.Controllers
 
                 var companyId = (await _context.Database.SqlQueryRaw<int>(
                     "SELECT sp_register_company({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12})",
-                    dto.CompanyName, subdomain, "", "", "", "", "",
+                    dto.CompanyName, subdomain, "", "", "", "",
                     dto.FirstName, dto.LastName, dto.Email, dto.PhoneNumber ?? "", passwordHash,
                     basicPlan?.Id ?? 0, role?.Id ?? 0
                 ).ToListAsync()).FirstOrDefault();

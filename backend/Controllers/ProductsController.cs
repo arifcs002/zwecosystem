@@ -39,8 +39,8 @@ namespace Ecommerce.Api.Controllers
                 var term = search.Trim().ToLower();
                 query = query.Where(p =>
                     p.Name.ToLower().Contains(term) ||
-                    p.Sku.ToLower().Contains(term) ||
-                    p.Barcode.ToLower().Contains(term));
+                    (p.Sku != null && p.Sku.ToLower().Contains(term)) ||
+                    (p.Barcode != null && p.Barcode.ToLower().Contains(term)));
             }
 
             var items = await query.OrderByDescending(p => p.CreatedDate).ToListAsync();

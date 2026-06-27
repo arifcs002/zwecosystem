@@ -141,12 +141,12 @@ namespace Ecommerce.Api.Models
         public string?  PaymentStatus { get; set; }
         public string?  SaleType      { get; set; }
         public DateTime CreatedDate   { get; set; }
+        public DateTime createdAt     { get; set; } // alias for Angular interface
     }
 
     // ── Settings ────────────────────────────────────────────
     public class SettingVm
     {
-        public int     id        { get; set; }
         public int     companyId { get; set; }
         public string  key       { get; set; } = string.Empty;
         public string  value     { get; set; } = string.Empty;

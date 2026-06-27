@@ -21,6 +21,19 @@ namespace Ecommerce.Api.Controllers
             _fileLogger = fileLogger;
         }
 
+        // Public endpoint for login page — returns minimal info by subdomain
+        [HttpGet("public/{subdomain}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicCompany(string subdomain)
+        {
+            var company = await _context.Companies
+                .Where(c => c.Subdomain == subdomain.ToLower() && c.IsDeleted == 0)
+                .Select(c => new { c.Id, c.Name, c.LogoUrl, c.Subdomain, c.IsActive })
+                .FirstOrDefaultAsync();
+            if (company == null) return NotFound();
+            return Ok(company);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
@@ -121,7 +134,7 @@ namespace Ecommerce.Api.Controllers
                 return Conflict(new { message = $"Subdomain '{dto.Subdomain}' is already taken." });
 
             await _context.Database.ExecuteSqlRawAsync(
-                "SELECT sp_update_company({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21})",
+                "CALL sp_update_company({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21})",
                 id, dto.Name, dto.Subdomain,
                 dto.ContactEmail ?? "", dto.ContactPhone ?? "",
                 dto.OwnerName ?? "", dto.OwnerMobile ?? "", dto.CompanyMobile ?? "",

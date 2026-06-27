@@ -47,6 +47,18 @@ namespace Ecommerce.Api.Controllers
             return Ok(created);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateSupplier(int id, [FromBody] Supplier supplier)
+        {
+            if (!await _context.Suppliers.AnyAsync(s => s.Id == id)) return NotFound();
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_supplier({0},{1},{2},{3},{4})",
+                id, supplier.Name, supplier.PhoneNumber ?? "",
+                supplier.Address ?? "", _context.CurrentUserId);
+            var updated = await _context.Suppliers.FindAsync(id);
+            return Ok(updated);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSupplier(int id)
         {
