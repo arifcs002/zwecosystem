@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CompanyService, Company } from '../../../services/company/company.service';
+import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 @Component({
   selector: 'app-company-management',
@@ -13,44 +14,53 @@ import { CompanyService, Company } from '../../../services/company/company.servi
 export class CompanyManagementComponent implements OnInit {
   private router = inject(Router);
   private companyService = inject(CompanyService);
+  private notify = inject(GlobalNotificationService);
 
   companies: Company[] = [];
+  loading = false;
+  companyToDelete: Company | null = null;
+  deleteLoading = false;
 
-  ngOnInit() {
-    this.loadCompanies();
-  }
+  get activeCount() { return this.companies.filter(c => c.isActive).length; }
+  get pendingCount() { return this.companies.filter(c => c.approvalStatus === 'Pending').length; }
+  get approvedCount() { return this.companies.filter(c => c.approvalStatus === 'Approved').length; }
+
+  ngOnInit() { this.loadCompanies(); }
 
   loadCompanies() {
+    this.loading = true;
     this.companyService.getCompanies().subscribe({
-      next: (data: any) => this.companies = data,
-      error: (err: any) => console.error(err)
+      next: (data) => { this.companies = data; this.loading = false; },
+      error: () => { this.loading = false; }
     });
   }
 
-  navigateToCreate() {
-    this.router.navigate(['/admin/company/create']);
-  }
-
-  navigateToEdit(company: Company) {
-    this.router.navigate(['/admin/company/edit', company.id]);
-  }
+  navigateToCreate() { this.router.navigate(['/admin/company/create']); }
+  navigateToEdit(company: Company) { this.router.navigate(['/admin/company/edit', company.id]); }
 
   toggleStatus(company: Company) {
-    if(confirm(`Are you sure you want to change status for ${company.name}?`)) {
-      company.isActive = !company.isActive;
-      this.companyService.updateCompany(company).subscribe({
-        next: () => this.loadCompanies(),
-        error: (err: any) => console.error(err)
-      });
-    }
+    this.companyService.toggleStatus(company.id).subscribe({
+      next: (res) => {
+        company.isActive = res.isActive;
+        this.notify.notify({ type: 'success', title: 'Status updated', message: res.message, ttlMs: 4000 });
+      },
+      error: () => {}
+    });
   }
 
-  deleteCompany(company: Company) {
-    if(confirm(`Are you sure you want to delete ${company.name}?`)) {
-      this.companyService.deleteCompany(company.id).subscribe({
-        next: () => this.loadCompanies(),
-        error: (err: any) => console.error(err)
-      });
-    }
+  confirmDelete(company: Company) { this.companyToDelete = company; }
+
+  deleteCompany() {
+    if (!this.companyToDelete) return;
+    this.deleteLoading = true;
+    this.companyService.deleteCompany(this.companyToDelete.id).subscribe({
+      next: (res) => {
+        this.companies = this.companies.filter(c => c.id !== this.companyToDelete!.id);
+        this.notify.notify({ type: 'success', title: 'Deleted', message: res.message, ttlMs: 4000 });
+        this.companyToDelete = null;
+        this.deleteLoading = false;
+      },
+      error: () => { this.deleteLoading = false; }
+    });
   }
 }

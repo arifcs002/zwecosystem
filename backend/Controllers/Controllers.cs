@@ -1207,8 +1207,8 @@ namespace Ecommerce.Api.Controllers
             company.NagadNumber = NormalizeStringForColumn(company.NagadNumber, 50);
             company.BankName = NormalizeStringForColumn(company.BankName, 255);
             company.BankAccountName = NormalizeStringForColumn(company.BankAccountName, 255);
-            company.LogoUrl = NormalizeStringForColumn(company.LogoUrl, 500);
-            company.BannerUrl = NormalizeStringForColumn(company.BannerUrl, 500);
+            company.LogoUrl = string.IsNullOrWhiteSpace(company.LogoUrl) ? null : company.LogoUrl.Trim();
+            company.BannerUrl = string.IsNullOrWhiteSpace(company.BannerUrl) ? null : company.BannerUrl.Trim();
             company.ApprovalStatus = NormalizeStringForColumn(company.ApprovalStatus, 50) ?? "Pending";
         }
 
@@ -1217,12 +1217,29 @@ namespace Ecommerce.Api.Controllers
         {
             var companies = await _context.Companies
                 .IgnoreQueryFilters()
+                .Where(c => c.IsDeleted == 0)
                 .Select(c => new
                 {
                     id = c.Id,
                     name = c.Name,
                     subdomain = c.Subdomain,
                     logoUrl = c.LogoUrl,
+                    contactEmail = c.ContactEmail,
+                    contactPhone = c.ContactPhone,
+                    companyMobile = c.CompanyMobile,
+                    ownerName = c.OwnerName,
+                    ownerMobile = c.OwnerMobile,
+                    division = c.Division,
+                    district = c.District,
+                    thana = c.Thana,
+                    address = c.Address,
+                    facebookLink = c.FacebookLink,
+                    instagramLink = c.InstagramLink,
+                    bkashNumber = c.BkashNumber,
+                    nagadNumber = c.NagadNumber,
+                    bankName = c.BankName,
+                    bankAccountName = c.BankAccountName,
+                    deliveryCharge = c.DeliveryCharge,
                     isActive = c.IsActive,
                     approvalStatus = c.ApprovalStatus,
                     createdAt = c.CreatedDate
@@ -1346,6 +1363,35 @@ namespace Ecommerce.Api.Controllers
                     detail = ex.GetBaseException().Message
                 });
             }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCompany(int id)
+        {
+            var company = await _context.Companies.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id);
+            if (company == null) return NotFound(new { message = "Company not found." });
+
+            if (string.Equals(company.Subdomain, "zw", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "The platform root company cannot be deleted." });
+
+            company.IsDeleted = 1;
+            company.DeletedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Company '{company.Name}' has been deleted." });
+        }
+
+        [HttpPatch("{id}/toggle-status")]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var company = await _context.Companies.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id);
+            if (company == null) return NotFound(new { message = "Company not found." });
+
+            company.IsActive = !company.IsActive;
+            company.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { isActive = company.IsActive, message = $"Company '{company.Name}' is now {(company.IsActive ? "active" : "inactive")}." });
         }
     }
 

@@ -1,112 +1,157 @@
 <div class="page-container max-w-5xl mx-auto">
   <div class="page-header flex justify-between items-center">
     <div>
-      <h1 class="page-title">🏢 {{ isEditMode ? 'Edit Company' : 'Create New Company' }}</h1>
+      <h1 class="page-title">{{ isEditMode ? 'Edit Company' : 'Create New Company' }}</h1>
       <p class="page-subtitle">Configure company details and settings</p>
     </div>
-    <button (click)="cancel()" class="btn-secondary py-1.5 px-3">
-      ✕ Close
-    </button>
+    <button (click)="cancel()" class="btn-secondary py-1.5 px-4 text-sm">✕ Close</button>
   </div>
 
-  <div class="bg-white/5 border border-white/10 rounded-xl p-6 md:p-8 shadow-2xl">
+  <div class="bg-white/5 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
     <!-- Tabs -->
-    <div class="flex border-b border-white/10 mb-6">
-      <button (click)="activeTab = 'basic'" 
-              [ngClass]="activeTab === 'basic' ? 'border-violet-500 text-violet-400' : 'border-transparent text-gray-400 hover:text-gray-200'" 
-              class="px-4 py-2 border-b-2 font-medium transition focus:outline-none">
+    <div class="flex border-b border-white/10 bg-white/[0.02]">
+      <button (click)="activeTab = 'basic'"
+        [ngClass]="activeTab === 'basic' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
+        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
         Basic Info
       </button>
-      <button (click)="activeTab = 'address'" 
-              [ngClass]="activeTab === 'address' ? 'border-violet-500 text-violet-400' : 'border-transparent text-gray-400 hover:text-gray-200'" 
-              class="px-4 py-2 border-b-2 font-medium transition focus:outline-none">
+      <button (click)="activeTab = 'address'"
+        [ngClass]="activeTab === 'address' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
+        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
         Address
       </button>
-      <button (click)="activeTab = 'payment'" 
-              [ngClass]="activeTab === 'payment' ? 'border-violet-500 text-violet-400' : 'border-transparent text-gray-400 hover:text-gray-200'" 
-              class="px-4 py-2 border-b-2 font-medium transition focus:outline-none">
-        Payment Information
+      <button (click)="activeTab = 'payment'"
+        [ngClass]="activeTab === 'payment' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
+        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
+        Payment Info
       </button>
     </div>
 
-    <div class="min-h-[400px]">
-      <!-- Basic Info Tab -->
+    <div class="p-6 md:p-8 min-h-[420px]">
+
+      <!-- ── Basic Info Tab ── -->
       <div *ngIf="activeTab === 'basic'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Left Column -->
         <div class="space-y-4">
           <div class="form-group">
-            <label>Company Name *</label>
-            <input #companyNameModel="ngModel" [(ngModel)]="currentCompany.name" name="companyName" type="text" required class="form-input" placeholder="e.g. Super Shop">
+            <label>Company Name <span class="text-rose-400">*</span></label>
+            <input #companyNameModel="ngModel" [(ngModel)]="currentCompany.name" name="companyName"
+              type="text" required class="form-input" placeholder="e.g. Super Shop">
             <app-required-error [control]="companyNameModel"></app-required-error>
           </div>
+
           <div class="form-group">
-            <label>Subdomain *</label>
-            <input #companySubdomainModel="ngModel" [(ngModel)]="currentCompany.subdomain" name="companySubdomain" type="text" required class="form-input" placeholder="e.g. shop">
+            <label>Subdomain <span class="text-rose-400">*</span></label>
+            <div class="flex items-center gap-0">
+              <input #companySubdomainModel="ngModel" [(ngModel)]="currentCompany.subdomain" name="companySubdomain"
+                type="text" required class="form-input rounded-r-none" placeholder="shop">
+              <span class="px-3 py-2 bg-white/5 border border-l-0 border-white/10 rounded-r-lg text-xs text-gray-500 whitespace-nowrap">.zairasworld.com</span>
+            </div>
             <app-required-error [control]="companySubdomainModel"></app-required-error>
           </div>
+
           <div class="form-group">
-            <label>Company Email *</label>
-            <input #companyEmailModel="ngModel" [(ngModel)]="currentCompany.contactEmail" name="companyEmail" type="email" required class="form-input" placeholder="admin@shop.com">
-            <app-required-error [control]="companyEmailModel"></app-required-error>
+            <label>Company Email</label>
+            <input [(ngModel)]="currentCompany.contactEmail" name="contactEmail"
+              type="email" class="form-input" placeholder="admin@shop.com">
           </div>
+
           <div class="form-group">
-            <label>Company Logo (Upload)</label>
-            <div class="mt-1 flex items-center space-x-4">
-              <img *ngIf="currentCompany.logoUrl" [src]="currentCompany.logoUrl" class="h-24 w-auto object-contain rounded border border-white/10 p-1 bg-black/20">
-              <input type="file" (change)="onLogoSelect($event)" accept="image/*" class="form-input py-1.5 text-xs">
-            </div>
+            <label>Company Phone</label>
+            <input [(ngModel)]="currentCompany.companyMobile" name="companyMobile"
+              type="text" class="form-input" placeholder="01XXXXXXXXX">
+          </div>
+
+          <div class="form-group">
+            <label>Delivery Charge (৳)</label>
+            <input [(ngModel)]="currentCompany.deliveryCharge" name="deliveryCharge"
+              type="number" min="0" class="form-input" placeholder="0">
           </div>
         </div>
+
+        <!-- Right Column -->
         <div class="space-y-4">
+
+          <!-- Logo Upload -->
           <div class="form-group">
-            <label>Company Mobile</label>
-            <input [(ngModel)]="currentCompany.companyMobile" name="companyMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <label>Company Logo</label>
+            <div class="mt-1 flex items-start gap-4">
+              <div class="flex-shrink-0 h-20 w-20 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center overflow-hidden">
+                <img *ngIf="currentCompany.logoUrl" [src]="currentCompany.logoUrl"
+                  class="h-full w-full object-contain" alt="Logo preview">
+                <svg *ngIf="!currentCompany.logoUrl" class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div class="flex-1 space-y-2">
+                <input type="file" (change)="onLogoSelect($event)" accept="image/*"
+                  class="form-input py-1.5 text-xs cursor-pointer">
+                <p class="text-[10px] text-gray-600">Max 2MB · PNG, JPG, WEBP</p>
+                <input [(ngModel)]="currentCompany.logoUrl" name="logoUrl"
+                  type="text" class="form-input text-xs" placeholder="Or paste image URL">
+              </div>
+            </div>
           </div>
+
           <div class="form-group">
             <label>Owner Name</label>
-            <input [(ngModel)]="currentCompany.ownerName" name="ownerName" type="text" class="form-input" placeholder="Owner Name">
+            <input [(ngModel)]="currentCompany.ownerName" name="ownerName"
+              type="text" class="form-input" placeholder="Full name">
           </div>
+
           <div class="form-group">
             <label>Owner Mobile</label>
-            <input [(ngModel)]="currentCompany.ownerMobile" name="ownerMobile" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.ownerMobile" name="ownerMobile"
+              type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
+
           <div class="form-group">
-            <label>Facebook Link</label>
-            <input [(ngModel)]="currentCompany.facebookLink" name="facebookLink" type="text" class="form-input" placeholder="https://facebook.com/...">
+            <label>Facebook Page</label>
+            <input [(ngModel)]="currentCompany.facebookLink" name="facebookLink"
+              type="url" class="form-input" placeholder="https://facebook.com/...">
           </div>
+
           <div class="form-group">
-            <label>Instagram Link</label>
-            <input [(ngModel)]="currentCompany.instagramLink" name="instagramLink" type="text" class="form-input" placeholder="https://instagram.com/...">
+            <label>Instagram</label>
+            <input [(ngModel)]="currentCompany.instagramLink" name="instagramLink"
+              type="url" class="form-input" placeholder="https://instagram.com/...">
           </div>
-          
-          <div class="pt-4 border-t border-white/10">
-            <label class="block text-sm font-semibold text-gray-400 mb-2">Account Status</label>
-            <div class="flex items-center">
-              <label class="flex items-center cursor-pointer">
+
+          <!-- Status Controls -->
+          <div class="flex gap-4 pt-2 border-t border-white/10">
+            <div class="flex-1">
+              <label class="block text-xs font-semibold text-gray-400 mb-2">Account Status</label>
+              <label class="flex items-center cursor-pointer gap-3">
                 <div class="relative">
-                  <input type="checkbox" class="sr-only" [(ngModel)]="currentCompany.isActive">
+                  <input type="checkbox" class="sr-only" [(ngModel)]="currentCompany.isActive" name="isActive">
                   <div class="block w-10 h-6 rounded-full transition-colors" [ngClass]="currentCompany.isActive ? 'bg-emerald-500' : 'bg-gray-700'"></div>
                   <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform" [ngClass]="currentCompany.isActive ? 'transform translate-x-4' : ''"></div>
                 </div>
-                <span class="ml-3 text-sm font-medium" [ngClass]="currentCompany.isActive ? 'text-emerald-400' : 'text-gray-500'">
+                <span class="text-sm font-medium" [ngClass]="currentCompany.isActive ? 'text-emerald-400' : 'text-gray-500'">
                   {{ currentCompany.isActive ? 'Active' : 'Inactive' }}
                 </span>
               </label>
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label>Approval Status</label>
-            <select [(ngModel)]="currentCompany.approvalStatus" class="form-input font-medium"
-                    [ngClass]="{'text-amber-400': currentCompany.approvalStatus === 'Pending', 'text-emerald-400': currentCompany.approvalStatus === 'Approved', 'text-rose-400': currentCompany.approvalStatus === 'Rejected'}">
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+            <div class="flex-1">
+              <label class="block text-xs font-semibold text-gray-400 mb-2">Approval Status</label>
+              <select [(ngModel)]="currentCompany.approvalStatus" name="approvalStatus" class="form-input text-sm"
+                [ngClass]="{
+                  'text-amber-400': currentCompany.approvalStatus === 'Pending',
+                  'text-emerald-400': currentCompany.approvalStatus === 'Approved',
+                  'text-rose-400': currentCompany.approvalStatus === 'Rejected'
+                }">
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Address Tab -->
+      <!-- ── Address Tab ── -->
       <div *ngIf="activeTab === 'address'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
           <div class="form-group">
@@ -118,53 +163,76 @@
           </div>
           <div class="form-group">
             <label>District</label>
-            <select [(ngModel)]="currentCompany.district" name="district" (change)="onDistrictChange()" class="form-input" [disabled]="!currentCompany.division">
+            <select [(ngModel)]="currentCompany.district" name="district" (change)="onDistrictChange()"
+              class="form-input" [disabled]="!currentCompany.division || availableDistricts.length === 0">
               <option value="">Select District</option>
               <option *ngFor="let dist of availableDistricts" [value]="dist">{{ dist }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Thana / Upazila</label>
-            <select [(ngModel)]="currentCompany.thana" name="thana" class="form-input" [disabled]="!currentCompany.district">
+            <select [(ngModel)]="currentCompany.thana" name="thana"
+              class="form-input" [disabled]="!currentCompany.district || availableThanas.length === 0">
               <option value="">Select Thana</option>
               <option *ngFor="let th of availableThanas" [value]="th">{{ th }}</option>
             </select>
+            <p *ngIf="currentCompany.district && availableThanas.length === 0" class="text-xs text-gray-500 mt-1">
+              Type manually below if thana not listed.
+            </p>
+          </div>
+          <div class="form-group">
+            <label>Thana (Manual)</label>
+            <input [(ngModel)]="currentCompany.thana" name="thanaManual"
+              type="text" class="form-input" placeholder="Enter thana manually if not listed">
           </div>
         </div>
         <div class="space-y-4">
           <div class="form-group">
             <label>Detailed Address</label>
-            <textarea [(ngModel)]="currentCompany.address" name="address" rows="5" class="form-input" placeholder="House no, Road no, Area..."></textarea>
+            <textarea [(ngModel)]="currentCompany.address" name="address" rows="6"
+              class="form-input" placeholder="House no, Road, Area..."></textarea>
           </div>
         </div>
       </div>
 
-      <!-- Payment Information Tab -->
+      <!-- ── Payment Tab ── -->
       <div *ngIf="activeTab === 'payment'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-4">
-          <h4 class="font-bold text-violet-400 mb-2 border-b border-white/10 pb-1">Mobile Banking</h4>
+          <h4 class="text-xs font-bold text-violet-400 uppercase tracking-widest border-b border-white/10 pb-2">Mobile Banking</h4>
           <div class="form-group">
             <label>bKash Number</label>
-            <input [(ngModel)]="currentCompany.bkashNumber" name="bkashNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.bkashNumber" name="bkashNumber"
+              type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
           <div class="form-group">
             <label>Nagad Number</label>
-            <input [(ngModel)]="currentCompany.nagadNumber" name="nagadNumber" type="text" class="form-input" placeholder="01XXXXXXXXX">
+            <input [(ngModel)]="currentCompany.nagadNumber" name="nagadNumber"
+              type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
         </div>
         <div class="space-y-4">
-          <h4 class="font-bold text-violet-400 mb-2 border-b border-white/10 pb-1">Bank Account</h4>
+          <h4 class="text-xs font-bold text-violet-400 uppercase tracking-widest border-b border-white/10 pb-2">Bank Account</h4>
           <div class="form-group">
             <label>Bank Name</label>
-            <input [(ngModel)]="currentCompany.bankName" name="bankName" type="text" class="form-input" placeholder="e.g. City Bank">
+            <input [(ngModel)]="currentCompany.bankName" name="bankName"
+              type="text" class="form-input" placeholder="e.g. Dutch Bangla Bank">
+          </div>
+          <div class="form-group">
+            <label>Account Holder Name</label>
+            <input [(ngModel)]="currentCompany.bankAccountName" name="bankAccountName"
+              type="text" class="form-input" placeholder="Account holder name">
           </div>
         </div>
       </div>
     </div>
 
-    <div class="mt-8 border-t border-white/10 pt-6 flex justify-end space-x-3">
+    <!-- Footer -->
+    <div class="border-t border-white/10 px-6 md:px-8 py-4 flex justify-end gap-3 bg-white/[0.02]">
       <button (click)="cancel()" class="btn-secondary">Cancel</button>
-      <button (click)="saveCompany()" class="btn-primary">Save Details</button>
+      <button (click)="saveCompany()" [disabled]="saving"
+        class="btn-primary disabled:opacity-50 min-w-[120px]">
+        {{ saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Company') }}
+      </button>
     </div>
   </div>
 </div>

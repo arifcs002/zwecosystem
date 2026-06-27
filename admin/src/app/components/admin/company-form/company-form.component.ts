@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CompanyService, Company } from '../../../services/company/company.service';
+import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
@@ -16,26 +17,37 @@ export class CompanyFormComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private companyService = inject(CompanyService);
+  private notify = inject(GlobalNotificationService);
 
   isEditMode = false;
+  saving = false;
   activeTab: 'basic' | 'address' | 'payment' = 'basic';
-  
+
   currentCompany: Company = this.getEmptyCompany();
 
-  // Hardcoded Bangladesh Location Data for Dropdowns
   divisions = ['Dhaka', 'Chattogram', 'Sylhet', 'Khulna', 'Rajshahi', 'Barishal', 'Rangpur', 'Mymensingh'];
-  
+
   districtsByDivision: { [key: string]: string[] } = {
-    'Dhaka': ['Dhaka', 'Gazipur', 'Narayanganj', 'Tangail', 'Faridpur'],
-    'Chattogram': ['Chattogram', 'Cox\'s Bazar', 'Cumilla', 'Feni', 'Noakhali'],
+    'Dhaka': ['Dhaka', 'Gazipur', 'Narayanganj', 'Tangail', 'Faridpur', 'Manikganj', 'Munshiganj', 'Narsingdi'],
+    'Chattogram': ['Chattogram', "Cox's Bazar", 'Cumilla', 'Feni', 'Noakhali', 'Lakshmipur', 'Chandpur', 'Brahmanbaria'],
     'Sylhet': ['Sylhet', 'Moulvibazar', 'Habiganj', 'Sunamganj'],
+    'Khulna': ['Khulna', 'Jessore', 'Satkhira', 'Bagerhat', 'Narail'],
+    'Rajshahi': ['Rajshahi', 'Natore', 'Bogura', 'Naogaon', 'Chapainawabganj'],
+    'Barishal': ['Barishal', 'Bhola', 'Patuakhali', 'Pirojpur', 'Jhalokati'],
+    'Rangpur': ['Rangpur', 'Dinajpur', 'Gaibandha', 'Kurigram', 'Nilphamari'],
+    'Mymensingh': ['Mymensingh', 'Jamalpur', 'Netrokona', 'Sherpur'],
   };
 
   thanasByDistrict: { [key: string]: string[] } = {
-    'Dhaka': ['Gulshan', 'Banani', 'Dhanmondi', 'Mirpur', 'Uttara', 'Motijheel'],
-    'Gazipur': ['Tongi', 'Sreepur', 'Kaliakair'],
-    'Chattogram': ['Pahartali', 'Panchlaish', 'Double Mooring', 'Halishahar'],
-    'Sylhet': ['Kotwali', 'South Surma', 'Bimanbandar'],
+    'Dhaka': ['Gulshan', 'Banani', 'Dhanmondi', 'Mirpur', 'Uttara', 'Motijheel', 'Tejgaon', 'Mohammadpur', 'Khilgaon', 'Badda'],
+    'Gazipur': ['Tongi', 'Sreepur', 'Kaliakair', 'Kapasia', 'Gazipur Sadar'],
+    'Narayanganj': ['Narayanganj Sadar', 'Fatullah', 'Siddhirganj', 'Sonargaon'],
+    'Chattogram': ['Pahartali', 'Panchlaish', 'Double Mooring', 'Halishahar', 'Kotwali', 'Bayazid'],
+    "Cox's Bazar": ['Cox Bazar Sadar', 'Ukhiya', 'Teknaf', 'Chakaria'],
+    'Sylhet': ['Kotwali', 'South Surma', 'Bimanbandar', 'Osmani Nagar'],
+    'Khulna': ['Khulna Sadar', 'Sonadanga', 'Khan Jahan Ali', 'Daulatpur'],
+    'Rajshahi': ['Rajshahi Sadar', 'Boalia', 'Motihar', 'Shah Makhdum'],
+    'Rangpur': ['Rangpur Sadar', 'Taragonj', 'Badarganj', 'Gangachara'],
   };
 
   availableDistricts: string[] = [];
@@ -45,47 +57,49 @@ export class CompanyFormComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
-      const parsedId = parseInt(id, 10);
-      this.companyService.getCompanyById(parsedId).subscribe({
+      this.companyService.getCompanyById(parseInt(id, 10)).subscribe({
         next: (company) => {
-          if (company) {
-            this.currentCompany = { ...company };
-            this.onDivisionChange();
-            this.onDistrictChange();
-            this.currentCompany.district = company.district || '';
-            this.currentCompany.thana = company.thana || '';
+          this.currentCompany = { ...company };
+          if (company.division) {
+            this.availableDistricts = this.districtsByDivision[company.division] ?? [];
+          }
+          if (company.district) {
+            this.availableThanas = this.thanasByDistrict[company.district] ?? [];
           }
         },
-        error: (err) => console.error(err)
+        error: () => this.notify.notify({ type: 'error', title: 'Load failed', message: 'Could not load company data.', ttlMs: 5000 })
       });
     }
   }
 
   getEmptyCompany(): Company {
-    return { 
-      id: 0, name: '', subdomain: '', contactEmail: '', 
-      companyMobile: '', ownerName: '', ownerMobile: '', 
-      division: '', district: '', thana: '', address: '', 
-      facebookLink: '', instagramLink: '', 
-      bkashNumber: '', nagadNumber: '', bankName: '', bankAccountName: '', 
-      logoUrl: '', isActive: true, approvalStatus: 'Pending', createdAt: new Date()
+    return {
+      id: 0, name: '', subdomain: '', contactEmail: '', contactPhone: '',
+      companyMobile: '', ownerName: '', ownerMobile: '',
+      division: '', district: '', thana: '', address: '',
+      facebookLink: '', instagramLink: '',
+      bkashNumber: '', nagadNumber: '', bankName: '', bankAccountName: '',
+      deliveryCharge: 0,
+      logoUrl: '', bannerUrl: '',
+      isActive: true, approvalStatus: 'Pending'
     };
   }
 
   onLogoSelect(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.currentCompany.logoUrl = reader.result as string;
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      this.notify.notify({ type: 'warning', title: 'File too large', message: 'Logo must be under 2MB.', ttlMs: 5000 });
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = () => { this.currentCompany.logoUrl = reader.result as string; };
+    reader.readAsDataURL(file);
   }
 
   onDivisionChange() {
     const div = this.currentCompany.division;
-    this.availableDistricts = (div && this.districtsByDivision[div]) ? this.districtsByDivision[div] : ['General District'];
+    this.availableDistricts = (div && this.districtsByDivision[div]) ? this.districtsByDivision[div] : [];
     this.currentCompany.district = '';
     this.currentCompany.thana = '';
     this.availableThanas = [];
@@ -93,42 +107,29 @@ export class CompanyFormComponent implements OnInit {
 
   onDistrictChange() {
     const dist = this.currentCompany.district;
-    this.availableThanas = (dist && this.thanasByDistrict[dist]) ? this.thanasByDistrict[dist] : ['General Thana'];
+    this.availableThanas = (dist && this.thanasByDistrict[dist]) ? this.thanasByDistrict[dist] : [];
     this.currentCompany.thana = '';
   }
 
   saveCompany() {
-    if (!this.currentCompany.name || !this.currentCompany.subdomain) {
-      alert('Name and Subdomain are required');
+    if (!this.currentCompany.name?.trim() || !this.currentCompany.subdomain?.trim()) {
+      this.notify.notify({ type: 'warning', title: 'Validation', message: 'Company Name and Subdomain are required.', ttlMs: 4000 });
       return;
     }
-    
-    if (this.isEditMode) {
-      this.companyService.updateCompany(this.currentCompany).subscribe({
-        next: () => {
-          alert('Company updated successfully!');
-          this.router.navigate(['/admin/companies']);
-        },
-        error: (err) => console.error(err)
-      });
-    } else {
-      const companyToCreate = { ...this.currentCompany };
-      companyToCreate.id = 0;
+    this.saving = true;
+    const action$ = this.isEditMode
+      ? this.companyService.updateCompany(this.currentCompany)
+      : this.companyService.addCompany({ ...this.currentCompany, id: 0 });
 
-      this.companyService.addCompany(companyToCreate).subscribe({
-        next: () => {
-          alert('Company created successfully!');
-          this.router.navigate(['/admin/companies']);
-        },
-        error: (err) => {
-          console.error(err);
-          alert('Failed to create company: ' + (err.error?.message || err.message || 'Unknown error'));
-        }
-      });
-    }
+    action$.subscribe({
+      next: () => {
+        this.notify.notify({ type: 'success', title: this.isEditMode ? 'Updated' : 'Created', message: `Company "${this.currentCompany.name}" saved successfully.`, ttlMs: 4000 });
+        this.saving = false;
+        this.router.navigate(['/admin/companies']);
+      },
+      error: () => { this.saving = false; }
+    });
   }
 
-  cancel() {
-    this.router.navigate(['/admin/companies']);
-  }
+  cancel() { this.router.navigate(['/admin/companies']); }
 }

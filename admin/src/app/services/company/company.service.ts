@@ -6,11 +6,10 @@ import { environment } from '../../../environments/environment';
 export interface Company {
   id: number;
   name: string;
-  subdomain: string; // Used for multi-tenant URL e.g. /fashion/login
-  databaseConnectionString?: string; // Optional: For physical DB isolation
-  createdAt: Date;
-  themeColor?: string;
+  subdomain: string;
+  createdAt?: Date;
   contactEmail?: string;
+  contactPhone?: string;
   companyMobile?: string;
   ownerName?: string;
   ownerMobile?: string;
@@ -24,9 +23,11 @@ export interface Company {
   nagadNumber?: string;
   bankName?: string;
   bankAccountName?: string;
+  deliveryCharge?: number;
   isActive: boolean;
   approvalStatus?: string;
   logoUrl?: string;
+  bannerUrl?: string;
 }
 
 @Injectable({
@@ -52,7 +53,11 @@ export class CompanyService {
     return this.http.put<Company>(`${this.apiUrl}/${updatedCompany.id}`, updatedCompany);
   }
 
-  deleteCompany(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  toggleStatus(id: number): Observable<{ isActive: boolean; message: string }> {
+    return this.http.patch<{ isActive: boolean; message: string }>(`${this.apiUrl}/${id}/toggle-status`, {});
+  }
+
+  deleteCompany(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
   }
 }
