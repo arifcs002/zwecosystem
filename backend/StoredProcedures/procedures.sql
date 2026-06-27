@@ -160,7 +160,7 @@ RETURNS TABLE(
                 'productId', oi.product_id,
                 'productName', p.name,
                 'quantity', oi.quantity,
-                'unitPrice', oi.unit_price,
+                'unitPrice', oi.price,
                 'totalPrice', oi.total_price,
                 'imageUrl', p.image_url
             ) ORDER BY oi.id), '[]')::TEXT
@@ -188,7 +188,7 @@ RETURNS TABLE(
                 'productId', oi.product_id,
                 'productName', p.name,
                 'quantity', oi.quantity,
-                'unitPrice', oi.unit_price,
+                'unitPrice', oi.price,
                 'totalPrice', oi.total_price,
                 'imageUrl', p.image_url
             ) ORDER BY oi.id), '[]')::TEXT
