@@ -198,6 +198,17 @@ using (var scope = app.Services.CreateScope())
 
         dbContext.Database.EnsureCreated();
 
+        // Run stored procedures SQL (CREATE OR REPLACE — safe to re-run)
+        var spSqlPath = Path.Combine(AppContext.BaseDirectory, "StoredProcedures", "procedures.sql");
+        if (!File.Exists(spSqlPath))
+            spSqlPath = Path.Combine(Directory.GetCurrentDirectory(), "StoredProcedures", "procedures.sql");
+        if (File.Exists(spSqlPath))
+        {
+            var spSql = File.ReadAllText(spSqlPath);
+            dbContext.Database.ExecuteSqlRaw(spSql);
+            Console.WriteLine("--> Stored procedures loaded.");
+        }
+
         // Ensure user_sessions table exists (EnsureCreated won't add new tables to existing DB)
         dbContext.Database.ExecuteSqlRaw(@"
             CREATE TABLE IF NOT EXISTS user_sessions (
