@@ -24,10 +24,49 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
-            var companies = await _context.Database
-                .SqlQueryRaw<CompanyListVm>("SELECT * FROM sp_get_companies()")
-                .ToListAsync();
-            return Ok(companies);
+            try
+            {
+                var companies = await _context.Database
+                    .SqlQueryRaw<CompanyListVm>("SELECT * FROM sp_get_companies()")
+                    .ToListAsync();
+                return Ok(companies);
+            }
+            catch
+            {
+                // SP not yet deployed — fallback to direct query
+                var companies = await _context.Companies
+                    .IgnoreQueryFilters()
+                    .Where(c => c.IsDeleted == 0)
+                    .Select(c => new CompanyListVm
+                    {
+                        id             = c.Id,
+                        name           = c.Name,
+                        subdomain      = c.Subdomain,
+                        logoUrl        = c.LogoUrl,
+                        contactEmail   = c.ContactEmail,
+                        contactPhone   = c.ContactPhone,
+                        companyMobile  = c.CompanyMobile,
+                        ownerName      = c.OwnerName,
+                        ownerMobile    = c.OwnerMobile,
+                        division       = c.Division,
+                        district       = c.District,
+                        thana          = c.Thana,
+                        address        = c.Address,
+                        facebookLink   = c.FacebookLink,
+                        instagramLink  = c.InstagramLink,
+                        bkashNumber    = c.BkashNumber,
+                        nagadNumber    = c.NagadNumber,
+                        bankName       = c.BankName,
+                        bankAccountName = c.BankAccountName,
+                        deliveryCharge = c.DeliveryCharge,
+                        isActive       = c.IsActive,
+                        approvalStatus = c.ApprovalStatus,
+                        createdAt      = c.CreatedDate
+                    })
+                    .OrderByDescending(c => c.createdAt)
+                    .ToListAsync();
+                return Ok(companies);
+            }
         }
 
         [HttpGet("{id}")]

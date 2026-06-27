@@ -199,14 +199,32 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.EnsureCreated();
 
         // Run stored procedures SQL (CREATE OR REPLACE — safe to re-run)
-        var spSqlPath = Path.Combine(AppContext.BaseDirectory, "StoredProcedures", "procedures.sql");
-        if (!File.Exists(spSqlPath))
-            spSqlPath = Path.Combine(Directory.GetCurrentDirectory(), "StoredProcedures", "procedures.sql");
-        if (File.Exists(spSqlPath))
+        try
         {
-            var spSql = File.ReadAllText(spSqlPath);
-            dbContext.Database.ExecuteSqlRaw(spSql);
-            Console.WriteLine("--> Stored procedures loaded.");
+            var spSqlPath = Path.Combine(AppContext.BaseDirectory, "StoredProcedures", "procedures.sql");
+            if (!File.Exists(spSqlPath))
+                spSqlPath = Path.Combine(Directory.GetCurrentDirectory(), "StoredProcedures", "procedures.sql");
+            if (File.Exists(spSqlPath))
+            {
+                var spSql = File.ReadAllText(spSqlPath);
+                var conn = dbContext.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = spSql;
+                cmd.CommandTimeout = 60;
+                cmd.ExecuteNonQuery();
+                Console.WriteLine("--> Stored procedures loaded.");
+            }
+            else
+            {
+                Console.WriteLine("--> procedures.sql not found, skipping SP load.");
+            }
+        }
+        catch (Exception spEx)
+        {
+            Console.WriteLine($"--> WARNING: SP load failed (non-fatal): {spEx.Message}");
+            fileLogger.LogError("STARTUP", "Stored procedure load failed", spEx);
         }
 
         // Ensure user_sessions table exists (EnsureCreated won't add new tables to existing DB)
