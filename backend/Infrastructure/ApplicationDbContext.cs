@@ -40,6 +40,7 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<CompanySetting> CompanySettings { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<UserSession> UserSessions { get; set; }
 
         private void ResolveTenantAndUser()
         {

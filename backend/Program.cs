@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Net.Sockets;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -134,6 +135,53 @@ app.UseCors("AllowAll");
 app.UseStaticFiles();
 
 app.UseAuthentication();
+
+// Session validation: every protected request must have a valid DB session
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+    var isPublic = path.Contains("/auth/login") || path.Contains("/auth/register") ||
+                   path.Contains("/auth/forgot-password") || path.Contains("/auth/reset-password-otp") ||
+                   path.Contains("/swagger") || path.Contains("/health");
+
+    if (!isPublic)
+    {
+        var authHeader = context.Request.Headers["Authorization"].ToString();
+        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var token = authHeader.Substring(7).Trim();
+            var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+            var session = await dbContext.UserSessions
+                .FirstOrDefaultAsync(s => s.SessionToken == token && s.IsActive && s.ExpiresAt > DateTime.UtcNow);
+
+            if (session == null)
+            {
+                context.Response.StatusCode = 401;
+                await context.Response.WriteAsJsonAsync(new { message = "Session expired or invalid. Please login again." });
+                return;
+            }
+
+            // Build ClaimsPrincipal from session data so [Authorize] works
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, session.UserId.ToString()),
+                new Claim("sub", session.UserId.ToString()),
+                new Claim(ClaimTypes.Email, session.Email),
+                new Claim("name", session.FullName)
+            };
+            if (session.CompanyId.HasValue)
+                claims.Add(new Claim("company_id", session.CompanyId.Value.ToString()));
+            foreach (var role in session.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                claims.Add(new Claim(ClaimTypes.Role, role.Trim()));
+
+            var identity = new ClaimsIdentity(claims, "SessionToken");
+            context.User = new System.Security.Claims.ClaimsPrincipal(identity);
+        }
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 
 app.MapControllers();
@@ -149,6 +197,27 @@ using (var scope = app.Services.CreateScope())
         // dbContext.Database.EnsureCreated();
 
         dbContext.Database.EnsureCreated();
+
+        // Ensure user_sessions table exists (EnsureCreated won't add new tables to existing DB)
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id SERIAL PRIMARY KEY,
+                session_token TEXT NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                company_id INTEGER,
+                roles TEXT NOT NULL DEFAULT '',
+                user_type TEXT,
+                email TEXT NOT NULL DEFAULT '',
+                full_name TEXT NOT NULL DEFAULT '',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                expires_at TIMESTAMPTZ NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                ip_address TEXT,
+                user_agent TEXT
+            )");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)

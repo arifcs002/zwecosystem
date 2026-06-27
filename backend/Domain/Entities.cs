@@ -663,4 +663,53 @@ namespace Ecommerce.Api.Domain
         [Column("user_agent")]
         public string? UserAgent { get; set; }
     }
+
+    [Table("user_sessions")]
+    public class UserSession
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("session_token")]
+        public string SessionToken { get; set; } = string.Empty;
+
+        [Column("user_id")]
+        public int UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        [JsonIgnore]
+        public User? User { get; set; }
+
+        [Column("company_id")]
+        public int? CompanyId { get; set; }
+
+        [Column("roles")]
+        public string Roles { get; set; } = string.Empty; // comma-separated
+
+        [Column("user_type")]
+        public string? UserType { get; set; }
+
+        [Column("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Column("full_name")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("expires_at")]
+        public DateTime ExpiresAt { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        [Column("ip_address")]
+        public string? IpAddress { get; set; }
+
+        [Column("user_agent")]
+        public string? UserAgent { get; set; }
+    }
 }

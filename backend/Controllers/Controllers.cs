@@ -54,7 +54,7 @@ namespace Ecommerce.Api.Controllers
         public string? Password { get; set; }
     }
     public record LoginDto(string Email, string Password, string? LoginContext);
-    public record LoginResponse(string Token, string RefreshToken, string Email, string FullName, int? CompanyId, List<string> Roles, string? UserType);
+    public record LoginResponse(string Token, string SessionToken, string Email, string FullName, int? CompanyId, List<string> Roles, string? UserType);
     public record ProductCreateDto(string Name, string SKU, decimal Price, decimal WholesalePrice, int StockQuantity, string? Description, int? CategoryId, int? BrandId, string? Barcode, string? ImageUrl);
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(string Name, decimal Price, decimal WholesalePrice, string? Description, int? CategoryId, int? SupplierId, string? ImageUrl, List<SizeQtyDto> Sizes);
@@ -205,16 +205,63 @@ namespace Ecommerce.Api.Controllers
 
                 var roles = user.UserRoles.Select(ur => ur.Role!.Name).ToList();
                 var token = GenerateJwtToken(user, roles);
-                var refreshToken = Guid.NewGuid().ToString();
+
+                // Invalidate previous sessions for this user
+                var oldSessions = await _context.UserSessions
+                    .Where(s => s.UserId == user.Id && s.IsActive)
+                    .ToListAsync();
+                foreach (var old in oldSessions)
+                    old.IsActive = false;
+
+                // Create new session
+                var sessionToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+                var session = new Ecommerce.Api.Domain.UserSession
+                {
+                    SessionToken = sessionToken,
+                    UserId = user.Id,
+                    CompanyId = user.CompanyId,
+                    Roles = string.Join(",", roles),
+                    UserType = user.UserType,
+                    Email = user.Email,
+                    FullName = $"{user.FirstName} {user.LastName}",
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddHours(24),
+                    IsActive = true,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent
+                };
+                _context.UserSessions.Add(session);
+                await _context.SaveChangesAsync();
 
                 _fileLogger.LogInfo("LOGIN", $"Login success for '{dto.Email}' with context '{dto.LoginContext}'");
-                return Ok(new LoginResponse(token, refreshToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
+                return Ok(new LoginResponse(token, sessionToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
             }
             catch (Exception ex)
             {
                 _fileLogger.LogError("LOGIN", $"Unhandled login exception for '{dto.Email}'", ex);
                 throw;
             }
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].ToString();
+            if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                var token = authHeader.Substring(7).Trim();
+                var session = await _context.UserSessions.FirstOrDefaultAsync(s => s.SessionToken == token);
+                if (session != null)
+                {
+                    session.IsActive = false;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            return Ok(new { message = "Logged out successfully." });
         }
 
         [HttpPost("forgot-password")]

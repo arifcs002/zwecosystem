@@ -14,7 +14,7 @@ export interface User {
 
 export interface LoginResponse {
   token: string;
-  refreshToken: string;
+  sessionToken: string;
   email: string;
   fullName: string;
   companyId: number | null;
@@ -42,19 +42,19 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/login`, { email, password, loginContext })
       .pipe(tap(response => {
         if (response) {
-          const token = response.token || response.Token;
-          if (token) {
-            localStorage.setItem('token', token);
-            
+          const sessionToken = response.sessionToken || response.SessionToken;
+          if (sessionToken) {
+            localStorage.setItem('token', sessionToken);
+
             const user: User = {
-              id: response.id || response.Id || 0, 
+              id: response.id || response.Id || 0,
               email: response.email || response.Email,
               fullName: response.fullName || response.FullName,
               companyId: response.companyId !== undefined ? response.companyId : response.CompanyId,
               loginContext: loginContext,
               roles: response.roles || response.Roles || []
             };
-            
+
             localStorage.setItem('user', JSON.stringify(user));
             this.currentUserSubject.next(user);
           }
@@ -63,6 +63,10 @@ export class AuthService {
   }
 
   logout() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this.http.post(`${this.apiUrl}/logout`, {}).subscribe({ error: () => {} });
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     this.currentUserSubject.next(null);
