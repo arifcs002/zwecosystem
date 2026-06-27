@@ -13,11 +13,18 @@ namespace Ecommerce.Api.Infrastructure
         private readonly string _logDir;
         private static readonly object _lock = new();
 
-        public FileTextLogger(IConfiguration configuration)
+        public FileTextLogger(IConfiguration configuration, IWebHostEnvironment env)
         {
-            _logDir = Environment.GetEnvironmentVariable("TEXT_LOG_DIR")
-                ?? configuration["Logging:TextLogDirectory"]
-                ?? "/data/apps/textlog";
+            if (env.IsDevelopment())
+            {
+                _logDir = Path.Combine(env.ContentRootPath, "textlog");
+            }
+            else
+            {
+                _logDir = Environment.GetEnvironmentVariable("TEXT_LOG_DIR")
+                    ?? configuration["Logging:TextLogDirectory"]
+                    ?? "/data/apps/textlog";
+            }
         }
 
         public void LogError(string category, string message, Exception? exception = null)

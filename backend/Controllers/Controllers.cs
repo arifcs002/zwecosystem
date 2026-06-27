@@ -299,6 +299,7 @@ namespace Ecommerce.Api.Controllers
             }
             catch (Exception ex)
             {
+                _fileLogger.LogError("EXCEPTION", $"Error in Controller: {ex.Message}", ex);
                 Console.WriteLine($"--> SMTP ERROR: Failed to send email to {toEmail}: {ex.Message}");
             }
         }
@@ -359,10 +360,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public ProductsController(ApplicationDbContext context)
+        public ProductsController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -548,10 +551,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class POSController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public POSController(ApplicationDbContext context)
+        public POSController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -658,10 +663,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class PaymentsController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public PaymentsController(ApplicationDbContext context)
+        public PaymentsController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -691,10 +698,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class SettingsController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public SettingsController(ApplicationDbContext context)
+        public SettingsController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -769,10 +778,12 @@ namespace Ecommerce.Api.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -936,10 +947,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class UploadController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly IWebHostEnvironment _env;
 
-        public UploadController(IWebHostEnvironment env)
+        public UploadController(IWebHostEnvironment env, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _env = env;
         }
 
@@ -972,10 +985,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class SuppliersController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public SuppliersController(ApplicationDbContext context)
+        public SuppliersController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -1034,10 +1049,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public CategoriesController(ApplicationDbContext context)
+        public CategoriesController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -1100,10 +1117,12 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class CompaniesController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public CompaniesController(ApplicationDbContext context)
+        public CompaniesController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -1291,10 +1310,12 @@ namespace Ecommerce.Api.Controllers
     [Authorize]
     public class DashboardController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
@@ -1499,10 +1520,12 @@ namespace Ecommerce.Api.Controllers
     [Authorize]
     public class OrdersController : ControllerBase
     {
+        private readonly IFileTextLogger _fileLogger;
         private readonly ApplicationDbContext _context;
 
-        public OrdersController(ApplicationDbContext context)
+        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
+            _fileLogger = fileLogger;
             _context = context;
         }
 
