@@ -54,7 +54,8 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th class="text-center align-middle">User Info</th>
+          <th class="text-left align-middle">User Info</th>
+          <th class="text-left align-middle" *ngIf="authService.isSuperAdmin()">Company</th>
           <th class="text-center align-middle">Role</th>
           <th class="text-center align-middle">Status</th>
           <th class="text-center align-middle">Actions</th>
@@ -62,10 +63,13 @@
       </thead>
       <tbody>
         <tr *ngFor="let user of filteredUsers">
-          <td class="text-center align-middle">
+          <td class="align-middle">
             <div class="font-semibold text-gray-200">{{ user.firstName }} {{ user.lastName }}</div>
             <div class="text-xs text-gray-500">{{ user.email }}</div>
             <div class="text-xs text-gray-500">{{ user.phoneNumber || '—' }}</div>
+          </td>
+          <td class="align-middle" *ngIf="authService.isSuperAdmin()">
+            <span class="text-sm text-gray-300">{{ getCompanyName(user.companyId) }}</span>
           </td>
           <td class="text-center align-middle">
             <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
@@ -89,7 +93,7 @@
           </td>
         </tr>
         <tr *ngIf="filteredUsers.length === 0">
-          <td colspan="4" class="empty-row">
+          <td [attr.colspan]="authService.isSuperAdmin() ? 5 : 4" class="empty-row">
             No users found for the selected company.
           </td>
         </tr>

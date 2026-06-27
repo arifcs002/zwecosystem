@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CompanyService, Company } from '../../../services/company/company.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-company-management',
@@ -20,6 +21,7 @@ export class CompanyManagementComponent implements OnInit {
   loading = false;
   companyToDelete: Company | null = null;
   deleteLoading = false;
+  readonly siteUrl = environment.siteUrl;
 
   get activeCount() { return this.companies.filter(c => c.isActive).length; }
   get pendingCount() { return this.companies.filter(c => c.approvalStatus === 'Pending').length; }

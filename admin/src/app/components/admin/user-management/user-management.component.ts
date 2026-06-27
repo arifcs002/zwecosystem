@@ -55,9 +55,9 @@ export class UserManagementComponent implements OnInit {
 
   ngOnInit() {
     this.loadRoles();
+    this.loadCompanies();
     if (this.authService.isSuperAdmin()) {
       this.selectedCompanyContext = 'all';
-      this.loadCompanies();
     } else {
       this.selectedCompanyContext = this.authService.currentUserValue?.companyId || '';
     }
@@ -229,6 +229,11 @@ export class UserManagementComponent implements OnInit {
         error: (err) => alert('Failed to delete user')
       });
     }
+  }
+
+  getCompanyName(companyId: number | null | undefined): string {
+    if (!companyId) return '—';
+    return this.companies.find(c => c.id === companyId)?.name || `Company #${companyId}`;
   }
 
   getRoleDisplay(roleName: string): string {
