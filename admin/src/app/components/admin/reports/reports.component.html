@@ -1,48 +1,89 @@
 <div class="page-container">
-  <div class="page-header flex justify-between items-center">
+
+  <!-- Header -->
+  <div class="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h1 class="page-title">📊 Sales Reports & Receipts</h1>
-      <p class="page-subtitle">View store revenue and printed receipts</p>
-    </div>
-    <div class="flex space-x-2">
-      <input type="date" class="form-input p-2 text-sm bg-[#0d0d1a] border border-white/10 rounded-lg text-white">
-      <button class="btn-primary">Filter</button>
+      <h1 class="page-title">📊 Sales Reports</h1>
+      <p class="page-subtitle">Revenue and transaction history</p>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white/5 border border-white/10 rounded-xl p-5 text-center shadow-lg">
-      <h4 class="text-gray-400 font-semibold mb-2 text-sm">Today's Revenue</h4>
-      <p class="text-2xl font-bold text-emerald-400">৳ 12,500</p>
+  <div *ngIf="errorMsg" class="alert-error mb-4">❌ {{ errorMsg }}</div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Today's Revenue</p>
+      <p class="text-2xl font-bold text-emerald-400">৳{{ stats.todayRevenue | number:'1.0-0' }}</p>
+      <p class="text-xs text-gray-600 mt-1">{{ stats.todayOrders }} orders</p>
     </div>
-    <div class="bg-white/5 border border-white/10 rounded-xl p-5 text-center shadow-lg">
-      <h4 class="text-gray-400 font-semibold mb-2 text-sm">Items Sold Today</h4>
-      <p class="text-2xl font-bold text-sky-400">18</p>
+    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">This Month</p>
+      <p class="text-2xl font-bold text-sky-400">৳{{ stats.monthRevenue | number:'1.0-0' }}</p>
+      <p class="text-xs text-gray-600 mt-1">{{ stats.monthOrders }} orders</p>
+    </div>
+    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5 col-span-2 md:col-span-1">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total (All Time)</p>
+      <p class="text-2xl font-bold text-violet-400">৳{{ stats.totalRevenue | number:'1.0-0' }}</p>
+      <p class="text-xs text-gray-600 mt-1">{{ stats.totalOrders }} completed orders</p>
     </div>
   </div>
 
-  <h4 class="font-bold text-gray-300 mb-4 border-b border-white/10 pb-2">Recent Transactions</h4>
-  
+  <!-- Filters -->
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <input type="date" [(ngModel)]="filterDate" (ngModelChange)="applyFilter()"
+      class="form-input text-sm w-auto">
+    <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()" class="form-input text-sm w-auto">
+      <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+    </select>
+    <button (click)="clearFilter()" class="btn-secondary text-xs px-3 py-1.5">Clear Filter</button>
+    <span class="text-xs text-gray-500 ml-auto">
+      {{ filteredOrders.length }} orders · ৳{{ filteredRevenue | number:'1.0-0' }} revenue
+    </span>
+  </div>
+
+  <!-- Table -->
   <div class="table-card">
-    <table class="data-table">
+    <div *ngIf="isLoading" class="flex justify-center items-center py-16 text-gray-500 text-sm">
+      <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading…
+    </div>
+
+    <div *ngIf="!isLoading && filteredOrders.length === 0" class="py-12 text-center text-gray-500 text-sm">
+      No orders found for selected filters.
+    </div>
+
+    <table *ngIf="!isLoading && filteredOrders.length > 0" class="data-table">
       <thead>
         <tr>
-          <th>Receipt No</th>
-          <th>Time</th>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Payment</th>
           <th>Amount</th>
-          <th class="text-right">Actions</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><strong class="text-gray-200">#RCPT-1001</strong></td>
-          <td class="text-gray-400">10:45 AM</td>
-          <td class="font-semibold text-emerald-400">৳ 2,500</td>
-          <td class="text-right">
-            <button class="btn-edit mr-0">Print Receipt</button>
+        <tr *ngFor="let o of filteredOrders">
+          <td class="font-mono text-xs text-gray-300">{{ o.OrderNumber || o.orderNumber }}</td>
+          <td>
+            <div class="text-sm text-gray-200">{{ o.CustomerName || o.customerName || '—' }}</div>
+            <div class="text-xs text-gray-500">{{ o.CustomerPhone || o.customerPhone }}</div>
+          </td>
+          <td class="text-xs text-gray-400">
+            {{ (o.CreatedDate || o.createdDate) | date:'dd MMM yyyy, hh:mm a' }}
+          </td>
+          <td class="text-xs text-gray-400">{{ o.PaymentMethod || o.paymentMethod }}</td>
+          <td class="font-semibold text-emerald-400">৳{{ (o.Total ?? o.total) | number:'1.0-0' }}</td>
+          <td>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" [ngClass]="statusClass(o.Status || o.status)">
+              {{ o.Status || o.status }}
+            </span>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
+
 </div>

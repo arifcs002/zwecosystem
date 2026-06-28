@@ -29,8 +29,8 @@ export class DeliveryManagementComponent implements OnInit {
   newStatus = '';
   statusNote = '';
 
-  deliveryStatuses = ['PACKED', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
-  filterStatuses = ['ALL', 'PROCESSING', 'PACKED', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
+  deliveryStatuses = ['CANCELLED', 'COMPLETED', 'PACKED', 'SHIPPED'];
+  filterStatuses = ['ALL', 'CANCELLED', 'COMPLETED', 'PACKED', 'PROCESSING', 'SHIPPED'];
 
   ngOnInit() { this.load(); }
 

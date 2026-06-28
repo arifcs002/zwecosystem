@@ -1,5 +1,13 @@
 namespace Ecommerce.Api.Models
 {
+    // ── Categories ───────────────────────────────────────────
+    public class CategoryUpsertDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Sizes { get; set; }
+    }
+
     // ── Auth ────────────────────────────────────────────────
     public record LoginDto(string Email, string Password, string? LoginContext);
     public record LoginResponse(string Token, string SessionToken, string Email, string FullName, int? CompanyId, List<string> Roles, string? UserType);

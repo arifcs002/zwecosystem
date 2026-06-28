@@ -32,21 +32,38 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] Category category)
+        public async Task<IActionResult> CreateCategory([FromBody] CategoryUpsertDto dto)
         {
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
+            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Category name is required.");
 
-            var slug = category.Name.ToLower().Replace(" ", "-").Replace("/", "-");
+            var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
             var categoryId = (await _context.Database.SqlQueryRaw<int>(
                 "SELECT sp_create_category({0},{1},{2},{3},{4},{5})",
-                companyId.Value, category.Name, slug,
-                category.Description ?? "", category.Sizes ?? "", _context.CurrentUserId
+                companyId.Value, dto.Name, slug,
+                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId
             ).ToListAsync()).FirstOrDefault();
 
             var created = await _context.Categories.FindAsync(categoryId);
             return Ok(created);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] CategoryUpsertDto dto)
+        {
+            if (!await _context.Categories.AnyAsync(c => c.Id == id && c.IsDeleted == 0)) return NotFound();
+            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Category name is required.");
+
+            var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_update_category({0},{1},{2},{3},{4},{5})",
+                id, dto.Name, slug,
+                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId
+            );
+            var updated = await _context.Categories.FindAsync(id);
+            return Ok(updated);
         }
 
         [HttpDelete("{id}")]

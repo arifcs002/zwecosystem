@@ -1,44 +1,142 @@
 <div class="page-container">
-  <div class="page-header flex justify-between items-center">
+
+  <!-- Header -->
+  <div class="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h1 class="page-title">🏷️ Categories</h1>
       <p class="page-subtitle">Manage storefront categories</p>
     </div>
-    <button class="btn-primary">
-      + New Category
-    </button>
+    <button class="btn-primary" (click)="openNew()">+ New Category</button>
   </div>
 
+  <!-- Search -->
+  <div class="mb-4">
+    <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()"
+      class="form-input max-w-sm" placeholder="Search categories…">
+  </div>
+
+  <!-- Table -->
   <div class="table-card">
-    <table class="data-table">
+    <div *ngIf="isLoading" class="flex justify-center items-center py-16 text-gray-500 text-sm">
+      <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading categories…
+    </div>
+
+    <div *ngIf="!isLoading && filteredCategories.length === 0" class="py-16 text-center text-gray-500 text-sm">
+      <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+      </div>
+      {{ searchQuery ? 'No categories match your search.' : 'No categories yet. Create one!' }}
+    </div>
+
+    <table *ngIf="!isLoading && filteredCategories.length > 0" class="data-table">
       <thead>
         <tr>
           <th>Category Name</th>
-          <th>Parent</th>
-          <th>Item Count</th>
+          <th>Description</th>
+          <th>Sizes</th>
+          <th>Slug</th>
           <th class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><strong class="text-gray-200">Sneakers</strong></td>
-          <td class="text-gray-400">Shoes</td>
-          <td class="text-gray-300">12</td>
-          <td class="text-right">
-            <button class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
-            <button class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+        <tr *ngFor="let cat of filteredCategories">
+          <td>
+            <span class="font-semibold text-gray-200">{{ cat.name }}</span>
           </td>
-        </tr>
-        <tr>
-          <td><strong class="text-gray-200">T-Shirts</strong></td>
-          <td class="text-gray-400">Clothing</td>
-          <td class="text-gray-300">45</td>
+          <td class="text-gray-400 max-w-[200px] truncate">{{ cat.description || '—' }}</td>
+          <td>
+            <div class="flex flex-wrap gap-1">
+              <span *ngFor="let s of parseSizes(cat.sizes)"
+                class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-900/30 border border-violet-700/30 text-violet-300">
+                {{ s }}
+              </span>
+              <span *ngIf="!cat.sizes" class="text-gray-600 text-xs">—</span>
+            </div>
+          </td>
+          <td class="text-gray-500 text-xs font-mono">{{ cat.slug }}</td>
           <td class="text-right">
-            <button class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
-            <button class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+            <button (click)="openEdit(cat)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-4">Edit</button>
+            <button (click)="confirmDelete(cat)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Total count -->
+  <p *ngIf="!isLoading && categories.length > 0" class="text-xs text-gray-600 mt-2 text-right">
+    {{ filteredCategories.length }} of {{ categories.length }} categories
+  </p>
+
+</div>
+
+<!-- ── Create / Edit Modal ── -->
+<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeModal()"></div>
+  <div class="relative w-full max-w-md bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl p-6">
+
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-bold text-white">{{ isEditMode ? 'Edit Category' : 'New Category' }}</h2>
+      <button (click)="closeModal()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div *ngIf="errorMsg" class="alert-error mb-4 text-sm">{{ errorMsg }}</div>
+
+    <div class="space-y-4">
+
+      <div class="form-group">
+        <label>Category Name <span class="text-rose-400">*</span></label>
+        <input [(ngModel)]="currentCategory.name" name="catName" type="text"
+          class="form-input" [ngClass]="{'border-rose-500': submitted && !currentCategory.name.trim()}"
+          placeholder="e.g. T-Shirts">
+        <p *ngIf="submitted && !currentCategory.name.trim()" class="text-rose-400 text-xs mt-1">Name is required</p>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="currentCategory.description" name="catDesc" rows="2"
+          class="form-input resize-none" placeholder="Optional short description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Sizes <span class="text-gray-500 text-[10px] font-normal">(comma-separated, optional)</span></label>
+        <input [(ngModel)]="currentCategory.sizes" name="catSizes" type="text"
+          class="form-input font-mono" placeholder="e.g. S, M, L, XL, XXL">
+        <p class="text-gray-600 text-[11px] mt-1">Enter sizes separated by commas. Leave blank if not applicable.</p>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button (click)="closeModal()" class="btn-secondary px-5">Cancel</button>
+      <button (click)="save()" [disabled]="saving" class="btn-primary flex items-center gap-2 min-w-[120px] justify-center">
+        <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        {{ saving ? 'Saving…' : (isEditMode ? 'Save Changes' : 'Create') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ── -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="cancelDelete()"></div>
+  <div class="relative w-full max-w-sm bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl p-6 text-center">
+    <div class="w-12 h-12 rounded-full bg-rose-900/30 border border-rose-700/30 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <h3 class="text-white font-bold text-base mb-1">Delete Category?</h3>
+    <p class="text-gray-400 text-sm mb-5">
+      "<span class="text-gray-200 font-medium">{{ categoryToDelete?.name }}</span>" will be permanently deleted.
+    </p>
+    <div class="flex gap-3 justify-center">
+      <button (click)="cancelDelete()" class="btn-secondary px-5">Cancel</button>
+      <button (click)="doDelete()" [disabled]="deleting"
+        class="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition disabled:opacity-50">
+        {{ deleting ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
   </div>
 </div>

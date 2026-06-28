@@ -57,6 +57,10 @@
 
       <!-- ===== COMPANY / TENANT MODULE ===== -->
       <!-- These show for both Super Admin (company-filtered) and Company Admins -->
+      <a [routerLink]="basePath + '/dashboard-view'" *ngIf="authService.hasRight('PAGE_DASHBOARD_VIEW')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🛍️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Preview</span>
+      </a>
       <a [routerLink]="basePath + '/dashboard'" *ngIf="authService.hasRight('PAGE_SHOP_DASHBOARD')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📈</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
@@ -107,11 +111,7 @@
       </a>
       <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard Config</span>
-      </a>
-      <a [routerLink]="basePath + '/dashboard-view'" *ngIf="authService.hasRight('PAGE_DASHBOARD_VIEW')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📱</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard View</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Config</span>
       </a>
 
     </nav>

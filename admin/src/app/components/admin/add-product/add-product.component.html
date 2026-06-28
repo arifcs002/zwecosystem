@@ -87,14 +87,31 @@
               This category has no predefined sizes.<br>Cannot map variations.
             </div>
 
-            <div *ngIf="selectedCategoryObj && availableSizes.length > 0" class="space-y-3 max-h-48 overflow-y-auto pr-2">
-              <div *ngFor="let size of availableSizes" class="flex items-center justify-between bg-white/5 p-2 rounded border border-white/5 shadow-sm">
-                <span class="font-bold text-gray-300 w-16 text-center">Size {{ size }}</span>
-                <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-500">Qty</span>
-                  <input type="number" [(ngModel)]="sizeQuantities[size]" [name]="'qty_'+size" class="w-24 p-1.5 text-center bg-[#0d0d1a] border border-white/10 rounded text-white focus:outline-none focus:border-violet-500 text-sm font-bold">
+            <div *ngIf="selectedCategoryObj && availableSizes.length > 0">
+              <p class="text-xs text-gray-500 mb-3">Enter quantity for each size (leave 0 to skip)</p>
+              <div class="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                <div *ngFor="let size of availableSizes"
+                  class="flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all"
+                  [ngClass]="sizeQuantities[size] > 0 ? 'border-violet-500/60 bg-violet-900/20' : 'border-white/8 bg-white/[0.02]'">
+                  <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Size</span>
+                  <span class="text-lg font-extrabold"
+                    [ngClass]="sizeQuantities[size] > 0 ? 'text-violet-300' : 'text-gray-300'">{{ size }}</span>
+                  <div class="flex items-center gap-1 mt-1">
+                    <button type="button"
+                      (click)="sizeQuantities[size] = sizeQuantities[size] > 0 ? sizeQuantities[size] - 1 : 0"
+                      class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex items-center justify-center font-bold text-base leading-none">−</button>
+                    <input type="number" [(ngModel)]="sizeQuantities[size]" [name]="'qty_'+size" min="0"
+                      class="w-12 h-7 text-center bg-black/30 border border-white/10 rounded-lg text-white text-sm font-bold focus:outline-none focus:border-violet-500">
+                    <button type="button"
+                      (click)="sizeQuantities[size] = sizeQuantities[size] + 1"
+                      class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex items-center justify-center font-bold text-base leading-none">+</button>
+                  </div>
                 </div>
               </div>
+              <p class="text-xs text-gray-500 mt-3 text-right">
+                Total: <span class="font-bold text-violet-400">{{ totalQty }} pcs</span>
+                across {{ selectedSizeCount }} sizes
+              </p>
             </div>
 
           </div>

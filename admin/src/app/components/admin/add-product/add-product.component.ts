@@ -38,6 +38,9 @@ export class AddProductComponent implements OnInit {
   availableSizes: string[] = [];
   sizeQuantities: { [key: string]: number } = {};
 
+  get totalQty(): number { return this.availableSizes.reduce((s, sz) => s + (this.sizeQuantities[sz] || 0), 0); }
+  get selectedSizeCount(): number { return this.availableSizes.filter(sz => (this.sizeQuantities[sz] || 0) > 0).length; }
+
   isSubmitting: boolean = false;
   imageFile: File | null = null;
   imagePreview: string | ArrayBuffer | null = null;
@@ -48,22 +51,22 @@ export class AddProductComponent implements OnInit {
 
   loadDropdowns() {
     this.supplierService.getSuppliers().subscribe({
-      next: (data) => this.suppliers = data,
+      next: (data) => this.suppliers = data.sort((a: any, b: any) => a.name.localeCompare(b.name)),
       error: (err) => console.error(err)
     });
 
     this.categoryService.getCategories().subscribe({
-      next: (data) => this.categories = data,
+      next: (data) => this.categories = data.sort((a: any, b: any) => a.name.localeCompare(b.name)),
       error: (err) => console.error(err)
     });
   }
 
   onCategoryChange() {
-    this.selectedCategoryObj = this.categories.find(c => c.id === this.formData.categoryId) || null;
+    const id = Number(this.formData.categoryId);
+    this.selectedCategoryObj = this.categories.find(c => Number(c.id) === id) || null;
     this.sizeQuantities = {};
-    if (this.selectedCategoryObj && this.selectedCategoryObj.sizes) {
-      this.availableSizes = this.selectedCategoryObj.sizes.split(',').map(s => s.trim());
-      // Initialize all to 0
+    if (this.selectedCategoryObj?.sizes) {
+      this.availableSizes = this.selectedCategoryObj.sizes.split(',').map(s => s.trim()).filter(Boolean);
       this.availableSizes.forEach(s => this.sizeQuantities[s] = 0);
     } else {
       this.availableSizes = [];

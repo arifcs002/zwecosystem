@@ -6,6 +6,7 @@ import { CompanyService, Company } from '../../../services/company/company.servi
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { SearchFilterPipe } from '../../../pipes/search-filter.pipe';
 import { ClickOutsideDirective } from '../../../directives/click-outside.directive';
+import { DIVISIONS, getDistrictsByDivision, getUpazilasByDistrict } from '../../../data/bangladesh-geo.data';
 
 @Component({
   selector: 'app-company-form',
@@ -31,90 +32,9 @@ export class CompanyFormComponent implements OnInit {
   divOpen = false;   divSearch = '';
   distOpen = false;  distSearch = '';
   thanaOpen = false; thanaSearch = '';
+  unionOpen = false; unionSearch = '';
 
-  divisions = [
-    'Dhaka', 'Chattogram', 'Sylhet', 'Khulna',
-    'Rajshahi', 'Barishal', 'Rangpur', 'Mymensingh'
-  ];
-
-  districtsByDivision: { [key: string]: string[] } = {
-    'Dhaka': ['Dhaka', 'Gazipur', 'Narayanganj', 'Tangail', 'Faridpur', 'Manikganj', 'Munshiganj', 'Narsingdi', 'Kishoreganj', 'Rajbari', 'Gopalganj', 'Madaripur', 'Shariatpur'],
-    'Chattogram': ['Chattogram', "Cox's Bazar", 'Cumilla', 'Feni', 'Noakhali', 'Lakshmipur', 'Chandpur', 'Brahmanbaria', 'Khagrachhari', 'Rangamati', 'Bandarban'],
-    'Sylhet': ['Sylhet', 'Moulvibazar', 'Habiganj', 'Sunamganj'],
-    'Khulna': ['Khulna', 'Jessore', 'Satkhira', 'Bagerhat', 'Narail', 'Chuadanga', 'Meherpur', 'Magura', 'Kushtia', 'Jhenaidah'],
-    'Rajshahi': ['Rajshahi', 'Natore', 'Bogura', 'Naogaon', 'Chapainawabganj', 'Sirajganj', 'Pabna', 'Joypurhat'],
-    'Barishal': ['Barishal', 'Bhola', 'Patuakhali', 'Pirojpur', 'Jhalokati', 'Barguna'],
-    'Rangpur': ['Rangpur', 'Dinajpur', 'Gaibandha', 'Kurigram', 'Nilphamari', 'Lalmonirhat', 'Thakurgaon', 'Panchagarh'],
-    'Mymensingh': ['Mymensingh', 'Jamalpur', 'Netrokona', 'Sherpur'],
-  };
-
-  thanasByDistrict: { [key: string]: string[] } = {
-    'Dhaka': ['Adabor', 'Airport', 'Badda', 'Banani', 'Bangshal', 'Cantonment', 'Chalkbazar', 'Dhanmondi', 'Demra', 'Gendaria', 'Gulshan', 'Hazaribagh', 'Jatrabari', 'Kafrul', 'Kadamtali', 'Kalabagan', 'Khilgaon', 'Khilkhet', 'Kotwali', 'Lalbagh', 'Mirpur', 'Mohammadpur', 'Motijheel', 'Mugda', 'New Market', 'Pallabi', 'Paltan', 'Rampura', 'Sabujbagh', 'Shah Ali', 'Shahjahanpur', 'Sher-e-Bangla Nagar', 'Shyampur', 'Sutrapur', 'Tejgaon', 'Turag', 'Uttara', 'Vatara', 'Wari'],
-    'Gazipur': ['Gazipur Sadar', 'Kaliakair', 'Kapasia', 'Kaliganj', 'Sreepur', 'Tongi'],
-    'Narayanganj': ['Araihazar', 'Bandar', 'Narayanganj Sadar', 'Rupganj', 'Siddhirganj', 'Sonargaon', 'Fatullah'],
-    'Tangail': ['Tangail Sadar', 'Basail', 'Bhuapur', 'Delduar', 'Dhanbari', 'Ghatail', 'Gopalpur', 'Kalihati', 'Madhupur', 'Mirzapur', 'Nagarpur', 'Sakhipur'],
-    'Faridpur': ['Faridpur Sadar', 'Alfadanga', 'Bhanga', 'Boalmari', 'Charbhadrason', 'Madhukhali', 'Nagarkanda', 'Sadarpur', 'Saltha'],
-    'Manikganj': ['Manikganj Sadar', 'Daulatpur', 'Ghior', 'Harirampur', 'Saturia', 'Shivalaya', 'Singair'],
-    'Munshiganj': ['Munshiganj Sadar', 'Gazaria', 'Lohajang', 'Shreenagar', 'Sirajdikhan', 'Tongibari'],
-    'Narsingdi': ['Narsingdi Sadar', 'Belabo', 'Monohardi', 'Palash', 'Raipura', 'Shibpur'],
-    'Kishoreganj': ['Kishoreganj Sadar', 'Austagram', 'Bajitpur', 'Bhairab', 'Hossainpur', 'Itna', 'Karimganj', 'Katiadi', 'Kuliarchar', 'Mithamain', 'Nikli', 'Pakundia', 'Tarail'],
-    'Gopalganj': ['Gopalganj Sadar', 'Kashiani', 'Kotalipara', 'Muksudpur', 'Tungipara'],
-    'Madaripur': ['Madaripur Sadar', 'Kalkini', 'Rajoir', 'Shibchar'],
-    'Shariatpur': ['Shariatpur Sadar', 'Bhedarganj', 'Damudya', 'Gosairhat', 'Naria', 'Zanjira'],
-    'Rajbari': ['Rajbari Sadar', 'Baliakandi', 'Goalanda', 'Kalukhali', 'Pangsha'],
-    'Chattogram': ['Anwara', 'Bayazid', 'Boalkhali', 'Chandgaon', 'Chandanaish', 'Double Mooring', 'Fatikchhari', 'Halishahar', 'Hathazari', 'Karnaphuli', 'Kotwali', 'Lohagara', 'Mirsharai', 'Pahartali', 'Panchlaish', 'Patenga', 'Patiya', 'Rangunia', 'Raozan', 'Sandwip', 'Satkania', 'Sitakunda'],
-    "Cox's Bazar": ["Cox's Bazar Sadar", 'Chakaria', 'Moheshkhali', 'Pekua', 'Kutubdia', 'Ramu', 'Teknaf', 'Ukhiya'],
-    'Cumilla': ['Cumilla Sadar', 'Brahmanpara', 'Burichang', 'Chandina', 'Chauddagram', 'Daudkandi', 'Debidwar', 'Homna', 'Laksam', 'Lalmai', 'Meghna', 'Monohorgonj', 'Muradnagar', 'Nangalkot', 'Titas'],
-    'Noakhali': ['Noakhali Sadar', 'Begumganj', 'Chatkhil', 'Companiganj', 'Hatiya', 'Senbagh', 'Sonaimuri', 'Subarnachar'],
-    'Feni': ['Feni Sadar', 'Chhagalnaiya', 'Daganbhuiyan', 'Fulgazi', 'Parshuram', 'Sonagazi'],
-    'Lakshmipur': ['Lakshmipur Sadar', 'Kamalnagar', 'Ramganj', 'Ramgati', 'Roypur'],
-    'Chandpur': ['Chandpur Sadar', 'Faridganj', 'Haimchar', 'Hajiganj', 'Kachua', 'Matlab Dakshin', 'Matlab Uttar', 'Shahrasti'],
-    'Brahmanbaria': ['Brahmanbaria Sadar', 'Akhaura', 'Ashuganj', 'Bancharampur', 'Bijoynagar', 'Kasba', 'Nasirnagar', 'Nabinagar', 'Sarail'],
-    'Sylhet': ['Sylhet Sadar', 'Balaganj', 'Beanibazar', 'Biswanath', 'Companigonj', 'Dakshin Surma', 'Fenchuganj', 'Golapganj', 'Gowainghat', 'Jaintiapur', 'Kanaighat', 'Osmani Nagar', 'South Surma'],
-    'Moulvibazar': ['Moulvibazar Sadar', 'Barlekha', 'Juri', 'Kamalganj', 'Kulaura', 'Rajnagar', 'Sreemangal'],
-    'Habiganj': ['Habiganj Sadar', 'Ajmiriganj', 'Bahubal', 'Baniachong', 'Chunarughat', 'Lakhai', 'Madhabpur', 'Nabiganj', 'Shayestaganj'],
-    'Sunamganj': ['Sunamganj Sadar', 'Bishwamvarpur', 'Chhatak', 'Derai', 'Dharampasha', 'Dowarabazar', 'Jagannathpur', 'Jamalganj', 'South Sunamganj', 'Sulla', 'Tahirpur'],
-    'Khulna': ['Khulna Sadar', 'Batiaghata', 'Dacope', 'Daulatpur', 'Dighalia', 'Dumuria', 'Koyra', 'Paikgachha', 'Phultala', 'Rupsa', 'Sonadanga', 'Terokhada'],
-    'Jessore': ['Jessore Sadar', 'Abhaynagar', 'Bagherpara', 'Chaugachha', 'Jhikargachha', 'Keshabpur', 'Manirampur', 'Sharsha'],
-    'Satkhira': ['Satkhira Sadar', 'Assasuni', 'Debhata', 'Kalaroa', 'Kaliganj', 'Shyamnagar', 'Tala'],
-    'Bagerhat': ['Bagerhat Sadar', 'Chitalmari', 'Fakirhat', 'Kachua', 'Mollahat', 'Mongla', 'Morrelganj', 'Rampal', 'Sharankhola'],
-    'Narail': ['Narail Sadar', 'Kalia', 'Lohagara'],
-    'Kushtia': ['Kushtia Sadar', 'Bheramara', 'Daulatpur', 'Khoksa', 'Kumarkhali', 'Mirpur'],
-    'Jhenaidah': ['Jhenaidah Sadar', 'Harinakunda', 'Kaliganj', 'Kotchandpur', 'Maheshpur', 'Shailkupa'],
-    'Rajshahi': ['Rajshahi Sadar', 'Bagha', 'Bagmara', 'Boalia', 'Charghat', 'Durgapur', 'Godagari', 'Mohanpur', 'Motihar', 'Paba', 'Puthia', 'Shah Makhdum', 'Tanore'],
-    'Natore': ['Natore Sadar', 'Bagatipara', 'Baraigram', 'Gurudaspur', 'Lalpur', 'Singra'],
-    'Bogura': ['Bogura Sadar', 'Adamdighi', 'Dhunot', 'Dhupchancia', 'Gabtali', 'Kahaloo', 'Nandigram', 'Sariakandi', 'Shajahanpur', 'Sherpur', 'Shibganj', 'Sonatala'],
-    'Naogaon': ['Naogaon Sadar', 'Atrai', 'Badalgachhi', 'Dhamoirhat', 'Mahadebpur', 'Manda', 'Niamatpur', 'Patnitala', 'Porsha', 'Raninagar', 'Sapahar'],
-    'Sirajganj': ['Sirajganj Sadar', 'Belkuchi', 'Chauhali', 'Kamarkhanda', 'Kazipur', 'Raiganj', 'Shahjadpur', 'Tarash', 'Ullapara'],
-    'Pabna': ['Pabna Sadar', 'Atgharia', 'Bera', 'Bhangura', 'Chatmohar', 'Faridpur', 'Ishwardi', 'Santhia', 'Sujanagar'],
-    'Barishal': ['Barishal Sadar', 'Agailjhara', 'Babuganj', 'Bakerganj', 'Banaripara', 'Gaurnadi', 'Hizla', 'Mehendiganj', 'Muladi', 'Uzirpur'],
-    'Bhola': ['Bhola Sadar', 'Burhanuddin', 'Char Fasson', 'Daulatkhan', 'Lalmohan', 'Manpura', 'Tazumuddin'],
-    'Patuakhali': ['Patuakhali Sadar', 'Bauphal', 'Dashmina', 'Dumki', 'Galachipa', 'Kalapara', 'Mirzaganj', 'Rangabali'],
-    'Pirojpur': ['Pirojpur Sadar', 'Bhandaria', 'Kawkhali', 'Mathbaria', 'Nazirpur', 'Nesarabad', 'Zianagar'],
-    'Jhalokati': ['Jhalokati Sadar', 'Kanthalia', 'Nalchity', 'Rajapur'],
-    'Rangpur': ['Rangpur Sadar', 'Badarganj', 'Gangachara', 'Kaunia', 'Mithapukur', 'Pirgachha', 'Pirganj', 'Taragonj'],
-    'Dinajpur': ['Dinajpur Sadar', 'Birampur', 'Birganj', 'Biral', 'Bochaganj', 'Chirirbandar', 'Fulbari', 'Ghoraghat', 'Hakimpur', 'Kaharol', 'Khansama', 'Nawabganj', 'Parbatipur'],
-    'Gaibandha': ['Gaibandha Sadar', 'Fulchhari', 'Gobindaganj', 'Palashbari', 'Sadullapur', 'Saghata', 'Sundarganj'],
-    'Kurigram': ['Kurigram Sadar', 'Bhurungamari', 'Char Rajibpur', 'Chilmari', 'Nageshwari', 'Phulbari', 'Rajarhat', 'Rowmari', 'Ulipur'],
-    'Nilphamari': ['Nilphamari Sadar', 'Dimla', 'Domar', 'Jaldhaka', 'Kishoreganj', 'Saidpur'],
-    'Lalmonirhat': ['Lalmonirhat Sadar', 'Aditmari', 'Hatibandha', 'Kaliganj', 'Patgram'],
-    'Thakurgaon': ['Thakurgaon Sadar', 'Baliadangi', 'Haripur', 'Pirganj', 'Ranisankail'],
-    'Panchagarh': ['Panchagarh Sadar', 'Atwari', 'Boda', 'Debiganj', 'Tetulia'],
-    'Mymensingh': ['Mymensingh Sadar', 'Bhaluka', 'Dhobaura', 'Fulbaria', 'Gaffargaon', 'Gauripur', 'Haluaghat', 'Ishwarganj', 'Muktagachha', 'Nandail', 'Phulpur', 'Trishal'],
-    'Jamalpur': ['Jamalpur Sadar', 'Bakshiganj', 'Dewanganj', 'Islampur', 'Madarganj', 'Melandaha', 'Sarishabari'],
-    'Netrokona': ['Netrokona Sadar', 'Atpara', 'Barhatta', 'Durgapur', 'Kalmakanda', 'Kendua', 'Khaliajuri', 'Madan', 'Mohanganj', 'Purbadhala'],
-    'Sherpur': ['Sherpur Sadar', 'Jhenaigati', 'Nalitabari', 'Nakla', 'Sreebardi'],
-    'Chapainawabganj': ['Chapainawabganj Sadar', 'Bholahat', 'Gomastapur', 'Nachole', 'Shibganj'],
-    'Joypurhat': ['Joypurhat Sadar', 'Akkelpur', 'Kalai', 'Khetlal', 'Panchbibi'],
-    'Chuadanga': ['Chuadanga Sadar', 'Alamdanga', 'Damurhuda', 'Jibannagar'],
-    'Meherpur': ['Meherpur Sadar', 'Gangni', 'Mujibnagar'],
-    'Magura': ['Magura Sadar', 'Mohammadpur', 'Shalikha', 'Sreepur'],
-    'Barguna': ['Barguna Sadar', 'Amtali', 'Bamna', 'Betagi', 'Pathorghata', 'Taltali'],
-    'Khagrachhari': ['Khagrachhari Sadar', 'Dighinala', 'Guimara', 'Lakshmichhari', 'Mahalchhari', 'Manikchhari', 'Matiranga', 'Panchhari', 'Ramgarh'],
-    'Rangamati': ['Rangamati Sadar', 'Bagaichhari', 'Barkal', 'Belaichhari', 'Juraichhari', 'Kaptai', 'Kaukhali', 'Langadu', 'Naniarchar', 'Rajasthali'],
-    'Bandarban': ['Bandarban Sadar', 'Alikadam', 'Lama', 'Naikhongchhari', 'Rowangchhari', 'Ruma', 'Thanchi'],
-  };
-
+  readonly divisions = DIVISIONS.map(d => d.name);
   availableDistricts: string[] = [];
   availableThanas: string[] = [];
 
@@ -125,8 +45,8 @@ export class CompanyFormComponent implements OnInit {
       this.companyService.getCompanyById(parseInt(id, 10)).subscribe({
         next: (company) => {
           this.currentCompany = { ...company };
-          if (company.division) this.availableDistricts = this.districtsByDivision[company.division] ?? [];
-          if (company.district) this.availableThanas = this.thanasByDistrict[company.district] ?? [];
+          if (company.division) this.availableDistricts = getDistrictsByDivision(company.division).map(d => d.name);
+          if (company.district) this.availableThanas = getUpazilasByDistrict(company.district).map(u => u.name);
         },
         error: () => this.notify.notify({ type: 'error', title: 'Load failed', message: 'Could not load company data.', ttlMs: 5000 })
       });
@@ -159,7 +79,7 @@ export class CompanyFormComponent implements OnInit {
 
   selectDivision(div: string) {
     this.currentCompany.division = div;
-    this.availableDistricts = div ? (this.districtsByDivision[div] ?? []) : [];
+    this.availableDistricts = div ? getDistrictsByDivision(div).map(d => d.name) : [];
     this.currentCompany.district = '';
     this.currentCompany.thana = '';
     this.availableThanas = [];
@@ -168,8 +88,9 @@ export class CompanyFormComponent implements OnInit {
 
   selectDistrict(dist: string) {
     this.currentCompany.district = dist;
-    this.availableThanas = dist ? (this.thanasByDistrict[dist] ?? []) : [];
+    this.availableThanas = dist ? getUpazilasByDistrict(dist).map(u => u.name) : [];
     this.currentCompany.thana = '';
+    this.currentCompany.unionName = '';
     this.distOpen = false; this.distSearch = '';
   }
 
@@ -180,7 +101,10 @@ export class CompanyFormComponent implements OnInit {
     const isValid = this.currentCompany.name?.trim() &&
                     this.currentCompany.subdomain?.trim() &&
                     this.currentCompany.ownerName?.trim() &&
-                    this.currentCompany.ownerMobile?.trim();
+                    this.currentCompany.ownerMobile?.trim() &&
+                    this.currentCompany.division?.trim() &&
+                    this.currentCompany.district?.trim() &&
+                    this.currentCompany.thana?.trim();
 
     if (!isValid) {
       this.errorMsg = 'Please fill in all required fields marked with *';

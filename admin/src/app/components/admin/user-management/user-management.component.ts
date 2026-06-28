@@ -67,7 +67,7 @@ export class UserManagementComponent implements OnInit {
   loadRoles() {
     this.userService.getRoles().subscribe({
       next: (data) => {
-        this.allRoles = data;
+        this.allRoles = data.sort((a: any, b: any) => a.value.localeCompare(b.value));
       },
       error: (err) => console.error(err)
     });
@@ -76,7 +76,7 @@ export class UserManagementComponent implements OnInit {
   loadCompanies() {
     this.companyService.getCompanies().subscribe({
       next: (data) => {
-        this.companies = data;
+        this.companies = data.sort((a: any, b: any) => a.name.localeCompare(b.name));
         this.filteredCompanies = [...this.companies];
       },
       error: (err) => console.error(err)

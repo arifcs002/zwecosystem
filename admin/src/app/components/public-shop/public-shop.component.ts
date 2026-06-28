@@ -95,17 +95,32 @@ export class PublicShopComponent implements OnInit {
   loadStorefrontData() {
     this.settingsService.getSettings().subscribe({
       next: (settings) => {
-        const setting = settings.find(s => s.key === 'visible_dashboard_categories');
-        const visibleCategoryIds = setting && setting.value ? setting.value.split(',') : [];
+        const catSetting = settings.find(s => s.key === 'visible_dashboard_categories');
+        const prodSetting = settings.find(s => s.key === 'visible_dashboard_products');
+        const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
+        const visibleProductIds = prodSetting?.value ? prodSetting.value.split(',').filter(Boolean) : [];
 
         this.categoryService.getCategories().subscribe({
           next: (allCats) => {
-            const filteredCats = allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()));
+            const filteredCats = visibleCategoryIds.length > 0
+              ? allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()))
+              : allCats;
             this.categories = ['All', ...filteredCats.map(c => c.name)];
 
             this.productService.getProducts().subscribe({
               next: (allProds) => {
-                const filteredProds = allProds.filter(p => visibleCategoryIds.includes((p.categoryId || '').toString()));
+                let filteredProds: any[];
+                if (visibleProductIds.length > 0) {
+                  // Specific products selected — show those (preserving config order)
+                  filteredProds = visibleProductIds
+                    .map(id => allProds.find(p => p.id.toString() === id))
+                    .filter((p): p is NonNullable<typeof p> => !!p);
+                } else if (visibleCategoryIds.length > 0) {
+                  filteredProds = allProds.filter(p => visibleCategoryIds.includes((p.categoryId || '').toString()));
+                } else {
+                  // No config — show all products
+                  filteredProds = allProds;
+                }
                 this.products = filteredProds.map(p => ({
                   id: p.id,
                   name: p.name,

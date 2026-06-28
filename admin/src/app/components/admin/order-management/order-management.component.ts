@@ -26,8 +26,8 @@ export class OrderManagementComponent implements OnInit {
   newStatus = '';
   statusNote = '';
 
-  statuses = ['ALL', 'PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
-  orderStatuses = ['PENDING', 'PROCESSING', 'PACKED', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
+  statuses = ['ALL', 'CANCELLED', 'COMPLETED', 'PENDING', 'PROCESSING'];
+  orderStatuses = ['CANCELLED', 'COMPLETED', 'PACKED', 'PENDING', 'PROCESSING', 'SHIPPED'];
 
   ngOnInit() { this.load(); }
 

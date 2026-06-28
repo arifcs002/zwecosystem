@@ -32,6 +32,7 @@ DROP FUNCTION IF EXISTS sp_create_supplier(INT,TEXT,TEXT,TEXT,INT);
 DROP PROCEDURE IF EXISTS sp_update_supplier(INT,TEXT,TEXT,TEXT,INT);
 DROP PROCEDURE IF EXISTS sp_delete_supplier(INT,INT);
 DROP FUNCTION IF EXISTS sp_create_category(INT,TEXT,TEXT,TEXT,TEXT,INT);
+DROP PROCEDURE IF EXISTS sp_update_category(INT,TEXT,TEXT,TEXT,TEXT,INT);
 DROP PROCEDURE IF EXISTS sp_delete_category(INT,INT);
 DROP FUNCTION IF EXISTS sp_create_product(INT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,INT,INT,TEXT,TEXT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_update_product(INT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,TEXT,INT,INT,TEXT,INT,INT);
@@ -565,6 +566,19 @@ BEGIN
     VALUES (p_company_id, p_name, p_slug, NULLIF(trim(p_description),''), NULLIF(trim(p_sizes),''), p_created_by, NOW(), NOW(), 0)
     RETURNING id INTO v_id;
     RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_update_category(
+    p_id INT, p_name TEXT, p_slug TEXT, p_description TEXT, p_sizes TEXT, p_updated_by INT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE categories
+    SET name = p_name, slug = p_slug,
+        description = NULLIF(trim(p_description), ''),
+        sizes = NULLIF(trim(p_sizes), ''),
+        updated_date = NOW()
+    WHERE id = p_id AND is_deleted = 0;
 END;
 $$;
 

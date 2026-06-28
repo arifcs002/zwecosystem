@@ -1,78 +1,93 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">📱 Dashboard View</h1>
-      <p class="page-subtitle">Preview of the configured storefront view for your customers</p>
-    </div>
-  </div>
+<!-- Storefront Preview wrapper -->
+<div class="min-h-screen bg-[#0a0a0f]">
 
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-
-  <!-- Loading State -->
-  <div class="loading" *ngIf="isLoading" style="text-align: center; padding: 3rem; color: #a78bfa;">
-    Loading dashboard view...
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="flex justify-center items-center min-h-screen text-gray-500 text-sm gap-2">
+    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Loading store preview…
   </div>
 
   <div *ngIf="!isLoading">
-    <!-- Category Pills -->
-    <div class="filter-row" style="margin-bottom: 2rem;">
-      <div class="status-filters">
-        <button 
-          class="filter-btn" 
-          [class.active]="selectedCategory === 'All'" 
-          (click)="filterProducts('All')">
-          All ({{ products.length }})
+
+    <!-- Preview banner -->
+    <div class="bg-violet-900/30 border-b border-violet-700/30 px-4 py-2 flex items-center justify-between">
+      <span class="text-xs text-violet-300 font-semibold">🛍️ Store Preview — this is how customers see your shop</span>
+      <a routerLink="../config" class="text-xs text-violet-400 hover:text-violet-300 underline">Edit in Config →</a>
+    </div>
+
+    <!-- Store Header -->
+    <header class="bg-[#0d0d1a] border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <img *ngIf="logoUrl" [src]="logoUrl" class="h-8 w-8 rounded-lg object-contain" alt="logo">
+        <div *ngIf="!logoUrl" class="h-8 w-8 rounded-lg bg-violet-700/40 flex items-center justify-center text-violet-300 text-sm font-bold">S</div>
+        <span class="font-bold text-white text-sm">{{ storeName || 'My Store' }}</span>
+      </div>
+      <div class="text-xs text-gray-500">🛒 Cart</div>
+    </header>
+
+    <!-- No products configured state -->
+    <div *ngIf="featuredProducts.length === 0" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4 text-3xl">🛍️</div>
+      <h2 class="text-white font-bold text-lg mb-2">No products configured</h2>
+      <p class="text-gray-500 text-sm max-w-sm mb-6">Go to <strong class="text-gray-300">Store Config</strong> and select up to 10 featured products (or choose categories) to display here and on the public storefront.</p>
+      <a routerLink="../config" class="btn-primary text-sm">⚙️ Open Store Config</a>
+    </div>
+
+    <div *ngIf="featuredProducts.length > 0" class="max-w-5xl mx-auto px-4 py-6">
+
+      <!-- Category filter tabs (only if category mode) -->
+      <div *ngIf="visibleProductIds.length === 0 && categories.length > 0" class="flex gap-2 flex-wrap mb-6">
+        <button (click)="filterByCategory('All')"
+          class="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
+          [ngClass]="selectedCategory === 'All' ? 'bg-violet-600 border-violet-500 text-white' : 'border-white/10 text-gray-400 hover:border-white/30'">
+          All ({{ featuredProducts.length }})
         </button>
-        <button 
-          *ngFor="let cat of categories" 
-          class="filter-btn" 
-          [class.active]="selectedCategory === cat.name" 
-          (click)="filterProducts(cat.name)">
+        <button *ngFor="let cat of categories" (click)="filterByCategory(cat.name)"
+          class="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
+          [ngClass]="selectedCategory === cat.name ? 'bg-violet-600 border-violet-500 text-white' : 'border-white/10 text-gray-400 hover:border-white/30'">
           {{ cat.name }}
         </button>
       </div>
-    </div>
 
-    <!-- Product Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <div *ngFor="let product of filteredProducts" class="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:border-violet-500/50 hover:transform hover:-translate-y-1">
-        <!-- Image Container -->
-        <div class="relative h-48 bg-[#090915] flex items-center justify-center overflow-hidden">
-          <img 
-            *ngIf="product.imageUrl" 
-            [src]="product.imageUrl" 
-            [alt]="product.name" 
-            class="h-full w-full object-cover">
-          <div *ngIf="!product.imageUrl" class="text-gray-500 text-4xl">
-            📦
+      <!-- Section heading if specific products -->
+      <div *ngIf="visibleProductIds.length > 0" class="mb-5">
+        <h2 class="text-white font-bold text-lg">Featured Products</h2>
+        <p class="text-gray-500 text-xs mt-0.5">{{ filteredProducts.length }} products featured</p>
+      </div>
+
+      <!-- Product Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div *ngFor="let p of filteredProducts"
+          class="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-violet-500/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+
+          <!-- Image -->
+          <div class="relative aspect-square bg-black/30 flex items-center justify-center overflow-hidden">
+            <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="w-full h-full object-cover">
+            <span *ngIf="!p.imageUrl" class="text-4xl">📦</span>
+            <span *ngIf="p.stockQuantity <= 0"
+              class="absolute top-2 left-2 text-[10px] font-bold bg-rose-600 text-white px-1.5 py-0.5 rounded">
+              Out of Stock
+            </span>
           </div>
-          <span class="absolute top-3 right-3 bg-violet-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
-            {{ product.category?.name || 'Uncategorized' }}
-          </span>
+
+          <!-- Info -->
+          <div class="p-3">
+            <p class="text-xs text-gray-500 mb-0.5 truncate">{{ p.category?.name || 'Uncategorized' }}</p>
+            <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 leading-tight mb-2" [title]="p.name">{{ p.name }}</h3>
+            <div class="flex items-center justify-between">
+              <span class="text-base font-bold text-violet-400">৳{{ p.price | number:'1.0-0' }}</span>
+              <button class="text-[10px] px-2 py-1 rounded-lg bg-violet-700/30 border border-violet-600/30 text-violet-300 hover:bg-violet-700/50 transition">
+                Add
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Product Body -->
-        <div class="p-4 space-y-3">
-          <h3 class="text-base font-semibold text-gray-100 line-clamp-1" [title]="product.name">
-            {{ product.name }}
-          </h3>
-          <div class="flex justify-between items-center">
-            <span class="text-lg font-bold text-violet-400">
-              ৳{{ product.price | number:'1.0-0' }}
-            </span>
-            <span 
-              class="text-xs px-2 py-0.5 rounded font-medium"
-              [ngClass]="product.stockQuantity > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'">
-              {{ product.stockQuantity > 0 ? 'In Stock (' + product.stockQuantity + ')' : 'Out of Stock' }}
-            </span>
-          </div>
+        <div *ngIf="filteredProducts.length === 0" class="col-span-full text-center py-12 text-gray-500 text-sm">
+          No products in this category.
         </div>
       </div>
 
-      <div *ngIf="filteredProducts.length === 0" class="col-span-full text-center py-12 bg-white/5 border border-white/10 rounded-xl">
-        <div class="text-4xl mb-3">🛍️</div>
-        <p class="text-gray-400 text-sm">No products found in this category.</p>
-      </div>
     </div>
   </div>
 </div>
