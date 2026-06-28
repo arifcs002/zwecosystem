@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CompanyService, Company } from '../../../services/company/company.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
-import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
+import { SearchFilterPipe } from '../../../pipes/search-filter.pipe';
+import { ClickOutsideDirective } from '../../../directives/click-outside.directive';
 
 @Component({
   selector: 'app-company-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RequiredErrorComponent],
+  imports: [CommonModule, FormsModule, SearchFilterPipe, ClickOutsideDirective],
   templateUrl: './company-form.component.html',
   styleUrl: './company-form.component.css'
 })
@@ -21,9 +22,13 @@ export class CompanyFormComponent implements OnInit {
 
   isEditMode = false;
   saving = false;
-  activeTab: 'basic' | 'address' | 'payment' = 'basic';
 
   currentCompany: Company = this.getEmptyCompany();
+
+  // Searchable dropdown state
+  divOpen = false;   divSearch = '';
+  distOpen = false;  distSearch = '';
+  thanaOpen = false; thanaSearch = '';
 
   divisions = ['Dhaka', 'Chattogram', 'Sylhet', 'Khulna', 'Rajshahi', 'Barishal', 'Rangpur', 'Mymensingh'];
 
@@ -97,18 +102,22 @@ export class CompanyFormComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
-  onDivisionChange() {
-    const div = this.currentCompany.division;
-    this.availableDistricts = (div && this.districtsByDivision[div]) ? this.districtsByDivision[div] : [];
+  selectDivision(div: string) {
+    this.currentCompany.division = div;
+    this.availableDistricts = div ? (this.districtsByDivision[div] ?? []) : [];
     this.currentCompany.district = '';
     this.currentCompany.thana = '';
     this.availableThanas = [];
+    this.divOpen = false;
+    this.divSearch = '';
   }
 
-  onDistrictChange() {
-    const dist = this.currentCompany.district;
-    this.availableThanas = (dist && this.thanasByDistrict[dist]) ? this.thanasByDistrict[dist] : [];
+  selectDistrict(dist: string) {
+    this.currentCompany.district = dist;
+    this.availableThanas = dist ? (this.thanasByDistrict[dist] ?? []) : [];
     this.currentCompany.thana = '';
+    this.distOpen = false;
+    this.distSearch = '';
   }
 
   saveCompany() {

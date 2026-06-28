@@ -1,98 +1,145 @@
 <div class="page-container max-w-5xl mx-auto">
-  <div class="page-header flex justify-between items-center">
-    <div>
-      <h1 class="page-title">{{ isEditMode ? 'Edit Company' : 'Create New Company' }}</h1>
-      <p class="page-subtitle">Configure company details and settings</p>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-4">
+      <button (click)="cancel()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-white">{{ isEditMode ? 'Edit Company' : 'New Company' }}</h1>
+        <p class="text-sm text-gray-500 mt-0.5">{{ isEditMode ? 'Update company information' : 'Fill in the details to register a new company' }}</p>
+      </div>
     </div>
-    <button (click)="cancel()" class="btn-secondary py-1.5 px-4 text-sm">✕ Close</button>
+    <button (click)="saveCompany()" [disabled]="saving"
+      class="btn-primary flex items-center gap-2 min-w-[140px] justify-center">
+      <svg *ngIf="!saving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <svg *ngIf="saving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      {{ saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Company') }}
+    </button>
   </div>
 
-  <div class="bg-white/5 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-    <!-- Tabs -->
-    <div class="flex border-b border-white/10 bg-white/[0.02]">
-      <button (click)="activeTab = 'basic'"
-        [ngClass]="activeTab === 'basic' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
-        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
-        Basic Info
-      </button>
-      <button (click)="activeTab = 'address'"
-        [ngClass]="activeTab === 'address' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
-        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
-        Address
-      </button>
-      <button (click)="activeTab = 'payment'"
-        [ngClass]="activeTab === 'payment' ? 'border-violet-500 text-violet-300 bg-violet-900/10' : 'border-transparent text-gray-500 hover:text-gray-300'"
-        class="px-6 py-3.5 border-b-2 font-medium text-sm transition focus:outline-none">
-        Payment Info
-      </button>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- ── LEFT SIDEBAR: Logo + Status ── -->
+    <div class="space-y-5">
+
+      <!-- Logo Card -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Company Logo</h3>
+
+        <!-- Preview -->
+        <div class="w-full aspect-square max-w-[160px] mx-auto rounded-2xl border-2 border-dashed border-white/15 bg-black/20 flex items-center justify-center overflow-hidden mb-4">
+          <img *ngIf="currentCompany.logoUrl && !currentCompany.logoUrl.startsWith('data:image')" [src]="currentCompany.logoUrl" class="w-full h-full object-contain" alt="Logo">
+          <img *ngIf="currentCompany.logoUrl && currentCompany.logoUrl.startsWith('data:')" [src]="currentCompany.logoUrl" class="w-full h-full object-contain" alt="Logo">
+          <div *ngIf="!currentCompany.logoUrl" class="text-center px-4">
+            <div class="w-14 h-14 rounded-2xl bg-violet-900/30 border border-violet-700/30 flex items-center justify-center mx-auto mb-2">
+              <svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <p class="text-xs text-gray-600">No logo</p>
+          </div>
+        </div>
+
+        <!-- Upload -->
+        <label class="block w-full cursor-pointer">
+          <span class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-violet-900/20 border border-violet-800/30 text-violet-400 text-xs font-semibold hover:bg-violet-900/30 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Upload Image
+          </span>
+          <input type="file" (change)="onLogoSelect($event)" accept="image/*" class="sr-only">
+        </label>
+        <p class="text-center text-[10px] text-gray-600 mt-1.5">PNG, JPG, WEBP · Max 2MB</p>
+
+        <div class="mt-3">
+          <input [(ngModel)]="currentCompany.logoUrl" name="logoUrl" type="text"
+            class="form-input text-xs" placeholder="Or paste image URL…">
+        </div>
+      </div>
+
+      <!-- Status Card -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Status</h3>
+
+        <div class="space-y-4">
+          <!-- Active Toggle -->
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-300">Account Active</p>
+              <p class="text-xs text-gray-600">Can this company log in?</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only" [(ngModel)]="currentCompany.isActive" name="isActive">
+              <div class="w-11 h-6 rounded-full transition-colors duration-200"
+                [ngClass]="currentCompany.isActive ? 'bg-emerald-500' : 'bg-gray-700'"></div>
+              <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200"
+                [ngClass]="currentCompany.isActive ? 'translate-x-5' : 'translate-x-0'"></div>
+            </label>
+          </div>
+
+          <!-- Approval -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Approval Status</label>
+            <select [(ngModel)]="currentCompany.approvalStatus" name="approvalStatus" class="form-input text-sm">
+              <option value="Pending">⏳ Pending</option>
+              <option value="Approved">✅ Approved</option>
+              <option value="Rejected">❌ Rejected</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Social Links Card -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Social Links</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-blue-900/30 border border-blue-800/30 text-blue-400 text-xs font-bold">f</span>
+            <input [(ngModel)]="currentCompany.facebookLink" name="facebookLink"
+              type="url" class="form-input text-sm" placeholder="Facebook page URL">
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-pink-900/30 border border-pink-800/30 text-pink-400 text-xs font-bold">ig</span>
+            <input [(ngModel)]="currentCompany.instagramLink" name="instagramLink"
+              type="url" class="form-input text-sm" placeholder="Instagram URL">
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="p-6 md:p-8 min-h-[420px]">
+    <!-- ── RIGHT MAIN CONTENT ── -->
+    <div class="lg:col-span-2 space-y-5">
 
-      <!-- ── Basic Info Tab ── -->
-      <div *ngIf="activeTab === 'basic'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Basic Info -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-violet-900/40 flex items-center justify-center text-violet-400">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+          </span>
+          Basic Information
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-        <!-- Left Column -->
-        <div class="space-y-4">
-          <div class="form-group">
+          <div class="form-group sm:col-span-2">
             <label>Company Name <span class="text-rose-400">*</span></label>
-            <input #companyNameModel="ngModel" [(ngModel)]="currentCompany.name" name="companyName"
-              type="text" required class="form-input" placeholder="e.g. Super Shop">
-            <app-required-error [control]="companyNameModel"></app-required-error>
+            <input [(ngModel)]="currentCompany.name" name="companyName"
+              type="text" required class="form-input" placeholder="e.g. Super Store BD">
           </div>
 
           <div class="form-group">
             <label>Subdomain <span class="text-rose-400">*</span></label>
-            <div class="flex items-center gap-0">
-              <input #companySubdomainModel="ngModel" [(ngModel)]="currentCompany.subdomain" name="companySubdomain"
-                type="text" required class="form-input rounded-r-none" placeholder="shop">
-              <span class="px-3 py-2 bg-white/5 border border-l-0 border-white/10 rounded-r-lg text-xs text-gray-500 whitespace-nowrap">.zairasworld.com</span>
+            <div class="flex items-center">
+              <input [(ngModel)]="currentCompany.subdomain" name="companySubdomain"
+                type="text" required class="form-input rounded-r-none border-r-0" placeholder="superstorebd"
+                (input)="currentCompany.subdomain = currentCompany.subdomain.toLowerCase().replace(' ','-')">
+              <span class="h-[38px] px-2.5 bg-white/[0.03] border border-white/10 rounded-r-lg text-[11px] text-gray-500 flex items-center whitespace-nowrap">.zairasworld.com</span>
             </div>
-            <app-required-error [control]="companySubdomainModel"></app-required-error>
-          </div>
-
-          <div class="form-group">
-            <label>Company Email</label>
-            <input [(ngModel)]="currentCompany.contactEmail" name="contactEmail"
-              type="email" class="form-input" placeholder="admin@shop.com">
-          </div>
-
-          <div class="form-group">
-            <label>Company Phone</label>
-            <input [(ngModel)]="currentCompany.companyMobile" name="companyMobile"
-              type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
 
           <div class="form-group">
             <label>Delivery Charge (৳)</label>
             <input [(ngModel)]="currentCompany.deliveryCharge" name="deliveryCharge"
               type="number" min="0" class="form-input" placeholder="0">
-          </div>
-        </div>
-
-        <!-- Right Column -->
-        <div class="space-y-4">
-
-          <!-- Logo Upload -->
-          <div class="form-group">
-            <label>Company Logo</label>
-            <div class="mt-1 flex items-start gap-4">
-              <div class="flex-shrink-0 h-20 w-20 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center overflow-hidden">
-                <img *ngIf="currentCompany.logoUrl" [src]="currentCompany.logoUrl"
-                  class="h-full w-full object-contain" alt="Logo preview">
-                <svg *ngIf="!currentCompany.logoUrl" class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div class="flex-1 space-y-2">
-                <input type="file" (change)="onLogoSelect($event)" accept="image/*"
-                  class="form-input py-1.5 text-xs cursor-pointer">
-                <p class="text-[10px] text-gray-600">Max 2MB · PNG, JPG, WEBP</p>
-                <input [(ngModel)]="currentCompany.logoUrl" name="logoUrl"
-                  type="text" class="form-input text-xs" placeholder="Or paste image URL">
-              </div>
-            </div>
           </div>
 
           <div class="form-group">
@@ -108,131 +155,168 @@
           </div>
 
           <div class="form-group">
-            <label>Facebook Page</label>
-            <input [(ngModel)]="currentCompany.facebookLink" name="facebookLink"
-              type="url" class="form-input" placeholder="https://facebook.com/...">
+            <label>Company Email</label>
+            <input [(ngModel)]="currentCompany.contactEmail" name="contactEmail"
+              type="email" class="form-input" placeholder="info@company.com">
           </div>
 
           <div class="form-group">
-            <label>Instagram</label>
-            <input [(ngModel)]="currentCompany.instagramLink" name="instagramLink"
-              type="url" class="form-input" placeholder="https://instagram.com/...">
-          </div>
-
-          <!-- Status Controls -->
-          <div class="flex gap-4 pt-2 border-t border-white/10">
-            <div class="flex-1">
-              <label class="block text-xs font-semibold text-gray-400 mb-2">Account Status</label>
-              <label class="flex items-center cursor-pointer gap-3">
-                <div class="relative">
-                  <input type="checkbox" class="sr-only" [(ngModel)]="currentCompany.isActive" name="isActive">
-                  <div class="block w-10 h-6 rounded-full transition-colors" [ngClass]="currentCompany.isActive ? 'bg-emerald-500' : 'bg-gray-700'"></div>
-                  <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform" [ngClass]="currentCompany.isActive ? 'transform translate-x-4' : ''"></div>
-                </div>
-                <span class="text-sm font-medium" [ngClass]="currentCompany.isActive ? 'text-emerald-400' : 'text-gray-500'">
-                  {{ currentCompany.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </label>
-            </div>
-            <div class="flex-1">
-              <label class="block text-xs font-semibold text-gray-400 mb-2">Approval Status</label>
-              <select [(ngModel)]="currentCompany.approvalStatus" name="approvalStatus" class="form-input text-sm"
-                [ngClass]="{
-                  'text-amber-400': currentCompany.approvalStatus === 'Pending',
-                  'text-emerald-400': currentCompany.approvalStatus === 'Approved',
-                  'text-rose-400': currentCompany.approvalStatus === 'Rejected'
-                }">
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
+            <label>Company Phone</label>
+            <input [(ngModel)]="currentCompany.companyMobile" name="companyMobile"
+              type="text" class="form-input" placeholder="01XXXXXXXXX">
           </div>
         </div>
       </div>
 
-      <!-- ── Address Tab ── -->
-      <div *ngIf="activeTab === 'address'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="space-y-4">
+      <!-- Location -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-sky-900/40 flex items-center justify-center text-sky-400">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </span>
+          Location
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+          <!-- Division Searchable -->
           <div class="form-group">
             <label>Division</label>
-            <select [(ngModel)]="currentCompany.division" name="division" (change)="onDivisionChange()" class="form-input">
-              <option value="">Select Division</option>
-              <option *ngFor="let div of divisions" [value]="div">{{ div }}</option>
-            </select>
+            <div class="searchable-dropdown" (clickOutside)="divOpen=false">
+              <div class="form-input flex items-center justify-between cursor-pointer select-none"
+                (click)="divOpen=!divOpen">
+                <span [ngClass]="currentCompany.division ? 'text-gray-200' : 'text-gray-500'">
+                  {{ currentCompany.division || 'Select Division' }}
+                </span>
+                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div *ngIf="divOpen" class="searchable-dropdown-menu">
+                <input type="text" class="searchable-dropdown-search" [(ngModel)]="divSearch" placeholder="Search…" (click)="$event.stopPropagation()">
+                <div class="searchable-dropdown-list">
+                  <div class="searchable-dropdown-item" [ngClass]="{'active': !currentCompany.division}"
+                    (click)="selectDivision('')">All / Clear</div>
+                  <div *ngFor="let d of divisions | searchFilter:divSearch"
+                    class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.division===d}"
+                    (click)="selectDivision(d)">{{ d }}</div>
+                  <div *ngIf="!(divisions | searchFilter:divSearch).length" class="searchable-dropdown-empty">No results</div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- District Searchable -->
           <div class="form-group">
             <label>District</label>
-            <select [(ngModel)]="currentCompany.district" name="district" (change)="onDistrictChange()"
-              class="form-input" [disabled]="!currentCompany.division || availableDistricts.length === 0">
-              <option value="">Select District</option>
-              <option *ngFor="let dist of availableDistricts" [value]="dist">{{ dist }}</option>
-            </select>
+            <div class="searchable-dropdown" (clickOutside)="distOpen=false">
+              <div class="form-input flex items-center justify-between cursor-pointer select-none"
+                [ngClass]="!currentCompany.division ? 'opacity-50 cursor-not-allowed' : ''"
+                (click)="currentCompany.division && (distOpen=!distOpen)">
+                <span [ngClass]="currentCompany.district ? 'text-gray-200' : 'text-gray-500'">
+                  {{ currentCompany.district || 'Select District' }}
+                </span>
+                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div *ngIf="distOpen" class="searchable-dropdown-menu">
+                <input type="text" class="searchable-dropdown-search" [(ngModel)]="distSearch" placeholder="Search…" (click)="$event.stopPropagation()">
+                <div class="searchable-dropdown-list">
+                  <div class="searchable-dropdown-item" [ngClass]="{'active': !currentCompany.district}"
+                    (click)="selectDistrict('')">All / Clear</div>
+                  <div *ngFor="let d of availableDistricts | searchFilter:distSearch"
+                    class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.district===d}"
+                    (click)="selectDistrict(d)">{{ d }}</div>
+                  <div *ngIf="!(availableDistricts | searchFilter:distSearch).length" class="searchable-dropdown-empty">No results</div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- Thana Searchable -->
           <div class="form-group">
             <label>Thana / Upazila</label>
-            <select [(ngModel)]="currentCompany.thana" name="thana"
-              class="form-input" [disabled]="!currentCompany.district || availableThanas.length === 0">
-              <option value="">Select Thana</option>
-              <option *ngFor="let th of availableThanas" [value]="th">{{ th }}</option>
-            </select>
-            <p *ngIf="currentCompany.district && availableThanas.length === 0" class="text-xs text-gray-500 mt-1">
-              Type manually below if thana not listed.
-            </p>
+            <div class="searchable-dropdown" (clickOutside)="thanaOpen=false">
+              <div class="form-input flex items-center justify-between cursor-pointer select-none"
+                [ngClass]="!currentCompany.district ? 'opacity-50 cursor-not-allowed' : ''"
+                (click)="currentCompany.district && (thanaOpen=!thanaOpen)">
+                <span [ngClass]="currentCompany.thana ? 'text-gray-200' : 'text-gray-500'">
+                  {{ currentCompany.thana || 'Select Thana' }}
+                </span>
+                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div *ngIf="thanaOpen" class="searchable-dropdown-menu">
+                <input type="text" class="searchable-dropdown-search" [(ngModel)]="thanaSearch" placeholder="Type to search or enter manually…" (click)="$event.stopPropagation()">
+                <div class="searchable-dropdown-list">
+                  <div *ngIf="thanaSearch && !(availableThanas | searchFilter:thanaSearch).includes(thanaSearch)"
+                    class="searchable-dropdown-item text-violet-300"
+                    (click)="currentCompany.thana=thanaSearch; thanaOpen=false">
+                    ＋ Use "{{ thanaSearch }}"
+                  </div>
+                  <div *ngFor="let t of availableThanas | searchFilter:thanaSearch"
+                    class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.thana===t}"
+                    (click)="currentCompany.thana=t; thanaOpen=false; thanaSearch=''">{{ t }}</div>
+                  <div *ngIf="!(availableThanas | searchFilter:thanaSearch).length && !thanaSearch" class="searchable-dropdown-empty">Select district first</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Thana (Manual)</label>
-            <input [(ngModel)]="currentCompany.thana" name="thanaManual"
-              type="text" class="form-input" placeholder="Enter thana manually if not listed">
-          </div>
-        </div>
-        <div class="space-y-4">
-          <div class="form-group">
+
+          <div class="form-group sm:col-span-3">
             <label>Detailed Address</label>
-            <textarea [(ngModel)]="currentCompany.address" name="address" rows="6"
-              class="form-input" placeholder="House no, Road, Area..."></textarea>
+            <textarea [(ngModel)]="currentCompany.address" name="address" rows="3"
+              class="form-input resize-none" placeholder="House no, Road, Area, City…"></textarea>
           </div>
         </div>
       </div>
 
-      <!-- ── Payment Tab ── -->
-      <div *ngIf="activeTab === 'payment'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold text-violet-400 uppercase tracking-widest border-b border-white/10 pb-2">Mobile Banking</h4>
-          <div class="form-group">
-            <label>bKash Number</label>
-            <input [(ngModel)]="currentCompany.bkashNumber" name="bkashNumber"
-              type="text" class="form-input" placeholder="01XXXXXXXXX">
+      <!-- Payment -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-emerald-900/40 flex items-center justify-center text-emerald-400">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          </span>
+          Payment Info
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <p class="text-[11px] font-bold text-amber-400 uppercase tracking-widest mb-3">Mobile Banking</p>
+            <div class="space-y-3">
+              <div class="form-group">
+                <label>bKash Number</label>
+                <input [(ngModel)]="currentCompany.bkashNumber" name="bkashNumber"
+                  type="text" class="form-input" placeholder="01XXXXXXXXX">
+              </div>
+              <div class="form-group">
+                <label>Nagad Number</label>
+                <input [(ngModel)]="currentCompany.nagadNumber" name="nagadNumber"
+                  type="text" class="form-input" placeholder="01XXXXXXXXX">
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Nagad Number</label>
-            <input [(ngModel)]="currentCompany.nagadNumber" name="nagadNumber"
-              type="text" class="form-input" placeholder="01XXXXXXXXX">
-          </div>
-        </div>
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold text-violet-400 uppercase tracking-widest border-b border-white/10 pb-2">Bank Account</h4>
-          <div class="form-group">
-            <label>Bank Name</label>
-            <input [(ngModel)]="currentCompany.bankName" name="bankName"
-              type="text" class="form-input" placeholder="e.g. Dutch Bangla Bank">
-          </div>
-          <div class="form-group">
-            <label>Account Holder Name</label>
-            <input [(ngModel)]="currentCompany.bankAccountName" name="bankAccountName"
-              type="text" class="form-input" placeholder="Account holder name">
+          <div>
+            <p class="text-[11px] font-bold text-sky-400 uppercase tracking-widest mb-3">Bank Account</p>
+            <div class="space-y-3">
+              <div class="form-group">
+                <label>Bank Name</label>
+                <input [(ngModel)]="currentCompany.bankName" name="bankName"
+                  type="text" class="form-input" placeholder="e.g. Dutch Bangla Bank">
+              </div>
+              <div class="form-group">
+                <label>Account Holder Name</label>
+                <input [(ngModel)]="currentCompany.bankAccountName" name="bankAccountName"
+                  type="text" class="form-input" placeholder="Account holder name">
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="border-t border-white/10 px-6 md:px-8 py-4 flex justify-end gap-3 bg-white/[0.02]">
-      <button (click)="cancel()" class="btn-secondary">Cancel</button>
-      <button (click)="saveCompany()" [disabled]="saving"
-        class="btn-primary disabled:opacity-50 min-w-[120px]">
-        {{ saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Company') }}
-      </button>
+      <!-- Bottom Save -->
+      <div class="flex justify-end gap-3">
+        <button (click)="cancel()" class="btn-secondary px-6">Cancel</button>
+        <button (click)="saveCompany()" [disabled]="saving"
+          class="btn-primary flex items-center gap-2 min-w-[160px] justify-center">
+          {{ saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Company') }}
+        </button>
+      </div>
+
     </div>
   </div>
 </div>

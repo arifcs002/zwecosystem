@@ -321,7 +321,54 @@ body {
 .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
 .form-input::placeholder { color: var(--text-muted); }
 
-select.form-input { cursor: pointer; }
+select.form-input {
+  cursor: pointer;
+  background-color: #1a1a2e;
+  color: var(--text-primary);
+}
+select.form-input option {
+  background-color: #1a1a2e;
+  color: var(--text-primary);
+}
+select.form-input option:disabled {
+  color: var(--text-muted);
+}
+
+/* Custom searchable dropdown */
+.searchable-dropdown { position: relative; }
+.searchable-dropdown-menu {
+  position: absolute;
+  z-index: 50;
+  width: 100%;
+  margin-top: 4px;
+  background: #1a1a2e;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.searchable-dropdown-search {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: rgba(255,255,255,0.04);
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+}
+.searchable-dropdown-search::placeholder { color: var(--text-muted); }
+.searchable-dropdown-list { max-height: 220px; overflow-y: auto; }
+.searchable-dropdown-item {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.searchable-dropdown-item:hover,
+.searchable-dropdown-item.active { background: rgba(124,58,237,0.2); color: #a78bfa; }
+.searchable-dropdown-empty { padding: 0.75rem 0.9rem; color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
 
 /* ======= NAME BADGE ======= */
 .name-badge {
