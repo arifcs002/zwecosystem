@@ -150,6 +150,9 @@ namespace Ecommerce.Api.Domain
         [Column("thana")]
         public string? Thana { get; set; }
 
+        [Column("union_name")]
+        public string? UnionName { get; set; }
+
         // Navigation properties
         [JsonIgnore]
         public List<User> Users { get; set; } = new();

@@ -16,6 +16,7 @@ export interface Company {
   division?: string;
   district?: string;
   thana?: string;
+  unionName?: string;
   address?: string;
   facebookLink?: string;
   instagramLink?: string;
