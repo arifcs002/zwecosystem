@@ -10,6 +10,7 @@ export interface Category {
   description?: string;
   sizes?: string;
   companyId?: number;
+  parentId?: number | null;
   createdAt?: string;
 }
 

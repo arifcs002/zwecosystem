@@ -87,8 +87,9 @@ export const routes: Routes = [
     ]
   },
 
-  // --- PUBLIC SHOP ROUTE ---
+  // --- PUBLIC SHOP ROUTES ---
   { path: ':companySlug', component: PublicShopComponent },
+  { path: ':companySlug/category/:categoryId', component: PublicShopComponent },
 
   // --- DEFAULT REDIRECT ---
   { path: '', redirectTo: '/admin/login', pathMatch: 'full' }

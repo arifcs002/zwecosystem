@@ -4,23 +4,34 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CompanyService } from '../../services/company/company.service';
 import { resolveImageUrl } from '../../utils/image-url.util';
-import { CategoryService } from '../../services/category/category.service';
+import { CategoryService, Category } from '../../services/category/category.service';
 import { ProductService } from '../../services/product/product.service';
 import { SettingsService } from '../../services/settings/settings.service';
 
-interface Product {
+export interface ShopProduct {
   id: number;
   name: string;
   price: number;
   image: string;
   category: string;
+  categoryId: number;
   stock: number;
 }
 
-interface CartItem {
-  product: Product;
-  quantity: number;
+export interface CategorySection {
+  id: number;
+  name: string;
+  products: ShopProduct[];
 }
+
+export interface CategoryTree {
+  id: number;
+  name: string;
+  expanded: boolean;
+  children: CategoryTree[];
+}
+
+interface CartItem { product: ShopProduct; quantity: number; }
 
 @Component({
   selector: 'app-public-shop',
@@ -37,182 +48,194 @@ export class PublicShopComponent implements OnInit {
   private productService = inject(ProductService);
   private settingsService = inject(SettingsService);
 
-  companySlug: string = '';
-  companyName: string = 'Loading...';
-  companyLogo: string = '';
-  themeClass: string = 'theme-cyberpunk-teal'; // Default fallback
+  companySlug = '';
+  companyName = 'Loading...';
+  companyLogo = '';
   isValidStore: boolean | null = null;
+  isLoading = false;
 
-  categories: string[] = [];
-  selectedCategory = 'All';
-  products: Product[] = [];
-  filteredProducts: Product[] = [];
+  // Category tree for left sidebar
+  categoryTree: CategoryTree[] = [];
+  selectedCategoryId: number | null = null;   // null = home (all sections)
 
-  // Cart State
+  // Category sections for homepage
+  categorySections: CategorySection[] = [];
+
+  // Category detail page (when See More clicked)
+  detailCategory: CategorySection | null = null;
+  allProductsInCategory: ShopProduct[] = [];
+
+  // Cart
   cart: CartItem[] = [];
   isCartOpen = false;
   isCheckoutOpen = false;
-
-  // Checkout Form
-  customerInfo = {
-    name: '',
-    mobile: '',
-    address: '',
-    paymentMethod: 'COD'
-  };
+  customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       this.companySlug = params.get('companySlug') || '';
-      
+      const catId = params.get('categoryId');
+      this.selectedCategoryId = catId ? Number(catId) : null;
+
       this.companyService.getCompanies().subscribe({
         next: (companies: any[]) => {
           const comp = companies.find(c => c.subdomain.toLowerCase() === this.companySlug.toLowerCase());
           if (comp) {
             this.companyName = comp.name;
+            this.companyLogo = comp.logoUrl || '';
             this.isValidStore = true;
             localStorage.setItem('tenant_company_id', comp.id);
-            if (comp.logoUrl) {
-              this.companyLogo = comp.logoUrl;
-            }
-            // Load categories and products for this company
             this.loadStorefrontData();
           } else {
             this.companyName = 'Store Not Found';
             this.isValidStore = false;
-            this.products = [];
-            this.filteredProducts = [];
-            this.categories = [];
           }
         },
-        error: (err: any) => {
-          console.error('Failed to load companies:', err);
-          this.isValidStore = false;
-        }
+        error: () => { this.isValidStore = false; }
       });
     });
   }
 
   loadStorefrontData() {
+    this.isLoading = true;
     this.settingsService.getSettings().subscribe({
       next: (settings) => {
         const catSetting = settings.find(s => s.key === 'visible_dashboard_categories');
-        const prodSetting = settings.find(s => s.key === 'visible_dashboard_products');
         const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
-        const visibleProductIds = prodSetting?.value ? prodSetting.value.split(',').filter(Boolean) : [];
 
         this.categoryService.getCategories().subscribe({
           next: (allCats) => {
-            const filteredCats = visibleCategoryIds.length > 0
+            const displayCats = visibleCategoryIds.length > 0
               ? allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()))
               : allCats;
-            this.categories = ['All', ...filteredCats.map(c => c.name)];
+
+            // Build category tree (parent/child)
+            this.buildCategoryTree(displayCats);
 
             this.productService.getProducts().subscribe({
               next: (allProds) => {
-                let filteredProds: any[];
-                if (visibleProductIds.length > 0) {
-                  // Specific products selected — show those (preserving config order)
-                  filteredProds = visibleProductIds
-                    .map(id => allProds.find(p => p.id.toString() === id))
-                    .filter((p): p is NonNullable<typeof p> => !!p);
-                } else if (visibleCategoryIds.length > 0) {
-                  filteredProds = allProds.filter(p => visibleCategoryIds.includes((p.categoryId || '').toString()));
-                } else {
-                  // No config — show all products
-                  filteredProds = allProds;
-                }
-                this.products = filteredProds.map(p => ({
+                const shopProds: ShopProduct[] = allProds.map(p => ({
                   id: p.id,
                   name: p.name,
                   price: p.price,
                   image: resolveImageUrl(p.imageUrl),
                   category: p.category?.name || 'Uncategorized',
+                  categoryId: Number(p.categoryId) || 0,
                   stock: p.stockQuantity
                 }));
-                this.filterProducts('All');
+
+                // Build sections: one per visible category (max 10 products each)
+                this.categorySections = displayCats
+                  .filter(c => !c.parentId) // top-level only on homepage
+                  .map(cat => ({
+                    id: Number(cat.id),
+                    name: cat.name,
+                    products: shopProds
+                      .filter(p => this.productBelongsToCategory(p.categoryId, Number(cat.id), displayCats))
+                      .slice(0, 10)
+                  }))
+                  .filter(s => s.products.length > 0);
+
+                // If on category detail route, set detail
+                if (this.selectedCategoryId) {
+                  const cat = displayCats.find(c => Number(c.id) === this.selectedCategoryId);
+                  if (cat) {
+                    this.detailCategory = {
+                      id: Number(cat.id),
+                      name: cat.name,
+                      products: shopProds.filter(p =>
+                        this.productBelongsToCategory(p.categoryId, Number(cat.id), displayCats)
+                      )
+                    };
+                    this.allProductsInCategory = this.detailCategory.products;
+                  }
+                }
+
+                this.isLoading = false;
               },
-              error: (err) => console.error('Failed to load products:', err)
+              error: () => { this.isLoading = false; }
             });
           },
-          error: (err) => console.error('Failed to load categories:', err)
+          error: () => { this.isLoading = false; }
         });
       },
-      error: (err) => console.error('Failed to load settings:', err)
+      error: () => { this.isLoading = false; }
     });
   }
 
-  filterProducts(category: string) {
-    this.selectedCategory = category;
-    if (category === 'All') {
-      this.filteredProducts = [...this.products];
-    } else {
-      this.filteredProducts = this.products.filter(p => p.category === category);
-    }
-  }
-
-  // --- Cart Logic ---
-  toggleCart() {
-    this.isCartOpen = !this.isCartOpen;
-    if (this.isCartOpen) this.isCheckoutOpen = false;
-  }
-
-  addToCart(product: Product) {
-    const existingItem = this.cart.find(item => item.product.id === product.id);
-    if (existingItem) {
-      if (existingItem.quantity < product.stock) {
-        existingItem.quantity++;
+  buildCategoryTree(cats: Category[]) {
+    const roots: CategoryTree[] = [];
+    const map: { [id: number]: CategoryTree } = {};
+    cats.forEach(c => { map[Number(c.id)] = { id: Number(c.id), name: c.name, expanded: false, children: [] }; });
+    cats.forEach(c => {
+      if (c.parentId && map[Number(c.parentId)]) {
+        map[Number(c.parentId)].children.push(map[Number(c.id)]);
+      } else {
+        roots.push(map[Number(c.id)]);
       }
-    } else {
-      this.cart.push({ product, quantity: 1 });
-    }
-    this.isCartOpen = true; // Open cart feedback
+    });
+    this.categoryTree = roots;
+  }
+
+  // Check if product belongs to category (including via sub-categories)
+  productBelongsToCategory(productCatId: number, catId: number, allCats: Category[]): boolean {
+    if (productCatId === catId) return true;
+    // Check sub-categories
+    const subIds = allCats.filter(c => Number(c.parentId) === catId).map(c => Number(c.id));
+    return subIds.some(sid => this.productBelongsToCategory(productCatId, sid, allCats));
+  }
+
+  toggleCategoryExpand(node: CategoryTree) {
+    node.expanded = !node.expanded;
+  }
+
+  navigateToCategory(catId: number) {
+    this.selectedCategoryId = catId;
+    this.router.navigate(['/', this.companySlug, 'category', catId]);
+  }
+
+  seeMore(catId: number) {
+    this.navigateToCategory(catId);
+  }
+
+  goHome() {
+    this.selectedCategoryId = null;
+    this.detailCategory = null;
+    this.router.navigate(['/', this.companySlug]);
+  }
+
+  // Cart
+  toggleCart() { this.isCartOpen = !this.isCartOpen; if (this.isCartOpen) this.isCheckoutOpen = false; }
+
+  addToCart(product: ShopProduct) {
+    const item = this.cart.find(i => i.product.id === product.id);
+    if (item) { if (item.quantity < product.stock) item.quantity++; }
+    else this.cart.push({ product, quantity: 1 });
+    this.isCartOpen = true;
   }
 
   updateQuantity(item: CartItem, delta: number) {
     item.quantity += delta;
-    if (item.quantity <= 0) {
-      this.removeFromCart(item);
-    } else if (item.quantity > item.product.stock) {
-      item.quantity = item.product.stock;
-    }
+    if (item.quantity <= 0) this.cart = this.cart.filter(c => c !== item);
+    else if (item.quantity > item.product.stock) item.quantity = item.product.stock;
   }
 
-  removeFromCart(item: CartItem) {
-    this.cart = this.cart.filter(c => c.product.id !== item.product.id);
-  }
+  removeFromCart(item: CartItem) { this.cart = this.cart.filter(c => c !== item); }
 
-  get cartTotalItems(): number {
-    return this.cart.reduce((sum, item) => sum + item.quantity, 0);
-  }
+  get cartTotalItems() { return this.cart.reduce((s, i) => s + i.quantity, 0); }
+  get cartSubtotal() { return this.cart.reduce((s, i) => s + i.product.price * i.quantity, 0); }
 
-  get cartSubtotal(): number {
-    return this.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  }
-
-  // --- Checkout Logic ---
-  proceedToCheckout() {
-    if (this.cart.length === 0) return;
-    this.isCartOpen = false;
-    this.isCheckoutOpen = true;
-  }
-
-  closeCheckout() {
-    this.isCheckoutOpen = false;
-  }
+  proceedToCheckout() { if (this.cart.length) { this.isCartOpen = false; this.isCheckoutOpen = true; } }
+  closeCheckout() { this.isCheckoutOpen = false; }
 
   placeOrder() {
     if (!this.customerInfo.name || !this.customerInfo.mobile || !this.customerInfo.address) {
       alert('Please fill out all required fields.');
       return;
     }
-    alert(`Order placed successfully!\nTotal: ৳${this.cartSubtotal}\nPayment Method: ${this.customerInfo.paymentMethod}`);
+    alert(`Order placed!\nTotal: ৳${this.cartSubtotal}\nPayment: ${this.customerInfo.paymentMethod}`);
     this.cart = [];
     this.isCheckoutOpen = false;
     this.customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
-  }
-
-  navigateToRegister() {
-    this.router.navigate(['/company/register']);
   }
 }

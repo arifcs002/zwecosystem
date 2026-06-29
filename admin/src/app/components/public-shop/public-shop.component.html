@@ -1,292 +1,229 @@
-<div class="min-h-screen bg-gray-50 font-sans flex flex-col relative" [ngClass]="themeClass">
-  
-  <!-- Navbar -->
-  <nav class="bg-white shadow-md sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 flex items-center space-x-3 cursor-pointer">
-            <img *ngIf="companyLogo" [src]="companyLogo" class="h-10 w-10 object-contain rounded shadow-sm bg-white" alt="Company Logo">
-            <div *ngIf="!companyLogo" class="h-10 w-10 rounded bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              {{ companyName.charAt(0) }}
-            </div>
-            <span class="font-bold text-xl text-gray-800 tracking-tight">{{ companyName }}</span>
-          </div>
-        </div>
-        <div class="flex items-center space-x-4">
-          <div class="relative hidden lg:block">
-            <input type="text" placeholder="Search products..." class="w-64 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow">
-            <svg class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          </div>
-          
-          <!-- Public Auth Links -->
-          <div class="hidden sm:flex items-center space-x-2 border-l pl-4 ml-2">
-            <a [routerLink]="['/', companySlug, 'login']" class="text-sm font-semibold text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Sign In</a>
-            <a routerLink="/company/register" class="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full shadow-sm transition-colors">Register</a>
-          </div>
+<div class="min-h-screen bg-gray-50 font-sans flex flex-col" style="font-family: 'Inter', sans-serif;">
 
-          <button (click)="toggleCart()" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors ml-2">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <span *ngIf="cartTotalItems > 0" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full shadow-sm">{{ cartTotalItems }}</span>
-          </button>
-        </div>
+  <!-- ══ NAVBAR ══ -->
+  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 cursor-pointer flex-shrink-0" (click)="goHome()">
+        <img *ngIf="companyLogo" [src]="companyLogo" class="h-8 w-8 rounded-lg object-contain border border-gray-100" alt="">
+        <div *ngIf="!companyLogo" class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">{{ companyName.charAt(0) }}</div>
+        <span class="font-bold text-gray-900 text-base">{{ companyName }}</span>
       </div>
+      <div *ngIf="detailCategory" class="hidden sm:flex items-center gap-1 text-sm text-gray-400">
+        <span class="cursor-pointer hover:text-indigo-600" (click)="goHome()">Home</span>
+        <span>/</span>
+        <span class="text-gray-700 font-medium">{{ detailCategory.name }}</span>
+      </div>
+      <button (click)="toggleCart()" class="relative p-2 text-gray-600 hover:text-indigo-600 transition ml-auto">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <span *ngIf="cartTotalItems > 0" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{{ cartTotalItems }}</span>
+      </button>
     </div>
   </nav>
 
-  <!-- Valid Store State -->
-  <ng-container *ngIf="isValidStore === true">
-    <!-- Hero Banner -->
-    <div class="relative bg-gray-900 overflow-hidden">
-      <div class="absolute inset-0">
-        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200" alt="Shop Banner" class="w-full h-full object-cover opacity-30">
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
-      </div>
-      <div class="relative max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
-          Discover the latest trends
-        </h1>
-        <p class="mt-6 text-xl text-gray-300 max-w-3xl">
-          Welcome to {{ companyName }}. Shop our premium collection curated just for you. Quality guaranteed.
-        </p>
-        <div class="mt-10">
-          <button class="bg-white text-gray-900 px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-lg hover:bg-gray-100 transition-colors">Shop Now</button>
-        </div>
-      </div>
-    </div>
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="flex justify-center items-center py-24 text-gray-400 text-sm gap-2">
+    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Loading store…
+  </div>
 
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-      
-      <!-- Category Filter -->
-      <div class="flex space-x-2 overflow-x-auto pb-4 mb-8 no-scrollbar">
-        <button *ngFor="let cat of categories" 
-                (click)="filterProducts(cat)"
-                class="px-6 py-2 rounded-full font-medium whitespace-nowrap transition-all duration-200 shadow-sm"
-                [ngClass]="selectedCategory === cat ? 'bg-blue-600 text-white ring-2 ring-offset-2 ring-blue-600' : 'bg-white text-gray-600 hover:bg-gray-100 border'">
-          {{ cat }}
-        </button>
-      </div>
+  <!-- Invalid Store -->
+  <div *ngIf="!isLoading && isValidStore === false" class="flex flex-col items-center justify-center py-32 text-center px-4">
+    <div class="text-6xl mb-4">🏪</div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Store Not Found</h2>
+    <p class="text-gray-500">The store <strong>{{ companySlug }}</strong> does not exist.</p>
+  </div>
 
-      <!-- Product Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        <div *ngFor="let p of filteredProducts" class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden group flex flex-col">
-          <div class="relative aspect-w-4 aspect-h-3 bg-gray-200 overflow-hidden h-64">
-            <img [src]="p.image" [alt]="p.name" class="object-cover object-center w-full h-full group-hover:scale-105 transition-transform duration-500">
-            <div *ngIf="p.stock < 20" class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow">Low Stock</div>
-          </div>
-          <div class="p-5 flex-1 flex flex-col">
-            <p class="text-sm text-gray-500 mb-1">{{ p.category }}</p>
-            <h3 class="text-lg font-bold text-gray-900 leading-tight mb-2 flex-1">{{ p.name }}</h3>
-            <div class="flex items-center justify-between mt-auto pt-4 border-t">
-              <span class="text-xl font-extrabold text-gray-900">৳{{ p.price }}</span>
-              <button (click)="addToCart(p)" class="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+  <!-- ══ MAIN LAYOUT ══ -->
+  <div *ngIf="!isLoading && isValidStore === true" class="flex flex-1 max-w-screen-xl mx-auto w-full">
+
+    <!-- Left Sidebar: Category Tree -->
+    <aside class="hidden lg:block w-56 flex-shrink-0 border-r border-gray-200 bg-white pt-5 pb-10 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+      <div class="px-3">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">Categories</p>
+        <ul class="space-y-0.5">
+          <li>
+            <button (click)="goHome()"
+              class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+              [ngClass]="!selectedCategoryId ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
+              🏠 All Products
+            </button>
+          </li>
+          <ng-container *ngFor="let node of categoryTree">
+            <li>
+              <button
+                (click)="node.children.length ? toggleCategoryExpand(node) : navigateToCategory(node.id)"
+                class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-1"
+                [ngClass]="selectedCategoryId === node.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
+                <span class="truncate">{{ node.name }}</span>
+                <svg *ngIf="node.children.length" class="w-3 h-3 flex-shrink-0 transition-transform duration-200"
+                  [ngClass]="node.expanded ? 'rotate-90' : ''"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                </svg>
               </button>
-            </div>
+              <ul *ngIf="node.expanded && node.children.length" class="ml-3 mt-0.5 space-y-0.5 border-l-2 border-indigo-100 pl-2">
+                <li *ngFor="let child of node.children">
+                  <button (click)="navigateToCategory(child.id)"
+                    class="w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all truncate"
+                    [ngClass]="selectedCategoryId === child.id ? 'text-indigo-600 font-semibold bg-indigo-50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">
+                    {{ child.name }}
+                  </button>
+                </li>
+              </ul>
+            </li>
+          </ng-container>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0 px-4 sm:px-6 py-6">
+
+      <!-- ── HOME: Category Sections ── -->
+      <ng-container *ngIf="!selectedCategoryId">
+
+        <div *ngIf="categorySections.length === 0" class="text-center py-24 text-gray-400">
+          <div class="text-5xl mb-4">🛍️</div>
+          <p class="text-lg font-semibold text-gray-600 mb-1">No products configured</p>
+          <p class="text-sm">Admin needs to configure categories from the Store Config page.</p>
+        </div>
+
+        <div *ngFor="let section of categorySections" class="mb-10">
+          <!-- Section Header -->
+          <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+            <h2 class="text-base font-bold text-gray-900">{{ section.name }}</h2>
+            <button (click)="seeMore(section.id)"
+              class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 hover:underline">
+              See all
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
           </div>
-        </div>
-        
-        <!-- Empty State -->
-        <div *ngIf="filteredProducts.length === 0" class="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-gray-300">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-          </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No products</h3>
-          <p class="mt-1 text-sm text-gray-500">Try selecting a different category.</p>
-        </div>
-      </div>
-    </main>
-  </ng-container>
 
-  <!-- Invalid Store State -->
-  <main *ngIf="isValidStore === false" class="flex-1 w-full h-screen relative flex flex-col items-center justify-center overflow-hidden bg-neutral-950 font-sans">
-    <!-- Massive Background Watermark ZW (China World Style) -->
-    <div class="absolute inset-0 z-0 flex items-center justify-center opacity-5 pointer-events-none select-none overflow-hidden">
-      <div class="relative">
-        <span class="text-[30rem] font-black text-white tracking-tighter leading-none" style="text-shadow: 0 0 100px rgba(255,255,255,0.8);">Z W</span>
-        <span class="absolute bottom-10 right-10 text-4xl font-bold tracking-widest text-red-600 opacity-80" style="writing-mode: vertical-rl;">中国风格</span>
-      </div>
-    </div>
-
-    <div class="absolute top-0 left-0 w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 z-0"></div>
-    <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-900/20 rounded-full blur-[150px] translate-x-1/3 translate-y-1/3 z-0"></div>
-
-    <div class="z-10 backdrop-blur-xl bg-neutral-900/40 border border-neutral-800/50 rounded-3xl p-12 text-center shadow-2xl max-w-2xl w-full mx-4 relative animate-fade-in">
-      <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-      </div>
-      <h2 class="text-4xl font-black mb-4 tracking-tight">
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-400">Store Not Found</span>
-      </h2>
-      <h3 class="text-2xl text-white font-bold mb-4">আপনার স্টোরটি রেজিস্টার করা নেই</h3>
-      <p class="text-neutral-400 text-lg mb-8 leading-relaxed">
-        Your store is not registered in the Zairas World ecosystem yet. Kindly register your store to continue.<br><br>
-        আপনার স্টোরটি এখনো জায়রাস ওয়ার্ল্ড ইকোসিস্টেমে নিবন্ধিত নয়। অনুগ্রহ করে আপনার স্টোরটি নিবন্ধন করুন।
-      </p>
-      
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <button (click)="navigateToRegister()" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:shadow-red-500/25">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          Register Now / এখনই নিবন্ধন করুন
-        </button>
-        <button type="button" (click)="navigateToRegister()" class="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-neutral-700 hover:border-neutral-500 text-white font-bold rounded-xl transition-all">
-          Pay your payment
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Loading State -->
-  <main *ngIf="isValidStore === null" class="flex-1 flex items-center justify-center py-20">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-gray-900 py-8 text-center mt-auto">
-    <p class="text-gray-400 text-sm">© 2026 {{ companyName }}. Powered by Zaira's World.</p>
-  </footer>
-
-  <!-- Slide-out Cart Drawer -->
-  <div *ngIf="isCartOpen" class="fixed inset-0 overflow-hidden z-40">
-    <div class="absolute inset-0 overflow-hidden">
-      <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm" (click)="toggleCart()"></div>
-      <div class="fixed inset-y-0 right-0 pl-10 max-w-full flex">
-        <div class="w-screen max-w-md transform transition ease-in-out duration-300">
-          <div class="h-full flex flex-col bg-white shadow-2xl">
-            <div class="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
-              <div class="flex items-start justify-between">
-                <h2 class="text-lg font-medium text-gray-900">Shopping Cart</h2>
-                <div class="ml-3 h-7 flex items-center">
-                  <button (click)="toggleCart()" class="-m-2 p-2 text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          <!-- Products Row -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div *ngFor="let p of section.products"
+              class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
+              <div class="aspect-square bg-gray-50 overflow-hidden">
+                <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div *ngIf="!p.image" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+              </div>
+              <div class="p-3 flex-1 flex flex-col">
+                <p class="text-xs text-gray-400 mb-0.5 truncate">{{ p.category }}</p>
+                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ p.name }}</h3>
+                <div class="flex items-center justify-between mt-2">
+                  <span class="text-sm font-bold text-gray-900">৳{{ p.price | number:'1.0-0' }}</span>
+                  <button (click)="addToCart(p)"
+                    class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                   </button>
                 </div>
               </div>
-
-              <div class="mt-8">
-                <div class="flow-root">
-                  <ul role="list" class="-my-6 divide-y divide-gray-200">
-                    <li *ngFor="let item of cart" class="py-6 flex">
-                      <div class="flex-shrink-0 w-20 h-20 border border-gray-200 rounded-md overflow-hidden">
-                        <img [src]="item.product.image" class="w-full h-full object-center object-cover">
-                      </div>
-                      <div class="ml-4 flex-1 flex flex-col">
-                        <div>
-                          <div class="flex justify-between text-base font-medium text-gray-900">
-                            <h3>{{ item.product.name }}</h3>
-                            <p class="ml-4">৳{{ item.product.price * item.quantity }}</p>
-                          </div>
-                          <p class="mt-1 text-sm text-gray-500">{{ item.product.category }}</p>
-                        </div>
-                        <div class="flex-1 flex items-end justify-between text-sm">
-                          <div class="flex items-center border rounded-md">
-                            <button (click)="updateQuantity(item, -1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100">-</button>
-                            <span class="px-3 py-1 font-medium">{{ item.quantity }}</span>
-                            <button (click)="updateQuantity(item, 1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100">+</button>
-                          </div>
-                          <button (click)="removeFromCart(item)" class="font-medium text-blue-600 hover:text-blue-500">Remove</button>
-                        </div>
-                      </div>
-                    </li>
-                  </ul>
-                  
-                  <div *ngIf="cart.length === 0" class="text-center py-12">
-                    <p class="text-gray-500">Your cart is empty.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div *ngIf="cart.length > 0" class="border-t border-gray-200 py-6 px-4 sm:px-6 bg-gray-50">
-              <div class="flex justify-between text-base font-medium text-gray-900 mb-4">
-                <p>Subtotal</p>
-                <p class="text-2xl font-bold">৳{{ cartSubtotal }}</p>
-              </div>
-              <p class="mt-0.5 text-sm text-gray-500 mb-6">Shipping and taxes calculated at checkout.</p>
-              <button (click)="proceedToCheckout()" class="w-full flex justify-center items-center px-6 py-4 border border-transparent rounded-xl shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
-                Checkout Now
-              </button>
             </div>
           </div>
         </div>
+      </ng-container>
+
+      <!-- ── CATEGORY DETAIL VIEW ── -->
+      <ng-container *ngIf="selectedCategoryId && detailCategory">
+        <div class="flex items-center gap-2 mb-5">
+          <button (click)="goHome()" class="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <span class="text-gray-300">|</span>
+          <h2 class="text-lg font-bold text-gray-900">{{ detailCategory.name }}</h2>
+          <span class="text-xs text-gray-400">({{ detailCategory.products.length }} products)</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div *ngFor="let p of detailCategory.products"
+            class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
+            <div class="aspect-square bg-gray-50 overflow-hidden">
+              <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <div *ngIf="!p.image" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+            </div>
+            <div class="p-3 flex-1 flex flex-col">
+              <p class="text-xs text-gray-400 mb-0.5 truncate">{{ p.category }}</p>
+              <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ p.name }}</h3>
+              <div class="flex items-center justify-between mt-2">
+                <span class="text-sm font-bold text-gray-900">৳{{ p.price | number:'1.0-0' }}</span>
+                <button (click)="addToCart(p)"
+                  class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="detailCategory.products.length === 0" class="col-span-full py-16 text-center text-gray-400 text-sm">
+            No products in this category.
+          </div>
+        </div>
+      </ng-container>
+
+    </main>
+  </div>
+
+  <!-- ══ CART SIDEBAR ══ -->
+  <div *ngIf="isCartOpen" class="fixed inset-0 z-50 flex justify-end">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="toggleCart()"></div>
+    <div class="relative w-full max-w-sm bg-white shadow-2xl flex flex-col h-full">
+      <div class="flex items-center justify-between px-5 py-4 border-b">
+        <h2 class="font-bold text-gray-900">Cart ({{ cartTotalItems }})</h2>
+        <button (click)="toggleCart()" class="text-gray-400 hover:text-gray-700">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+        <p *ngIf="cart.length === 0" class="text-center text-gray-400 py-12 text-sm">Your cart is empty.</p>
+        <div *ngFor="let item of cart" class="flex items-center gap-3">
+          <img *ngIf="item.product.image" [src]="item.product.image" class="w-12 h-12 rounded-lg object-cover border border-gray-100" alt="">
+          <div *ngIf="!item.product.image" class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl">📦</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}</p>
+            <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button (click)="updateQuantity(item, -1)" class="w-6 h-6 rounded border border-gray-200 text-sm flex items-center justify-center hover:bg-gray-50">−</button>
+            <span class="w-5 text-center text-sm font-semibold">{{ item.quantity }}</span>
+            <button (click)="updateQuantity(item, 1)" class="w-6 h-6 rounded border border-gray-200 text-sm flex items-center justify-center hover:bg-gray-50">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-4 border-t">
+        <div class="flex justify-between text-sm font-bold mb-3">
+          <span>Total</span><span>৳{{ cartSubtotal | number:'1.0-0' }}</span>
+        </div>
+        <button (click)="proceedToCheckout()" [disabled]="cart.length === 0"
+          class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition disabled:opacity-40 text-sm">
+          Checkout →
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Checkout Modal -->
-  <div *ngIf="isCheckoutOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm" (click)="closeCheckout()"></div>
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="p-6 border-b flex justify-between items-center bg-gray-50">
-        <h2 class="text-2xl font-bold text-gray-900">Checkout</h2>
-        <button (click)="closeCheckout()" class="text-gray-400 hover:text-gray-500">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
+  <!-- ══ CHECKOUT MODAL ══ -->
+  <div *ngIf="isCheckoutOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/50" (click)="closeCheckout()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <h2 class="font-bold text-gray-900 text-lg mb-4">Confirm Order</h2>
+      <div class="space-y-3 mb-4">
+        <input [(ngModel)]="customerInfo.name" placeholder="Your Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
+        <input [(ngModel)]="customerInfo.mobile" placeholder="Mobile Number *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
+        <textarea [(ngModel)]="customerInfo.address" rows="2" placeholder="Delivery Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+        <select [(ngModel)]="customerInfo.paymentMethod" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+          <option>COD</option>
+          <option>Online Payment</option>
+        </select>
       </div>
-      
-      <div class="p-6 overflow-y-auto flex-1">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Left: Shipping Info -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">Delivery Details</h3>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Full Name</label>
-              <input [(ngModel)]="customerInfo.name" type="text" class="mt-1 w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Mobile Number</label>
-              <input [(ngModel)]="customerInfo.mobile" type="tel" class="mt-1 w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Full Delivery Address</label>
-              <textarea [(ngModel)]="customerInfo.address" rows="3" class="mt-1 w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-            </div>
-          </div>
-          
-          <!-- Right: Order Summary & Payment -->
-          <div class="space-y-6">
-            <div class="bg-gray-50 p-4 rounded-xl border">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
-              <div class="flex justify-between text-sm mb-2">
-                <span class="text-gray-500">Items ({{ cartTotalItems }})</span>
-                <span class="font-medium">৳{{ cartSubtotal }}</span>
-              </div>
-              <div class="flex justify-between text-sm mb-4 pb-4 border-b">
-                <span class="text-gray-500">Delivery Fee</span>
-                <span class="font-medium text-green-600">Free</span>
-              </div>
-              <div class="flex justify-between text-lg font-bold text-gray-900">
-                <span>Total Amount</span>
-                <span>৳{{ cartSubtotal }}</span>
-              </div>
-            </div>
-
-            <div class="space-y-3">
-              <h3 class="text-sm font-medium text-gray-900">Payment Method</h3>
-              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" [ngClass]="{'border-blue-500 bg-blue-50': customerInfo.paymentMethod === 'COD'}">
-                <input type="radio" [(ngModel)]="customerInfo.paymentMethod" value="COD" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                <span class="ml-3 font-medium text-gray-900 flex-1">Cash on Delivery</span>
-                <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-              </label>
-              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" [ngClass]="{'border-pink-500 bg-pink-50': customerInfo.paymentMethod === 'bKash'}">
-                <input type="radio" [(ngModel)]="customerInfo.paymentMethod" value="bKash" class="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300">
-                <span class="ml-3 font-medium text-gray-900">bKash</span>
-              </label>
-              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" [ngClass]="{'border-orange-500 bg-orange-50': customerInfo.paymentMethod === 'Nagad'}">
-                <input type="radio" [(ngModel)]="customerInfo.paymentMethod" value="Nagad" class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300">
-                <span class="ml-3 font-medium text-gray-900">Nagad</span>
-              </label>
-            </div>
-          </div>
-        </div>
+      <div class="flex justify-between text-sm font-bold text-gray-900 mb-4">
+        <span>Total</span><span>৳{{ cartSubtotal | number:'1.0-0' }}</span>
       </div>
-      
-      <div class="p-6 border-t bg-white">
-        <button (click)="placeOrder()" class="w-full flex justify-center items-center px-6 py-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-          Confirm Order
-        </button>
+      <div class="flex gap-3">
+        <button (click)="closeCheckout()" class="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button (click)="placeOrder()" class="flex-1 py-2 bg-indigo-600 text-white font-semibold rounded-lg text-sm hover:bg-indigo-700">Place Order</button>
       </div>
     </div>
   </div>
