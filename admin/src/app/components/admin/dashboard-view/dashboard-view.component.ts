@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { SettingsService } from '../../../services/settings/settings.service';
+import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 @Component({
   selector: 'app-dashboard-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImgUrlPipe],
   templateUrl: './dashboard-view.component.html',
   styleUrl: './dashboard-view.component.css'
 })

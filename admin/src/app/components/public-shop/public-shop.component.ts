@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CompanyService } from '../../services/company/company.service';
+import { resolveImageUrl } from '../../utils/image-url.util';
 import { CategoryService } from '../../services/category/category.service';
 import { ProductService } from '../../services/product/product.service';
 import { SettingsService } from '../../services/settings/settings.service';
@@ -125,7 +126,7 @@ export class PublicShopComponent implements OnInit {
                   id: p.id,
                   name: p.name,
                   price: p.price,
-                  image: p.imageUrl || '',
+                  image: resolveImageUrl(p.imageUrl),
                   category: p.category?.name || 'Uncategorized',
                   stock: p.stockQuantity
                 }));

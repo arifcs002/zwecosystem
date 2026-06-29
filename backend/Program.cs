@@ -123,14 +123,14 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
+app.UseCors("AllowAll"); // MUST be first so CORS headers appear even on errors
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "POS SaaS API v1");
     c.RoutePrefix = "swagger"; // Swagger dashboard is at /swagger
 });
-
-app.UseCors("AllowAll");
 
 app.UseStaticFiles();
 

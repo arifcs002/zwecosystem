@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ProductService, Product } from '../../../services/product/product.service';
+import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 @Component({
   selector: 'app-product-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe],
   templateUrl: './product-management.component.html',
   styleUrl: './product-management.component.css'
 })

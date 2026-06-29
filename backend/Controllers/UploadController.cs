@@ -37,7 +37,8 @@ namespace Ecommerce.Api.Controllers
             using var stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
 
-            return Ok(new { imageUrl = $"/uploads/{folder}/{uniqueFileName}" });
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            return Ok(new { imageUrl = $"{baseUrl}/uploads/{folder}/{uniqueFileName}" });
         }
     }
 }

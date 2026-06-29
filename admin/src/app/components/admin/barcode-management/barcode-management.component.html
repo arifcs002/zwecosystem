@@ -61,7 +61,7 @@
           <td><input type="checkbox" [checked]="selectedProducts.has(p.id)" (change)="toggleSelect(p.id)" /></td>
           <td>
             <div class="product-info">
-              <img *ngIf="p.imageUrl" [src]="p.imageUrl" class="product-thumb" alt="" />
+              <img *ngIf="p.imageUrl" [src]="p.imageUrl | imgUrl" class="product-thumb" alt="" />
               <span>{{ p.name }}</span>
             </div>
           </td>

@@ -62,7 +62,7 @@
 
           <!-- Image -->
           <div class="relative aspect-square bg-black/30 flex items-center justify-center overflow-hidden">
-            <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" class="w-full h-full object-cover">
+            <img *ngIf="p.imageUrl" [src]="p.imageUrl | imgUrl" [alt]="p.name" class="w-full h-full object-cover">
             <span *ngIf="!p.imageUrl" class="text-4xl">📦</span>
             <span *ngIf="p.stockQuantity <= 0"
               class="absolute top-2 left-2 text-[10px] font-bold bg-rose-600 text-white px-1.5 py-0.5 rounded">

@@ -5,11 +5,12 @@ import { SettingsService, CompanySetting } from '../../../services/settings/sett
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 @Component({
   selector: 'app-dashboard-config',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImgUrlPipe],
   templateUrl: './dashboard-config.component.html',
   styleUrl: './dashboard-config.component.css'
 })

@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product/product.service';
+import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 @Component({
   selector: 'app-barcode-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImgUrlPipe],
   templateUrl: './barcode-management.component.html',
   styleUrl: './barcode-management.component.css'
 })
