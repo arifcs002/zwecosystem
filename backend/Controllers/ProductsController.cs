@@ -138,6 +138,16 @@ namespace Ecommerce.Api.Controllers
             return NoContent();
         }
 
+        [HttpPatch("{id}/stock")]
+        public async Task<IActionResult> AdjustStock(int id, [FromBody] StockAdjustDto dto)
+        {
+            if (!await _context.Products.AnyAsync(p => p.Id == id && p.IsDeleted == 0)) return NotFound();
+            await _context.Database.ExecuteSqlRawAsync(
+                "CALL sp_adjust_stock({0},{1},{2})", id, dto.Delta, _context.CurrentUserId);
+            var p = await _context.Products.FindAsync(id);
+            return Ok(new { id = p!.Id, stockQuantity = p.StockQuantity });
+        }
+
         [HttpPost("{id}/print-barcode")]
         public async Task<IActionResult> PrintBarcode(int id, [FromQuery] string ipAddress = "192.168.1.100", [FromQuery] int port = 9100)
         {

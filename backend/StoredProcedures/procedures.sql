@@ -37,6 +37,7 @@ DROP PROCEDURE IF EXISTS sp_delete_category(INT,INT);
 DROP FUNCTION IF EXISTS sp_create_product(INT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,INT,INT,TEXT,TEXT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_update_product(INT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,TEXT,INT,INT,TEXT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_delete_product(INT);
+DROP PROCEDURE IF EXISTS sp_adjust_stock(INT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_update_order_status(INT,TEXT,TEXT);
 DROP PROCEDURE IF EXISTS sp_cancel_order(INT);
 DROP FUNCTION IF EXISTS sp_checkout_order(INT,TEXT,TEXT,INT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,DECIMAL,TEXT,TEXT,INT[],INT[],DECIMAL[],INT);
@@ -644,6 +645,16 @@ CREATE OR REPLACE PROCEDURE sp_delete_product(p_id INT)
 LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE products SET is_deleted = 1, deleted_date = NOW() WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_adjust_stock(p_id INT, p_delta INT, p_updated_by INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE products
+    SET stock_quantity = GREATEST(0, stock_quantity + p_delta),
+        updated_date = NOW()
+    WHERE id = p_id AND is_deleted = 0;
 END;
 $$;
 

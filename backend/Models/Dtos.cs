@@ -1,5 +1,8 @@
 namespace Ecommerce.Api.Models
 {
+    // ── Products ─────────────────────────────────────────────
+    public class StockAdjustDto { public int Delta { get; set; } }  // positive = add, negative = minus
+
     // ── Categories ───────────────────────────────────────────
     public class CategoryUpsertDto
     {

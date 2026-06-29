@@ -5,6 +5,15 @@ import { RouterModule } from '@angular/router';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
+export interface ProductGroup {
+  baseName: string;
+  imageUrl: string;
+  category: string;
+  price: number;
+  wholesalePrice: number;
+  variants: Product[];  // one per size
+}
+
 @Component({
   selector: 'app-product-management',
   standalone: true,
@@ -15,52 +24,121 @@ import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 export class ProductManagementComponent implements OnInit {
   private productService = inject(ProductService);
 
-  products: Product[] = [];
-  filteredProducts: Product[] = [];
-  searchQuery: string = '';
-  isLoading: boolean = false;
+  allProducts: Product[] = [];
+  productGroups: ProductGroup[] = [];
+  filteredGroups: ProductGroup[] = [];
+  searchQuery = '';
+  isLoading = false;
 
-  ngOnInit(): void {
-    this.loadProducts();
-  }
+  // Detail popup
+  detailGroup: ProductGroup | null = null;
+  stockInputs: { [id: number]: number } = {};
+
+  ngOnInit() { this.loadProducts(); }
 
   loadProducts() {
     this.isLoading = true;
     this.productService.getProducts().subscribe({
       next: (data) => {
-        this.products = data;
-        this.filteredProducts = data;
+        this.allProducts = data;
+        this.buildGroups(data);
         this.isLoading = false;
       },
-      error: (err) => {
-        console.error('Error fetching products:', err);
-        this.isLoading = false;
+      error: () => { this.isLoading = false; }
+    });
+  }
+
+  buildGroups(products: Product[]) {
+    const map = new Map<string, Product[]>();
+    products.forEach(p => {
+      // Strip " (Size X)" suffix to get base name
+      const base = p.name.replace(/\s*\(Size [^)]+\)\s*$/i, '').trim();
+      if (!map.has(base)) map.set(base, []);
+      map.get(base)!.push(p);
+    });
+
+    this.productGroups = Array.from(map.entries()).map(([baseName, variants]) => ({
+      baseName,
+      imageUrl: variants.find(v => v.imageUrl)?.imageUrl || '',
+      category: variants[0].category?.name || 'Uncategorized',
+      price: variants[0].price,
+      wholesalePrice: variants[0].wholesalePrice,
+      variants: variants.sort((a, b) => (a.size || '').localeCompare(b.size || '', undefined, { numeric: true }))
+    }));
+
+    this.applySearch();
+  }
+
+  applySearch() {
+    const q = this.searchQuery.toLowerCase();
+    this.filteredGroups = q
+      ? this.productGroups.filter(g =>
+          g.baseName.toLowerCase().includes(q) ||
+          g.category.toLowerCase().includes(q)
+        )
+      : [...this.productGroups];
+  }
+
+  get totalStock(): number {
+    return this.allProducts.reduce((s, p) => s + p.stockQuantity, 0);
+  }
+
+  groupStock(g: ProductGroup): number {
+    return g.variants.reduce((s, v) => s + v.stockQuantity, 0);
+  }
+
+  detailTotalStock(): number {
+    return this.detailGroup ? this.detailGroup.variants.reduce((s, v) => s + v.stockQuantity, 0) : 0;
+  }
+
+  // ── Detail Popup ──
+  openDetail(group: ProductGroup) {
+    this.detailGroup = group;
+    this.stockInputs = {};
+    group.variants.forEach(v => this.stockInputs[v.id] = 0);
+  }
+
+  closeDetail() { this.detailGroup = null; }
+
+  adjustStock(variant: Product, delta: number) {
+    const qty = Math.abs(delta > 0 ? (this.stockInputs[variant.id] || 1) : (this.stockInputs[variant.id] || 1));
+    const actualDelta = delta > 0 ? qty : -qty;
+    this.productService.adjustStock(variant.id, actualDelta).subscribe({
+      next: (res) => {
+        variant.stockQuantity = res.stockQuantity;
+        this.stockInputs[variant.id] = 0;
       }
     });
   }
 
-  onSearch() {
-    if (!this.searchQuery) {
-      this.filteredProducts = this.products;
-    } else {
-      const q = this.searchQuery.toLowerCase();
-      this.filteredProducts = this.products.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.sku.toLowerCase().includes(q) || 
-        p.barcode.includes(q) ||
-        p.category?.name.toLowerCase().includes(q)
-      );
-    }
+  deleteVariant(variant: Product) {
+    if (!confirm(`Delete ${variant.name}?`)) return;
+    this.productService.deleteProduct(variant.id).subscribe({
+      next: () => {
+        if (this.detailGroup) {
+          this.detailGroup.variants = this.detailGroup.variants.filter(v => v.id !== variant.id);
+          if (this.detailGroup.variants.length === 0) this.closeDetail();
+        }
+        this.allProducts = this.allProducts.filter(p => p.id !== variant.id);
+        this.buildGroups(this.allProducts);
+      }
+    });
   }
 
-  deleteProduct(id: number) {
-    if (confirm('Are you sure you want to delete this product?')) {
+  deleteGroup(group: ProductGroup) {
+    if (!confirm(`Delete all sizes of "${group.baseName}"?`)) return;
+    const ids = group.variants.map(v => v.id);
+    let done = 0;
+    ids.forEach(id => {
       this.productService.deleteProduct(id).subscribe({
         next: () => {
-          this.loadProducts();
-        },
-        error: (err) => console.error(err)
+          done++;
+          if (done === ids.length) {
+            this.allProducts = this.allProducts.filter(p => !ids.includes(p.id));
+            this.buildGroups(this.allProducts);
+          }
+        }
       });
-    }
+    });
   }
 }

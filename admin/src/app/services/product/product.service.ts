@@ -70,6 +70,10 @@ export class ProductService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
   
+  adjustStock(id: number, delta: number): Observable<{ id: number; stockQuantity: number }> {
+    return this.http.patch<{ id: number; stockQuantity: number }>(`${this.apiUrl}/${id}/stock`, { delta });
+  }
+
   uploadImage(file: File, folder: 'product' | 'logo' | 'other' = 'product'): Observable<{ imageUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);
