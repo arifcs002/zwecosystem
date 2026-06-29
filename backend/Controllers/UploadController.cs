@@ -19,11 +19,16 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UploadFile(IFormFile file)
+        public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string folder = "other")
         {
             if (file == null || file.Length == 0) return BadRequest("No file uploaded");
 
-            var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
+            // Whitelist allowed subfolders
+            var allowed = new[] { "product", "logo", "other" };
+            if (!allowed.Contains(folder)) folder = "other";
+
+            var baseUploads = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
+            var uploadsFolder = Path.Combine(baseUploads, folder);
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
             var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
@@ -32,7 +37,7 @@ namespace Ecommerce.Api.Controllers
             using var stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
 
-            return Ok(new { imageUrl = "/uploads/" + uniqueFileName });
+            return Ok(new { imageUrl = $"/uploads/{folder}/{uniqueFileName}" });
         }
     }
 }

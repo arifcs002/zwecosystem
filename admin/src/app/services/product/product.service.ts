@@ -70,9 +70,9 @@ export class ProductService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
   
-  uploadImage(file: File): Observable<{ imageUrl: string }> {
+  uploadImage(file: File, folder: 'product' | 'logo' | 'other' = 'product'): Observable<{ imageUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/upload`, formData);
+    return this.http.post<{ imageUrl: string }>(`${environment.apiUrl}/upload?folder=${folder}`, formData);
   }
 }

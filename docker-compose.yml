@@ -49,6 +49,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
     volumes:
       - /data/apps/textlog:/data/apps/textlog
+      - /data/apps/zwecosystem/upload:/app/wwwroot/uploads
     depends_on:
       postgres:
         condition: service_healthy
