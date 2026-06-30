@@ -127,7 +127,17 @@ export class CategoryManagementComponent implements OnInit {
   }
 
   getEmpty(): Category {
-    return { name: '', description: '', sizes: '' };
+    return { name: '', description: '', sizes: '', parentId: null };
+  }
+
+  // Root categories only (for parent dropdown — a category can't be its own parent)
+  get rootCategories(): Category[] {
+    return this.categories.filter(c => !c.parentId && c.id !== this.currentCategory.id);
+  }
+
+  parentName(cat: Category): string {
+    const p = this.categories.find(c => c.id === cat.parentId);
+    return p ? p.name : '';
   }
 
   parseSizes(sizes: string | undefined): string[] {

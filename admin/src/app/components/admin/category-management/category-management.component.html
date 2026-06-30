@@ -33,16 +33,25 @@
       <thead>
         <tr>
           <th>Category Name</th>
+          <th>Parent</th>
           <th>Description</th>
           <th>Sizes</th>
-          <th>Slug</th>
           <th class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let cat of filteredCategories">
           <td>
-            <span class="font-semibold text-gray-200">{{ cat.name }}</span>
+            <div class="flex items-center gap-2">
+              <span *ngIf="cat.parentId" class="text-gray-600 text-xs">↳</span>
+              <span class="font-semibold text-gray-200">{{ cat.name }}</span>
+            </div>
+          </td>
+          <td>
+            <span *ngIf="parentName(cat)" class="text-xs px-2 py-0.5 rounded-full bg-sky-900/30 border border-sky-600/30 text-sky-300">
+              {{ parentName(cat) }}
+            </span>
+            <span *ngIf="!parentName(cat)" class="text-gray-600 text-xs">—</span>
           </td>
           <td class="text-gray-400 max-w-[200px] truncate">{{ cat.description || '—' }}</td>
           <td>
@@ -86,6 +95,15 @@
     <div *ngIf="errorMsg" class="alert-error mb-4 text-sm">{{ errorMsg }}</div>
 
     <div class="space-y-4">
+
+      <!-- Parent Category -->
+      <div class="form-group">
+        <label>Parent Category <span class="text-gray-500 text-[10px] font-normal">(leave blank for main category)</span></label>
+        <select [(ngModel)]="currentCategory.parentId" name="catParent" class="form-input">
+          <option [ngValue]="null">— None (Main Category) —</option>
+          <option *ngFor="let p of rootCategories" [ngValue]="p.id">{{ p.name }}</option>
+        </select>
+      </div>
 
       <div class="form-group">
         <label>Category Name <span class="text-rose-400">*</span></label>

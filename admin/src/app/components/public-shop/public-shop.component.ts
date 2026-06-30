@@ -65,6 +65,9 @@ export class PublicShopComponent implements OnInit {
   detailCategory: CategorySection | null = null;
   allProductsInCategory: ShopProduct[] = [];
 
+  // Sidebar toggle
+  sidebarOpen = false;
+
   // Cart
   cart: CartItem[] = [];
   isCartOpen = false;
@@ -203,6 +206,9 @@ export class PublicShopComponent implements OnInit {
     this.detailCategory = null;
     this.router.navigate(['/', this.companySlug]);
   }
+
+  goHomeAndClose() { this.sidebarOpen = false; this.goHome(); }
+  navAndClose(catId: number) { this.sidebarOpen = false; this.navigateToCategory(catId); }
 
   // Cart
   toggleCart() { this.isCartOpen = !this.isCartOpen; if (this.isCartOpen) this.isCheckoutOpen = false; }

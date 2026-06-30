@@ -41,9 +41,9 @@ namespace Ecommerce.Api.Controllers
             var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
             var categoryId = (await _context.Database.SqlQueryRaw<int>(
-                "SELECT sp_create_category({0},{1},{2},{3},{4},{5})",
+                "SELECT sp_create_category({0},{1},{2},{3},{4},{5},{6})",
                 companyId.Value, dto.Name, slug,
-                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId
+                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId, (object?)dto.ParentId ?? DBNull.Value
             ).ToListAsync()).FirstOrDefault();
 
             var created = await _context.Categories.FindAsync(categoryId);
@@ -58,9 +58,9 @@ namespace Ecommerce.Api.Controllers
 
             var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
             await _context.Database.ExecuteSqlRawAsync(
-                "CALL sp_update_category({0},{1},{2},{3},{4},{5})",
+                "CALL sp_update_category({0},{1},{2},{3},{4},{5},{6})",
                 id, dto.Name, slug,
-                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId
+                dto.Description ?? "", dto.Sizes ?? "", _context.CurrentUserId, (object?)dto.ParentId ?? DBNull.Value
             );
             var updated = await _context.Categories.FindAsync(id);
             return Ok(updated);

@@ -9,6 +9,7 @@ namespace Ecommerce.Api.Models
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? Sizes { get; set; }
+        public int? ParentId { get; set; }
     }
 
     // ── Auth ────────────────────────────────────────────────
