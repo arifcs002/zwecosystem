@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppVersionService, AppVersion } from '../../../services/app-version/app-version.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { resolveImageUrl } from '../../../utils/image-url.util';
 
 @Component({
   selector: 'app-app-releases',
@@ -18,6 +19,7 @@ export class AppReleasesComponent implements OnInit {
   versions: AppVersion[] = [];
   isLoading = false;
   uploading = false;
+  resolveUrl = resolveImageUrl;
 
   apkFile: File | null = null;
   versionName = '';

@@ -55,8 +55,8 @@ namespace Ecommerce.Api.Controllers
             if (file == null || file.Length == 0) return BadRequest("No APK file uploaded.");
             if (string.IsNullOrWhiteSpace(versionName)) return BadRequest("Version name is required.");
 
-            var baseUploads = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
-            var appsFolder = Path.Combine(baseUploads, "apps");
+            var wwwRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var appsFolder = Path.Combine(wwwRoot, "apks");
             if (!Directory.Exists(appsFolder)) Directory.CreateDirectory(appsFolder);
 
             byte[] bytes;
@@ -75,8 +75,7 @@ namespace Ecommerce.Api.Controllers
             if (!System.IO.File.Exists(filePath))
                 await System.IO.File.WriteAllBytesAsync(filePath, bytes);
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var apkUrl = $"{baseUrl}/uploads/apps/{fileName}";
+            var apkUrl = $"/apks/{fileName}";
 
             // Only one release is "latest" at a time.
             var previouslyActive = await _context.AppVersions.Where(v => v.IsActive).ToListAsync();

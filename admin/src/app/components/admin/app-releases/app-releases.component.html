@@ -48,6 +48,7 @@
           <th>Code</th>
           <th>Published</th>
           <th>Status</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -59,6 +60,9 @@
             <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="v.isActive ? 'bg-emerald-900/30 border border-emerald-600/30 text-emerald-300' : 'bg-white/5 border border-white/10 text-gray-500'">
               {{ v.isActive ? 'Active' : 'Archived' }}
             </span>
+          </td>
+          <td>
+            <a [href]="resolveUrl(v.apkUrl)" download class="text-xs text-violet-400 hover:text-violet-300">⬇ APK</a>
           </td>
         </tr>
       </tbody>

@@ -9,6 +9,7 @@ import { GlobalNotificationService } from '../../../services/global-notification
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { ProductGroup, groupProducts, groupForProductId } from '../../../utils/product-group.util';
 import { AppVersionService, AppVersion } from '../../../services/app-version/app-version.service';
+import { resolveImageUrl } from '../../../utils/image-url.util';
 
 interface CategoryNode {
   id: number;
@@ -35,6 +36,7 @@ export class DashboardConfigComponent implements OnInit {
   private appVersionService = inject(AppVersionService);
 
   latestAppVersion: AppVersion | null = null;
+  resolveUrl = resolveImageUrl;
 
   categories: Category[] = [];
   categoryTree: CategoryNode[] = [];

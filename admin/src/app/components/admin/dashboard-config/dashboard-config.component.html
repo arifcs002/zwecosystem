@@ -24,7 +24,7 @@
         <h3 class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-1">📱 Mobile App</h3>
         <p class="text-sm text-gray-300">Version {{ latestAppVersion.versionName }}<span *ngIf="latestAppVersion.releaseNotes"> — {{ latestAppVersion.releaseNotes }}</span></p>
       </div>
-      <a [href]="latestAppVersion.apkUrl" download class="btn-primary flex items-center gap-2 flex-shrink-0">
+      <a [href]="resolveUrl(latestAppVersion.apkUrl)" download class="btn-primary flex items-center gap-2 flex-shrink-0">
         ⬇ Download APK
       </a>
     </div>
