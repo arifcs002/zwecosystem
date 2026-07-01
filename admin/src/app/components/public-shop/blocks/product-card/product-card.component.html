@@ -1,0 +1,27 @@
+<div class="card" (click)="open.emit(group)">
+  <!-- Image + badges -->
+  <div class="thumb">
+    <img *ngIf="group.imageUrl" [src]="group.imageUrl | imgUrl" [alt]="group.baseName" loading="lazy">
+    <div *ngIf="!group.imageUrl" class="ph">🛍️</div>
+
+    <span *ngIf="discount > 0" class="badge save">Save {{ discount }}%</span>
+    <span *ngIf="soldOut" class="badge out">Out of Stock</span>
+    <span *ngIf="!soldOut && lowStock" class="badge low">Only {{ group.totalStock }} left</span>
+    <span *ngIf="isMultiVariant" class="badge sizes">{{ group.variants.length }} sizes</span>
+  </div>
+
+  <!-- Info -->
+  <div class="info">
+    <span class="cat">{{ group.categoryName }}</span>
+    <h3 class="name">{{ group.baseName }}</h3>
+    <div class="price-row">
+      <span class="price">৳{{ group.price | number:'1.0-0' }}</span>
+      <span *ngIf="discount > 0" class="was">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
+    </div>
+
+    <button class="btn" [class.disabled]="soldOut" (click)="onPrimary($event)" [disabled]="soldOut">
+      <ng-container *ngIf="!soldOut">{{ isMultiVariant ? 'View Options' : 'Add to Cart' }}</ng-container>
+      <ng-container *ngIf="soldOut">Sold Out</ng-container>
+    </button>
+  </div>
+</div>

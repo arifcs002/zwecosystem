@@ -52,6 +52,17 @@
         </div>
       </div>
 
+      <!-- Discount / compare-at price -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="form-group">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+            Compare-at Price (BDT) <span class="text-gray-600 normal-case font-normal">(optional)</span>
+          </label>
+          <input type="number" [(ngModel)]="formData.compareAtPrice" name="compareAtPrice" placeholder="Original / was price" class="form-input">
+          <p class="text-[11px] text-gray-500 mt-1">Set higher than retail to show a struck-through price and a <span class="text-emerald-400 font-semibold">Save %</span> badge on the storefront.</p>
+        </div>
+      </div>
+
       <!-- Description -->
       <div class="form-group">
         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</label>

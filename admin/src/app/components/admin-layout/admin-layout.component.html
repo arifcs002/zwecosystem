@@ -129,6 +129,16 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
       </a>
 
+      <!-- ===== ECOMMERCE (storefront configuration) ===== -->
+      <ng-container *ngIf="authService.hasRight('PAGE_STORE_CONFIG')">
+        <div class="nav-divider"></div>
+        <div class="nav-section-title" *ngIf="!sidebarCollapsed">🛒 Ecommerce</div>
+        <a [routerLink]="basePath + '/ecommerce/builder'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🧱</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Storefront Builder</span>
+        </a>
+      </ng-container>
+
     </nav>
 
     <!-- Logout -->

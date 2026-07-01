@@ -35,7 +35,8 @@ export class AddProductComponent implements OnInit {
     description: '',
     imageUrl: '',
     sizes: [],
-    pricingTagId: null
+    pricingTagId: null,
+    compareAtPrice: null
   };
 
   selectedCategoryObj: Category | null = null;

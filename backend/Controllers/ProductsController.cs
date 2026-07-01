@@ -37,9 +37,11 @@ namespace Ecommerce.Api.Controllers
                     p.Id,
                     p.Name,
                     p.Price,
+                    p.CompareAtPrice,
                     p.ImageUrl,
                     p.StockQuantity,
                     p.CategoryId,
+                    p.CreatedDate,
                     Category = p.Category != null ? new { p.Category.Name } : null
                 })
                 .ToListAsync();
@@ -99,10 +101,11 @@ namespace Ecommerce.Api.Controllers
             var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
             var productId = (await _context.Database.SqlQueryRaw<int>(
-                "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16})",
+                "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17})",
                 companyId.Value, dto.Name, slug, dto.SKU, barcode, dto.Description ?? "",
                 dto.Price, dto.WholesalePrice, dto.StockQuantity, dto.ImageUrl ?? "",
-                dto.CategoryId, dto.BrandId, "PUBLISHED", "", (int?)null, _context.CurrentUserId, dto.PricingTagId
+                dto.CategoryId, dto.BrandId, "PUBLISHED", "", (int?)null, _context.CurrentUserId, dto.PricingTagId,
+                dto.CompareAtPrice ?? 0
             ).ToListAsync()).FirstOrDefault();
 
             var product = await _context.Products.FindAsync(productId);
@@ -128,11 +131,12 @@ namespace Ecommerce.Api.Controllers
                 var slug = $"{dto.Name.ToLower().Replace(" ", "-").Replace("/", "-")}-{sizeQty.Size.ToLower()}";
 
                 var productId = (await _context.Database.SqlQueryRaw<int>(
-                    "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16})",
+                    "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17})",
                     companyId.Value, $"{dto.Name} (Size {sizeQty.Size})", slug, sku, barcode,
                     dto.Description ?? "", dto.Price, dto.WholesalePrice, sizeQty.Quantity,
                     dto.ImageUrl ?? "", dto.CategoryId, (int?)null, "PUBLISHED",
-                    sizeQty.Size, dto.SupplierId, _context.CurrentUserId, dto.PricingTagId
+                    sizeQty.Size, dto.SupplierId, _context.CurrentUserId, dto.PricingTagId,
+                    dto.CompareAtPrice ?? 0
                 ).ToListAsync()).FirstOrDefault();
 
                 var product = await _context.Products.FindAsync(productId);
@@ -147,10 +151,10 @@ namespace Ecommerce.Api.Controllers
             if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
 
             await _context.Database.ExecuteSqlRawAsync(
-                "CALL sp_update_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13})",
+                "CALL sp_update_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})",
                 id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity,
                 dto.Description ?? "", dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId,
-                "", (int?)null, _context.CurrentUserId, dto.PricingTagId);
+                "", (int?)null, _context.CurrentUserId, dto.PricingTagId, dto.CompareAtPrice ?? 0);
 
             var product = await _context.Products.FindAsync(id);
             return Ok(product);

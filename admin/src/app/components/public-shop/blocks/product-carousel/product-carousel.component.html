@@ -1,0 +1,17 @@
+<section class="section" [class.highlight]="highlight" *ngIf="groups.length">
+  <div class="head">
+    <h2 class="title">{{ title }}</h2>
+    <button *ngIf="showViewAll" class="view-all" (click)="viewAll.emit()">View All ›</button>
+  </div>
+
+  <div class="items" [class.grid]="grid" [style.--cols]="columns">
+    <app-product-card
+      *ngFor="let g of groups"
+      [group]="g"
+      [lowStockThreshold]="lowStockThreshold"
+      (add)="add.emit($event)"
+      (open)="open.emit($event)"
+      class="item">
+    </app-product-card>
+  </div>
+</section>

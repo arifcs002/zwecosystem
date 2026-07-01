@@ -1,0 +1,210 @@
+<div class="builder-wrap">
+
+  <!-- Header -->
+  <div class="builder-header">
+    <div>
+      <h1 class="builder-title">🧱 Storefront Builder</h1>
+      <p class="builder-sub">Add, reorder and configure the sections shown on your public shop homepage.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">
+      {{ saving ? 'Saving…' : 'Save Layout' }}
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <!-- Block list -->
+    <div class="block-list">
+      <div *ngIf="layout.blocks.length === 0" class="empty">
+        No sections yet. Add your first block below.
+      </div>
+
+      <div *ngFor="let block of layout.blocks; let i = index"
+           class="block-card" [class.disabled]="!block.enabled">
+
+        <!-- Block header row -->
+        <div class="block-head">
+          <div class="reorder">
+            <button (click)="moveBlock(i, -1)" [disabled]="i === 0" title="Move up">▲</button>
+            <button (click)="moveBlock(i, 1)" [disabled]="i === layout.blocks.length - 1" title="Move down">▼</button>
+          </div>
+          <span class="block-icon">{{ meta(block.type).icon }}</span>
+          <div class="block-info" (click)="toggleExpand(block)">
+            <span class="block-name">{{ block.title || meta(block.type).label }}</span>
+            <span class="block-summary">{{ meta(block.type).label }} · {{ blockSummary(block) }}</span>
+          </div>
+          <label class="switch" title="Show on storefront">
+            <input type="checkbox" [checked]="block.enabled" (change)="toggleBlock(block)">
+            <span class="slider"></span>
+          </label>
+          <button class="icon-btn edit" (click)="toggleExpand(block)" title="Edit">
+            {{ expandedBlockId === block.id ? '▲' : '✎' }}
+          </button>
+          <button class="icon-btn del" (click)="removeBlock(i)" title="Delete">🗑</button>
+        </div>
+
+        <!-- Edit panel -->
+        <div class="block-body" *ngIf="expandedBlockId === block.id">
+
+          <!-- ══ HERO SLIDER ══ -->
+          <ng-container *ngIf="block.type === 'hero_slider'">
+            <div *ngFor="let slide of block.slides; let si = index" class="slide-row">
+              <div class="slide-head">
+                <span>Slide {{ si + 1 }}</span>
+                <button class="icon-btn del sm" (click)="removeSlide(block, si)">✕</button>
+              </div>
+              <div class="grid2">
+                <div class="fg">
+                  <label>Banner Image</label>
+                  <div class="img-row">
+                    <img *ngIf="slide.image" [src]="slide.image | imgUrl" class="img-prev">
+                    <input type="file" accept="image/*" (change)="uploadSlideImage($event, slide)">
+                  </div>
+                  <input [(ngModel)]="slide.image" placeholder="or paste image URL" class="inp">
+                </div>
+                <div class="fg">
+                  <label>Title</label>
+                  <input [(ngModel)]="slide.title" placeholder="Discover the latest trends" class="inp">
+                  <label>Subtitle</label>
+                  <input [(ngModel)]="slide.subtitle" placeholder="Short supporting line" class="inp">
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="fg"><label>Button Text</label><input [(ngModel)]="slide.ctaText" placeholder="Shop Now" class="inp"></div>
+                <div class="fg"><label>Button Link</label><input [(ngModel)]="slide.ctaLink" placeholder="/category/1" class="inp"></div>
+              </div>
+            </div>
+            <button class="btn-add-sub" (click)="addSlide(block)">+ Add Slide</button>
+          </ng-container>
+
+          <!-- ══ CATEGORY ICONS ══ -->
+          <ng-container *ngIf="block.type === 'category_icons'">
+            <div class="grid2">
+              <div class="fg"><label>Section Title</label><input [(ngModel)]="block.title" class="inp"></div>
+              <div class="fg"><label>Max Visible</label><input type="number" [(ngModel)]="block.maxVisible" class="inp"></div>
+            </div>
+            <label class="fg-label">Categories to show</label>
+            <div class="chip-grid">
+              <button *ngFor="let c of categories" class="chip"
+                      [class.on]="isCategorySelected(block, +c.id!)"
+                      (click)="toggleCategory(block, +c.id!)">
+                {{ c.name }}
+              </button>
+            </div>
+          </ng-container>
+
+          <!-- ══ PRODUCT CAROUSEL / GRID ══ -->
+          <ng-container *ngIf="block.type === 'product_carousel' || block.type === 'product_grid'">
+            <div class="grid2">
+              <div class="fg"><label>Section Title</label><input [(ngModel)]="block.title" class="inp"></div>
+              <div class="fg">
+                <label>Product Source</label>
+                <select [(ngModel)]="block.source" class="inp">
+                  <option *ngFor="let s of sources" [value]="s.value">{{ s.label }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid2">
+              <div class="fg" *ngIf="block.source === 'category'">
+                <label>Category</label>
+                <select [(ngModel)]="block.categoryId" class="inp">
+                  <option [ngValue]="null">— Select —</option>
+                  <option *ngFor="let c of categories" [ngValue]="+c.id!">{{ c.name }}</option>
+                </select>
+              </div>
+              <div class="fg"><label>Max Products</label><input type="number" [(ngModel)]="block.limit" class="inp"></div>
+              <div class="fg" *ngIf="block.type === 'product_grid'"><label>Columns</label>
+                <select [(ngModel)]="block.columns" class="inp">
+                  <option [ngValue]="2">2</option><option [ngValue]="3">3</option><option [ngValue]="4">4</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid2">
+              <div class="fg"><label>"View All" Link</label><input [(ngModel)]="block.viewAllLink" placeholder="/category/1 (optional)" class="inp"></div>
+              <div class="fg" *ngIf="block.type === 'product_carousel'">
+                <label class="check"><input type="checkbox" [(ngModel)]="block.highlight"> Highlight (colored background)</label>
+              </div>
+            </div>
+
+            <!-- Curated picker -->
+            <ng-container *ngIf="block.source === 'curated'">
+              <label class="fg-label">Picked products ({{ pickedGroups(block).length }})</label>
+              <div class="picked-list">
+                <div *ngFor="let g of pickedGroups(block); let pi = index" class="picked-item">
+                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="pi-img">
+                  <span class="pi-name">{{ g.baseName }}</span>
+                  <span class="pi-cat">{{ g.categoryName }}</span>
+                  <button class="mini" (click)="moveProduct(block, pi, -1)" [disabled]="pi===0">▲</button>
+                  <button class="mini" (click)="moveProduct(block, pi, 1)" [disabled]="pi===pickedGroups(block).length-1">▼</button>
+                  <button class="mini del" (click)="removeProduct(block, g)">✕</button>
+                </div>
+                <p *ngIf="pickedGroups(block).length === 0" class="muted">Nothing picked yet — add from below.</p>
+              </div>
+              <input [(ngModel)]="pickerSearch[block.id]" placeholder="Search products to add…" class="inp">
+              <div class="avail-list">
+                <button *ngFor="let g of availableGroups(block)" class="avail-item" (click)="addProduct(block, g)">
+                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="pi-img">
+                  <span class="pi-name">{{ g.baseName }}</span>
+                  <span class="pi-cat">{{ g.categoryName }}</span>
+                  <span class="plus">+</span>
+                </button>
+              </div>
+            </ng-container>
+          </ng-container>
+
+          <!-- ══ PROMO BANNER ══ -->
+          <ng-container *ngIf="block.type === 'promo_banner'">
+            <div class="fg">
+              <label>Banner Image</label>
+              <div class="img-row">
+                <img *ngIf="block.image" [src]="block.image | imgUrl" class="img-prev wide">
+                <input type="file" accept="image/*" (change)="uploadBannerImage($event, block)">
+              </div>
+              <input [(ngModel)]="block.image" placeholder="or paste image URL" class="inp">
+            </div>
+            <div class="fg"><label>Link (on click)</label><input [(ngModel)]="block.link" placeholder="/category/2 (optional)" class="inp"></div>
+          </ng-container>
+
+          <!-- ══ BRAND CAROUSEL ══ -->
+          <ng-container *ngIf="block.type === 'brand_carousel'">
+            <div class="fg"><label>Section Title</label><input [(ngModel)]="block.title" class="inp"></div>
+            <p class="muted">Shows all active brands in your store automatically.</p>
+          </ng-container>
+
+          <!-- ══ TESTIMONIALS ══ -->
+          <ng-container *ngIf="block.type === 'testimonials'">
+            <div class="fg"><label>Section Title</label><input [(ngModel)]="block.title" class="inp"></div>
+            <div *ngFor="let t of block.items; let ti = index" class="slide-row">
+              <div class="slide-head">
+                <span>Review {{ ti + 1 }}</span>
+                <button class="icon-btn del sm" (click)="removeTestimonial(block, ti)">✕</button>
+              </div>
+              <div class="grid2">
+                <div class="fg"><label>Customer Name</label><input [(ngModel)]="t.name" class="inp"></div>
+                <div class="fg"><label>Rating (1–5)</label><input type="number" min="1" max="5" [(ngModel)]="t.rating" class="inp"></div>
+              </div>
+              <div class="fg"><label>Review Text</label><textarea [(ngModel)]="t.text" rows="2" class="inp"></textarea></div>
+            </div>
+            <button class="btn-add-sub" (click)="addTestimonial(block)">+ Add Review</button>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Add block palette -->
+    <div class="palette-wrap">
+      <button class="btn-add" (click)="showPalette = !showPalette">
+        {{ showPalette ? '✕ Close' : '+ Add Section' }}
+      </button>
+      <div class="palette" *ngIf="showPalette">
+        <button *ngFor="let type of blockTypes" class="palette-item" (click)="addBlock(type)">
+          <span class="pi-icon">{{ meta(type).icon }}</span>
+          <span class="pi-label">{{ meta(type).label }}</span>
+          <span class="pi-hint">{{ meta(type).hint }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+</div>

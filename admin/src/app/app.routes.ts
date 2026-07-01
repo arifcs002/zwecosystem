@@ -44,6 +44,7 @@ export const routes: Routes = [
       { path: 'reports', loadComponent: () => import('./components/admin/reports/reports.component').then(m => m.ReportsComponent) },
       { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
       { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
+      { path: 'ecommerce/builder', loadComponent: () => import('./components/admin/ecommerce/builder/ecommerce-builder.component').then(m => m.EcommerceBuilderComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -76,6 +77,7 @@ export const routes: Routes = [
       { path: 'users', loadComponent: () => import('./components/admin/user-management/user-management.component').then(m => m.UserManagementComponent) },
       { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
       { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
+      { path: 'ecommerce/builder', loadComponent: () => import('./components/admin/ecommerce/builder/ecommerce-builder.component').then(m => m.EcommerceBuilderComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

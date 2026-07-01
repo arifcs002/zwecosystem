@@ -24,7 +24,11 @@ export class CartService {
   cart: CartItem[] = [];
   isCartOpen = false;
   isCheckoutOpen = false;
-  customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
+  customerInfo = { name: '', mobile: '', address: '', district: '', thana: '', notes: '', paymentMethod: 'COD' };
+
+  // Checkout flow state (driven by the cart widget / checkout page).
+  placingOrder = false;
+  lastOrderNumber: string | null = null;
 
   constructor() {
     try {
@@ -66,14 +70,32 @@ export class CartService {
   proceedToCheckout() { if (this.cart.length) { this.isCartOpen = false; this.isCheckoutOpen = true; } }
   closeCheckout() { this.isCheckoutOpen = false; }
 
-  placeOrder(): boolean {
-    if (!this.customerInfo.name || !this.customerInfo.mobile || !this.customerInfo.address) {
-      return false;
-    }
+  isCheckoutValid(): boolean {
+    return !!(this.customerInfo.name && this.customerInfo.mobile && this.customerInfo.address);
+  }
+
+  // Maps the current cart + customer info into the shape the public checkout
+  // API expects. Prices are intentionally omitted — the backend re-reads them.
+  buildOrderRequest() {
+    return {
+      items: this.cart.map(i => ({ productId: i.product.id, quantity: i.quantity })),
+      customerName: this.customerInfo.name.trim(),
+      customerPhone: this.customerInfo.mobile.trim(),
+      shippingAddress: this.customerInfo.address.trim(),
+      shippingDistrict: this.customerInfo.district?.trim() || undefined,
+      shippingThana: this.customerInfo.thana?.trim() || undefined,
+      orderNotes: this.customerInfo.notes?.trim() || undefined,
+      paymentMethod: this.customerInfo.paymentMethod
+    };
+  }
+
+  // Called once the order has been accepted by the backend.
+  clearAfterOrder(orderNumber: string) {
     this.cart = [];
     this.persist();
     this.isCheckoutOpen = false;
-    this.customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
-    return true;
+    this.placingOrder = false;
+    this.lastOrderNumber = orderNumber;
+    this.customerInfo = { name: '', mobile: '', address: '', district: '', thana: '', notes: '', paymentMethod: 'COD' };
   }
 }

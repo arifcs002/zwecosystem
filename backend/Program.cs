@@ -344,6 +344,18 @@ using (var scope = app.Services.CreateScope())
                 uploaded_by_user_id INTEGER
             )");
 
+        // Online (storefront) orders carry a delivery address + optional note
+        // that POS walk-in orders don't — added here (same IF NOT EXISTS pattern)
+        // so existing databases get the columns without a full migration.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_address TEXT");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_district TEXT");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_thana TEXT");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_notes TEXT");
+
+        // Optional "was" price — when set (and higher than price) the storefront
+        // shows a strikethrough original + a Save% badge. NULL = no discount shown.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE products ADD COLUMN IF NOT EXISTS compare_at_price DECIMAL");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)

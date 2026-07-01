@@ -40,7 +40,11 @@ DROP PROCEDURE IF EXISTS sp_update_category(INT,TEXT,TEXT,TEXT,TEXT,INT);
 DROP PROCEDURE IF EXISTS sp_update_category(INT,TEXT,TEXT,TEXT,TEXT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_delete_category(INT,INT);
 DROP FUNCTION IF EXISTS sp_create_product(INT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,INT,INT,TEXT,TEXT,INT,INT);
+-- 17-param version (added pricing_tag_id) — dropped so the new compare_at_price
+-- overload doesn't collide/ambiguate with the shorter one on positional calls.
+DROP FUNCTION IF EXISTS sp_create_product(INT,TEXT,TEXT,TEXT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,INT,INT,TEXT,TEXT,INT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_update_product(INT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,TEXT,INT,INT,TEXT,INT,INT);
+DROP PROCEDURE IF EXISTS sp_update_product(INT,TEXT,TEXT,DECIMAL,DECIMAL,INT,TEXT,TEXT,INT,INT,TEXT,INT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_delete_product(INT);
 DROP PROCEDURE IF EXISTS sp_adjust_stock(INT,INT,INT);
 DROP PROCEDURE IF EXISTS sp_update_order_status(INT,TEXT,TEXT);
@@ -663,18 +667,19 @@ CREATE OR REPLACE FUNCTION sp_create_product(
     p_description TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
     p_stock_quantity INT, p_image_url TEXT,
     p_category_id INT, p_brand_id INT, p_status TEXT,
-    p_size TEXT, p_supplier_id INT, p_created_by INT, p_pricing_tag_id INT DEFAULT NULL
+    p_size TEXT, p_supplier_id INT, p_created_by INT, p_pricing_tag_id INT DEFAULT NULL,
+    p_compare_at_price DECIMAL DEFAULT NULL
 ) RETURNS INT LANGUAGE plpgsql AS $$
 DECLARE v_id INT;
 BEGIN
     INSERT INTO products (
         company_id, name, slug, sku, barcode, description,
-        price, wholesale_price, stock_quantity, image_url,
+        price, compare_at_price, wholesale_price, stock_quantity, image_url,
         category_id, brand_id, supplier_id, status, size, pricing_tag_id,
         created_by, created_date, updated_date, is_deleted)
     VALUES (
         p_company_id, p_name, p_slug, p_sku, p_barcode, NULLIF(trim(p_description),''),
-        p_price, p_wholesale_price, p_stock_quantity, NULLIF(trim(p_image_url),''),
+        p_price, NULLIF(p_compare_at_price, 0), p_wholesale_price, p_stock_quantity, NULLIF(trim(p_image_url),''),
         NULLIF(p_category_id, 0), NULLIF(p_brand_id, 0), NULLIF(p_supplier_id, 0),
         p_status, NULLIF(trim(p_size),''), p_pricing_tag_id,
         p_created_by, NOW(), NOW(), 0)
@@ -687,13 +692,14 @@ CREATE OR REPLACE PROCEDURE sp_update_product(
     p_id INT, p_name TEXT, p_sku TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
     p_stock_quantity INT, p_description TEXT, p_image_url TEXT,
     p_category_id INT, p_brand_id INT, p_size TEXT, p_supplier_id INT, p_updated_by INT,
-    p_pricing_tag_id INT DEFAULT NULL
+    p_pricing_tag_id INT DEFAULT NULL, p_compare_at_price DECIMAL DEFAULT NULL
 ) LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE products SET
         name            = p_name,
         sku             = p_sku,
         price           = p_price,
+        compare_at_price = NULLIF(p_compare_at_price, 0),
         wholesale_price = p_wholesale_price,
         stock_quantity  = p_stock_quantity,
         description     = NULLIF(trim(p_description), ''),
@@ -772,6 +778,53 @@ BEGIN
         p_subtotal, p_discount, 0, 0, p_total,
         p_payment_method, p_payment_status,
         p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_order_id;
+
+    FOR i IN 1..array_length(p_product_ids, 1) LOOP
+        INSERT INTO order_items (order_id, product_id, quantity, price, total_price, created_date, updated_date, is_deleted)
+        VALUES (v_order_id, p_product_ids[i], p_quantities[i], p_prices[i],
+                p_prices[i] * p_quantities[i], NOW(), NOW(), 0);
+
+        UPDATE products SET
+            stock_quantity = stock_quantity - p_quantities[i],
+            updated_date   = NOW()
+        WHERE id = p_product_ids[i];
+    END LOOP;
+
+    RETURN v_order_id;
+END;
+$$;
+
+-- Storefront (guest) checkout. Mirrors sp_checkout_order but records the
+-- delivery address/district/thana/note and a shipping fee — fields POS
+-- walk-in orders don't have. Kept separate so the POS signature stays stable.
+CREATE OR REPLACE FUNCTION sp_create_online_order(
+    p_company_id INT, p_order_number TEXT,
+    p_customer_name TEXT, p_customer_phone TEXT,
+    p_shipping_address TEXT, p_shipping_district TEXT, p_shipping_thana TEXT,
+    p_order_notes TEXT,
+    p_subtotal DECIMAL, p_shipping_fee DECIMAL, p_total DECIMAL,
+    p_payment_method TEXT,
+    p_product_ids INT[], p_quantities INT[], p_prices DECIMAL[]
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE
+    v_order_id INT;
+    i INT;
+BEGIN
+    INSERT INTO orders (
+        company_id, order_number, sale_type, sales_staff_id,
+        customer_name, customer_phone, status,
+        subtotal, discount, tax, shipping_fee, total,
+        payment_method, payment_status,
+        shipping_address, shipping_district, shipping_thana, order_notes,
+        created_date, updated_date, is_deleted)
+    VALUES (
+        p_company_id, p_order_number, 'ECOMMERCE', NULL,
+        p_customer_name, p_customer_phone, 'PENDING',
+        p_subtotal, 0, 0, p_shipping_fee, p_total,
+        p_payment_method, 'PENDING',
+        p_shipping_address, p_shipping_district, p_shipping_thana, p_order_notes,
+        NOW(), NOW(), 0)
     RETURNING id INTO v_order_id;
 
     FOR i IN 1..array_length(p_product_ids, 1) LOOP

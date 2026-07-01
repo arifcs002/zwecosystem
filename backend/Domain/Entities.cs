@@ -512,6 +512,10 @@ namespace Ecommerce.Api.Domain
         [Column("price")]
         public decimal Price { get; set; } // Retail Price
 
+        // Optional "was" / compare-at price for showing a discount on the storefront.
+        [Column("compare_at_price")]
+        public decimal? CompareAtPrice { get; set; }
+
         [Required]
         [Column("wholesale_price")]
         public decimal WholesalePrice { get; set; }
@@ -611,6 +615,19 @@ namespace Ecommerce.Api.Domain
 
         [Column("payment_status")]
         public string PaymentStatus { get; set; } = "PENDING"; // 'PENDING', 'PAID', 'FAILED'
+
+        // Storefront (ECOMMERCE) delivery details — null for POS walk-in orders.
+        [Column("shipping_address")]
+        public string? ShippingAddress { get; set; }
+
+        [Column("shipping_district")]
+        public string? ShippingDistrict { get; set; }
+
+        [Column("shipping_thana")]
+        public string? ShippingThana { get; set; }
+
+        [Column("order_notes")]
+        public string? OrderNotes { get; set; }
 
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();

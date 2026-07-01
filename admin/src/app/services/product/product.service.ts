@@ -18,6 +18,7 @@ export interface BatchProductCreateDto {
   imageUrl?: string;
   sizes: SizeQtyDto[];
   pricingTagId?: number | null;
+  compareAtPrice?: number | null;
 }
 
 export interface Product {
@@ -28,6 +29,7 @@ export interface Product {
   barcode: string;
   description?: string;
   price: number;
+  compareAtPrice?: number | null;
   wholesalePrice: number;
   stockQuantity: number;
   size?: string;
@@ -37,6 +39,7 @@ export interface Product {
   supplierId?: number;
   status: string;
   createdAt: string;
+  createdDate?: string; // public endpoint returns this (used for "newest" sort / New badge)
   category?: any;
   brand?: any;
   supplier?: any;

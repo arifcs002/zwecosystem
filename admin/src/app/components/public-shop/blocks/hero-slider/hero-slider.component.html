@@ -1,0 +1,18 @@
+<div class="hero" *ngIf="slides.length">
+  <div class="slides">
+    <div *ngFor="let s of slides; let i = index" class="slide" [class.active]="i === current"
+         [style.background-image]="s.image ? 'url(' + (s.image | imgUrl) + ')' : null">
+      <div class="overlay"></div>
+      <div class="content">
+        <span class="eyebrow" *ngIf="s.subtitle">✨ {{ s.subtitle }}</span>
+        <h1 class="title">{{ s.title }}</h1>
+        <a *ngIf="s.ctaText && linkFor(s.ctaLink)" [routerLink]="linkFor(s.ctaLink)" class="cta">{{ s.ctaText }} ›</a>
+        <span *ngIf="s.ctaText && !linkFor(s.ctaLink)" class="cta static">{{ s.ctaText }} ›</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dots" *ngIf="slides.length > 1">
+    <button *ngFor="let s of slides; let i = index" [class.on]="i === current" (click)="go(i)"></button>
+  </div>
+</div>

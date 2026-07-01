@@ -8,8 +8,16 @@ export interface ProductGroup {
   categoryId: number | null;
   categoryName: string;
   price: number;
+  compareAtPrice: number | null; // "was" price for discount display (from representative variant)
   totalStock: number;
-  variants: Product[]; // one per size, sorted
+  createdDate: string | null;    // latest variant's created date (for "newest" sort / New badge)
+  variants: Product[];           // one per size, sorted
+}
+
+// Whole-taka discount percent, or 0 when there's no valid "was" price.
+export function discountPercent(g: ProductGroup): number {
+  if (!g.compareAtPrice || g.compareAtPrice <= g.price) return 0;
+  return Math.round(((g.compareAtPrice - g.price) / g.compareAtPrice) * 100);
 }
 
 // Size variants are stored as separate Product rows named "{base} (Size X)".
@@ -31,13 +39,16 @@ export function groupProducts(products: Product[]): ProductGroup[] {
   return Array.from(map.values()).map(variants => {
     const sorted = [...variants].sort((a, b) =>
       (a.size || '').localeCompare(b.size || '', undefined, { numeric: true }));
+    const dates = sorted.map(v => v.createdDate || v.createdAt).filter(Boolean) as string[];
     return {
       baseName: baseProductName(sorted[0].name),
       imageUrl: sorted.find(v => v.imageUrl)?.imageUrl || '',
       categoryId: sorted[0].categoryId ?? null,
       categoryName: sorted[0].category?.name || 'Uncategorized',
       price: sorted[0].price,
+      compareAtPrice: sorted[0].compareAtPrice ?? null,
       totalStock: sorted.reduce((s, v) => s + v.stockQuantity, 0),
+      createdDate: dates.length ? dates.sort().slice(-1)[0] : null,
       variants: sorted
     };
   });

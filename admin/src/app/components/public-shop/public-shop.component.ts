@@ -11,11 +11,27 @@ import { CartService } from '../../services/cart/cart.service';
 import { ImgUrlPipe } from '../../pipes/img-url.pipe';
 import { CartWidgetComponent } from './cart-widget/cart-widget.component';
 import { ProductGroup, groupProducts, groupForProductId, toShopProduct } from '../../utils/product-group.util';
+import { StorefrontBlock, parseLayout } from '../../models/storefront-layout.model';
+import { resolveBlockProducts } from '../../utils/storefront-source.util';
+import { HeroSliderComponent } from './blocks/hero-slider/hero-slider.component';
+import { CategoryIconsComponent, IconCategory } from './blocks/category-icons/category-icons.component';
+import { ProductCarouselComponent } from './blocks/product-carousel/product-carousel.component';
+import { BrandCarouselComponent } from './blocks/brand-carousel/brand-carousel.component';
+import { TestimonialsComponent } from './blocks/testimonials/testimonials.component';
+import { BrandService, Brand } from '../../services/brand/brand.service';
 
 export interface CategorySection {
   id: number;
   name: string;
   groups: ProductGroup[];
+}
+
+// A layout block plus the data resolved for it, ready to render.
+export interface RenderBlock {
+  block: StorefrontBlock;
+  groups?: ProductGroup[];
+  iconCategories?: IconCategory[];
+  brands?: Brand[];
 }
 
 export interface CategoryTree {
@@ -28,7 +44,11 @@ export interface CategoryTree {
 @Component({
   selector: 'app-public-shop',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe, CartWidgetComponent],
+  imports: [
+    CommonModule, FormsModule, RouterModule, ImgUrlPipe, CartWidgetComponent,
+    HeroSliderComponent, CategoryIconsComponent, ProductCarouselComponent,
+    BrandCarouselComponent, TestimonialsComponent
+  ],
   templateUrl: './public-shop.component.html',
   styleUrl: './public-shop.component.css'
 })
@@ -39,6 +59,7 @@ export class PublicShopComponent implements OnInit {
   private categoryService = inject(CategoryService);
   private productService = inject(ProductService);
   private settingsService = inject(SettingsService);
+  private brandService = inject(BrandService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -59,6 +80,14 @@ export class PublicShopComponent implements OnInit {
 
   // Category detail page (when See More clicked)
   detailCategory: CategorySection | null = null;
+
+  // Homepage block layout (Storefront Builder) resolved to renderable data.
+  renderBlocks: RenderBlock[] = [];
+  lowStockThreshold = 5;
+  // Kept raw for block source resolution + category detail.
+  private allProductsRaw: any[] = [];
+  private allCategoriesRaw: Category[] = [];
+  private allBrandsRaw: Brand[] = [];
 
   // Sidebar toggle
   sidebarOpen = false;
@@ -98,9 +127,11 @@ export class PublicShopComponent implements OnInit {
     forkJoin({
       settings: this.settingsService.getPublicSettings(),
       allCats: this.categoryService.getCategories(),
-      allProds: this.productService.getPublicProducts()
+      allProds: this.productService.getPublicProducts(),
+      allBrands: this.brandService.getPublicBrands()
     }).subscribe({
-      next: ({ settings, allCats, allProds }) => {
+      next: ({ settings, allCats, allProds, allBrands }) => {
+        this.allBrandsRaw = allBrands || [];
         const catSetting = settings.find(s => s.key === 'visible_dashboard_categories');
         const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
 
@@ -121,6 +152,19 @@ export class PublicShopComponent implements OnInit {
         const displayCats = visibleCategoryIds.length > 0
           ? allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()))
           : allCats;
+
+        // Keep raw data for storefront-block resolution + category detail.
+        this.allProductsRaw = allProds;
+        this.allCategoriesRaw = allCats;
+        const lowStock = settings.find(s => s.key === 'low_stock_threshold')?.value;
+        if (lowStock && !isNaN(+lowStock)) this.lowStockThreshold = +lowStock;
+
+        // Build the homepage from the Storefront Builder layout.
+        const layout = parseLayout(settings.find(s => s.key === 'storefront_layout')?.value);
+        this.renderBlocks = layout.blocks
+          .filter(b => b.enabled)
+          .map(b => this.toRenderBlock(b))
+          .filter(rb => this.hasContent(rb));
 
         // Build category tree (parent/child)
         this.buildCategoryTree(displayCats);
@@ -168,6 +212,55 @@ export class PublicShopComponent implements OnInit {
       },
       error: () => { this.isLoading = false; }
     });
+  }
+
+  // ── Storefront block rendering ─────────────────────────────────────────
+  private toRenderBlock(block: StorefrontBlock): RenderBlock {
+    if (block.type === 'product_carousel' || block.type === 'product_grid') {
+      return { block, groups: resolveBlockProducts(block, this.allProductsRaw, this.allCategoriesRaw) };
+    }
+    if (block.type === 'category_icons') {
+      const ids = block.categoryIds || [];
+      const ordered = ids.length
+        ? ids.map(id => this.allCategoriesRaw.find(c => Number(c.id) === Number(id))).filter(Boolean) as Category[]
+        : this.allCategoriesRaw.filter(c => !c.parentId);
+      const list = (block.maxVisible && block.maxVisible > 0 ? ordered.slice(0, block.maxVisible) : ordered);
+      return { block, iconCategories: list.map(c => ({ id: Number(c.id), name: c.name })) };
+    }
+    if (block.type === 'brand_carousel') {
+      return { block, brands: this.allBrandsRaw };
+    }
+    return { block };
+  }
+
+  // Hide blocks that resolved to nothing (e.g. an empty carousel) so the page
+  // never shows a stray heading with no content. Non-product blocks always show.
+  private hasContent(rb: RenderBlock): boolean {
+    switch (rb.block.type) {
+      case 'product_carousel':
+      case 'product_grid':   return !!rb.groups && rb.groups.length > 0;
+      case 'category_icons': return !!rb.iconCategories && rb.iconCategories.length > 0;
+      case 'hero_slider':    return !!rb.block.slides && rb.block.slides.length > 0;
+      case 'promo_banner':   return !!rb.block.image;
+      case 'brand_carousel': return !!rb.brands && rb.brands.length > 0;
+      case 'testimonials':   return !!rb.block.items && rb.block.items.length > 0;
+      default:               return true;
+    }
+  }
+
+  blockViewAll(block: StorefrontBlock) {
+    if (block.viewAllLink) {
+      const parts = block.viewAllLink.replace(/^\/+/, '').split('/').filter(Boolean);
+      this.router.navigate(['/', this.companySlug, ...parts]);
+    } else if (block.source === 'category' && block.categoryId != null) {
+      this.navigateToCategory(Number(block.categoryId));
+    }
+  }
+
+  bannerLink(block: StorefrontBlock) {
+    if (!block.link) return;
+    const parts = block.link.replace(/^\/+/, '').split('/').filter(Boolean);
+    this.router.navigate(['/', this.companySlug, ...parts]);
   }
 
   // Curated order stores one representative variant id per group — expand each

@@ -65,13 +65,15 @@ namespace Ecommerce.Api.Models
     public record ProductCreateDto(
         string Name, string SKU, decimal Price, decimal WholesalePrice,
         int StockQuantity, string? Description, int? CategoryId, int? BrandId,
-        string? Barcode, string? ImageUrl, int? PricingTagId = null);
+        string? Barcode, string? ImageUrl, int? PricingTagId = null,
+        decimal? CompareAtPrice = null);
 
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(
         string Name, decimal Price, decimal WholesalePrice,
         string? Description, int? CategoryId, int? SupplierId,
-        string? ImageUrl, List<SizeQtyDto> Sizes, int? PricingTagId = null);
+        string? ImageUrl, List<SizeQtyDto> Sizes, int? PricingTagId = null,
+        decimal? CompareAtPrice = null);
 
     // ── Pricing Tags ────────────────────────────────────────
     public record PricingTagUpsertDto(
@@ -83,6 +85,13 @@ namespace Ecommerce.Api.Models
     public record POSCheckoutDto(
         List<OrderItemDto> Items, decimal Discount, string PaymentMethod,
         string? CustomerName, string? CustomerPhone, string? TransactionId);
+
+    // Storefront guest checkout — no auth; tenant comes from the X-Tenant-ID header.
+    public record PublicCheckoutDto(
+        List<OrderItemDto> Items,
+        string CustomerName, string CustomerPhone,
+        string ShippingAddress, string? ShippingDistrict, string? ShippingThana,
+        string? OrderNotes, string PaymentMethod);
 
     public class StatusUpdateDto
     {

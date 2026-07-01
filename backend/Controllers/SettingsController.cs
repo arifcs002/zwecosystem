@@ -22,10 +22,30 @@ namespace Ecommerce.Api.Controllers
         private const string CategoryOrderKeyPrefix = "category_order_";
         private static readonly HashSet<string> PublicSettingKeys = new(StringComparer.OrdinalIgnoreCase)
         {
+            // Branding / general
             "store_name", "store_phone", "primary_color", "logo_url",
+            "shop_currency", "visible_dashboard_categories",
+
+            // Footer + social
             "footer_about_text", "facebook_link", "instagram_link",
             "twitter_link", "youtube_link", "whatsapp_link", "tiktok_link", "linkedin_link",
-            "shop_currency", "visible_dashboard_categories"
+
+            // Storefront builder (homepage block layout) + header/nav
+            "storefront_layout", "nav_categories",
+            "announcement_text", "announcement_link", "announcement_enabled",
+
+            // Product display rules
+            "new_badge_days", "low_stock_threshold",
+            "enable_whatsapp_order", "whatsapp_number",
+            "enable_call_order", "call_number",
+
+            // Checkout / payment (public needs these to render the checkout UI)
+            "delivery_charge", "free_delivery_above",
+            "payment_cod", "payment_bkash", "payment_online", "bkash_number",
+
+            // Static pages / policies + contact
+            "page_about", "page_privacy", "page_refund", "page_terms",
+            "contact_address", "contact_phone", "contact_email"
         };
 
         private static bool IsPublicSettingKey(string key) =>
