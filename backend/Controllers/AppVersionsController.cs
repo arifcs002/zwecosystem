@@ -16,6 +16,8 @@ namespace Ecommerce.Api.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IFileTextLogger _fileLogger;
 
+        private static readonly string[] SuperAdminRoles = ["superadmin", "SUPERADMIN", "SuperAdmin"];
+
         public AppVersionsController(ApplicationDbContext context, IWebHostEnvironment env, IFileTextLogger fileLogger)
         {
             _context = context;
@@ -23,9 +25,18 @@ namespace Ecommerce.Api.Controllers
             _fileLogger = fileLogger;
         }
 
-        // Any authenticated session (super admin or company staff) can fetch the
-        // current release — there's no customer/public login into the workspace
-        // app, so requiring auth here already excludes anonymous visitors.
+        private bool IsSuperAdmin() =>
+            SuperAdminRoles.Any(r => User.IsInRole(r));
+
+        private string ApksFolder()
+        {
+            var wwwRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var folder = Path.Combine(wwwRoot, "apks");
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            return folder;
+        }
+
+        // ── GET /latest — any authenticated user (staff, super-admin) ──────────
         [HttpGet("latest")]
         public async Task<IActionResult> GetLatest()
         {
@@ -37,28 +48,62 @@ namespace Ecommerce.Api.Controllers
             return Ok(latest);
         }
 
+        // ── GET — all versions, super-admin only ───────────────────────────────
         [HttpGet]
-        [Authorize(Roles = "superadmin")]
         public async Task<IActionResult> GetAll()
         {
+            if (!IsSuperAdmin()) return Forbid();
             var versions = await _context.AppVersions
                 .OrderByDescending(v => v.VersionCode)
                 .ToListAsync();
             return Ok(versions);
         }
 
+        // ── GET /server-files — list .apk files already on the server ─────────
+        [HttpGet("server-files")]
+        public IActionResult GetServerFiles()
+        {
+            if (!IsSuperAdmin()) return Forbid();
+            var folder = ApksFolder();
+            var files = Directory.GetFiles(folder, "*.apk")
+                .Select(f => new
+                {
+                    name = Path.GetFileName(f),
+                    sizeKb = (int)(new FileInfo(f).Length / 1024),
+                    url = $"/apks/{Path.GetFileName(f)}"
+                })
+                .OrderByDescending(f => f.name)
+                .ToList();
+            return Ok(files);
+        }
+
+        // ── POST /register — register a file already in wwwroot/apks/ ─────────
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterExisting([FromBody] RegisterApkDto dto)
+        {
+            if (!IsSuperAdmin()) return Forbid();
+            if (string.IsNullOrWhiteSpace(dto.FileName)) return BadRequest("File name is required.");
+            if (string.IsNullOrWhiteSpace(dto.VersionName)) return BadRequest("Version name is required.");
+
+            var folder = ApksFolder();
+            var fullPath = Path.Combine(folder, Path.GetFileName(dto.FileName));
+            if (!System.IO.File.Exists(fullPath))
+                return BadRequest(new { message = $"File '{dto.FileName}' not found in /apks/ folder on server." });
+
+            var apkUrl = $"/apks/{Path.GetFileName(dto.FileName)}";
+            return await SaveVersion(dto.VersionName, dto.VersionCode, apkUrl, dto.ReleaseNotes);
+        }
+
+        // ── POST — upload APK from browser ────────────────────────────────────
         [HttpPost]
-        [Authorize(Roles = "superadmin")]
         [RequestSizeLimit(300_000_000)]
         public async Task<IActionResult> Upload(IFormFile file, [FromForm] string versionName, [FromForm] int versionCode, [FromForm] string? releaseNotes)
         {
+            if (!IsSuperAdmin()) return Forbid();
             if (file == null || file.Length == 0) return BadRequest("No APK file uploaded.");
             if (string.IsNullOrWhiteSpace(versionName)) return BadRequest("Version name is required.");
 
-            var wwwRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var appsFolder = Path.Combine(wwwRoot, "apks");
-            if (!Directory.Exists(appsFolder)) Directory.CreateDirectory(appsFolder);
-
+            var folder = ApksFolder();
             byte[] bytes;
             using (var ms = new MemoryStream())
             {
@@ -66,18 +111,53 @@ namespace Ecommerce.Api.Controllers
                 bytes = ms.ToArray();
             }
 
-            // Content-hash filename — same reasoning as product image uploads:
-            // identical bytes always resolve to the identical URL, so the client
-            // can cache a downloaded APK forever and only re-fetch on a real change.
             var hash = Convert.ToHexString(SHA256.HashData(bytes))[..16].ToLowerInvariant();
             var fileName = $"{hash}.apk";
-            var filePath = Path.Combine(appsFolder, fileName);
+            var filePath = Path.Combine(folder, fileName);
             if (!System.IO.File.Exists(filePath))
                 await System.IO.File.WriteAllBytesAsync(filePath, bytes);
 
-            var apkUrl = $"/apks/{fileName}";
+            return await SaveVersion(versionName, versionCode, $"/apks/{fileName}", releaseNotes);
+        }
 
-            // Only one release is "latest" at a time.
+        // ── PUT /{id} — edit version name / release notes ─────────────────────
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] AppVersionUpdateDto dto)
+        {
+            if (!IsSuperAdmin()) return Forbid();
+            var version = await _context.AppVersions.FindAsync(id);
+            if (version == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(dto.VersionName)) version.VersionName = dto.VersionName;
+            if (dto.VersionCode.HasValue) version.VersionCode = dto.VersionCode.Value;
+            version.ReleaseNotes = dto.ReleaseNotes;
+            await _context.SaveChangesAsync();
+            return Ok(version);
+        }
+
+        // ── DELETE /{id} — remove record (+ file if deleteFile=true) ──────────
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id, [FromQuery] bool deleteFile = false)
+        {
+            if (!IsSuperAdmin()) return Forbid();
+            var version = await _context.AppVersions.FindAsync(id);
+            if (version == null) return NotFound();
+
+            if (deleteFile && !string.IsNullOrWhiteSpace(version.ApkUrl))
+            {
+                var wwwRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                var filePath = Path.Combine(wwwRoot, version.ApkUrl.TrimStart('/'));
+                if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+            }
+
+            _context.AppVersions.Remove(version);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Deleted." });
+        }
+
+        // ── shared helper ──────────────────────────────────────────────────────
+        private async Task<IActionResult> SaveVersion(string versionName, int versionCode, string apkUrl, string? releaseNotes)
+        {
             var previouslyActive = await _context.AppVersions.Where(v => v.IsActive).ToListAsync();
             foreach (var v in previouslyActive) v.IsActive = false;
 
@@ -96,8 +176,10 @@ namespace Ecommerce.Api.Controllers
             };
             _context.AppVersions.Add(version);
             await _context.SaveChangesAsync();
-
             return Ok(version);
         }
     }
+
+    public record RegisterApkDto(string FileName, string VersionName, int VersionCode, string? ReleaseNotes);
+    public record AppVersionUpdateDto(string? VersionName, int? VersionCode, string? ReleaseNotes);
 }

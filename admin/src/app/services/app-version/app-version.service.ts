@@ -13,6 +13,12 @@ export interface AppVersion {
   createdDate: string;
 }
 
+export interface ServerApkFile {
+  name: string;
+  sizeKb: number;
+  url: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,6 +34,10 @@ export class AppVersionService {
     return this.http.get<AppVersion[]>(this.apiUrl);
   }
 
+  getServerFiles(): Observable<ServerApkFile[]> {
+    return this.http.get<ServerApkFile[]>(`${this.apiUrl}/server-files`);
+  }
+
   upload(file: File, versionName: string, versionCode: number, releaseNotes: string): Observable<AppVersion> {
     const formData = new FormData();
     formData.append('file', file);
@@ -35,5 +45,17 @@ export class AppVersionService {
     formData.append('versionCode', versionCode.toString());
     formData.append('releaseNotes', releaseNotes || '');
     return this.http.post<AppVersion>(this.apiUrl, formData);
+  }
+
+  registerExisting(fileName: string, versionName: string, versionCode: number, releaseNotes: string): Observable<AppVersion> {
+    return this.http.post<AppVersion>(`${this.apiUrl}/register`, { fileName, versionName, versionCode, releaseNotes });
+  }
+
+  update(id: number, versionName: string, versionCode: number, releaseNotes: string): Observable<AppVersion> {
+    return this.http.put<AppVersion>(`${this.apiUrl}/${id}`, { versionName, versionCode, releaseNotes });
+  }
+
+  delete(id: number, deleteFile = false): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}?deleteFile=${deleteFile}`);
   }
 }
