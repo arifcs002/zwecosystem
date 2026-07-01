@@ -24,6 +24,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedReq).pipe(
     tap({
       error: (error) => {
+        // DELETE 404 = resource already gone = desired state; suppress notification.
+        if (error.status === 404 && req.method === 'DELETE') return;
+
         if (error.status === 401) {
           authService.logout();
           const currentPath = window.location.pathname;

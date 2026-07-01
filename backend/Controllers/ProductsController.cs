@@ -158,7 +158,8 @@ namespace Ecommerce.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
+            // Soft-delete is idempotent — skip the query-filtered existence check
+            // (global filter excludes IsDeleted=1 rows, causing false 404 on retry).
             await _context.Database.ExecuteSqlRawAsync("CALL sp_delete_product({0})", id);
             return NoContent();
         }

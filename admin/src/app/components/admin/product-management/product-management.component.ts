@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 export interface ProductGroup {
   baseName: string;
@@ -142,17 +144,16 @@ export class ProductManagementComponent implements OnInit {
     });
     if (!ok) return;
     const ids = group.variants.map(v => v.id);
-    let done = 0;
-    ids.forEach(id => {
-      this.productService.deleteProduct(id).subscribe({
-        next: () => {
-          done++;
-          if (done === ids.length) {
-            this.allProducts = this.allProducts.filter(p => !ids.includes(p.id));
-            this.buildGroups(this.allProducts);
-          }
-        }
-      });
+    // forkJoin waits for all; catchError per call ensures one failure won't
+    // block the rest (soft-delete is idempotent — 404 = already gone).
+    forkJoin(ids.map(id =>
+      this.productService.deleteProduct(id).pipe(catchError(() => of(null)))
+    )).subscribe(() => {
+      this.allProducts = this.allProducts.filter(p => !ids.includes(p.id));
+      this.buildGroups(this.allProducts);
+      if (this.detailGroup && ids.some(id => this.detailGroup!.variants.map(v => v.id).includes(id))) {
+        this.closeDetail();
+      }
     });
   }
 }
