@@ -23,8 +23,9 @@
 *.log
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
-wwwroot/apks/*
-!wwwroot/apks/.gitkeep
+!wwwroot/uploads/apks/
+wwwroot/uploads/apks/*
+!wwwroot/uploads/apks/.gitkeep
 
 # ================================================
 # SECRETS — NEVER COMMIT THESE

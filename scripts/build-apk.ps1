@@ -15,7 +15,7 @@ $ROOT    = Split-Path $PSScriptRoot
 $ADMIN   = Join-Path $ROOT "admin"
 $ANDROID = Join-Path $ADMIN "android"
 $APK_SRC = Join-Path $ANDROID "app\build\outputs\apk\debug\app-debug.apk"
-$APK_DST = Join-Path $ROOT "backend\wwwroot\apks"
+$APK_DST = Join-Path $ROOT "backend\wwwroot\uploads\apks"
 
 function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 function OK($msg)   { Write-Host "    $msg" -ForegroundColor Green }

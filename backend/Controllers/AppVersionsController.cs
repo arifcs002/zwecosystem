@@ -31,7 +31,7 @@ namespace Ecommerce.Api.Controllers
         private string ApksFolder()
         {
             var wwwRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var folder = Path.Combine(wwwRoot, "apks");
+            var folder = Path.Combine(wwwRoot, "uploads", "apks");
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             return folder;
         }
@@ -70,14 +70,14 @@ namespace Ecommerce.Api.Controllers
                 {
                     name = Path.GetFileName(f),
                     sizeKb = (int)(new FileInfo(f).Length / 1024),
-                    url = $"/apks/{Path.GetFileName(f)}"
+                    url = $"/uploads/apks/{Path.GetFileName(f)}"
                 })
                 .OrderByDescending(f => f.name)
                 .ToList();
             return Ok(files);
         }
 
-        // ── POST /register — register a file already in wwwroot/apks/ ─────────
+        // ── POST /register — register a file already in wwwroot/uploads/apks/ ─────────
         [HttpPost("register")]
         public async Task<IActionResult> RegisterExisting([FromBody] RegisterApkDto dto)
         {
@@ -88,9 +88,9 @@ namespace Ecommerce.Api.Controllers
             var folder = ApksFolder();
             var fullPath = Path.Combine(folder, Path.GetFileName(dto.FileName));
             if (!System.IO.File.Exists(fullPath))
-                return BadRequest(new { message = $"File '{dto.FileName}' not found in /apks/ folder on server." });
+                return BadRequest(new { message = $"File '{dto.FileName}' not found in /uploads/apks/ folder on server." });
 
-            var apkUrl = $"/apks/{Path.GetFileName(dto.FileName)}";
+            var apkUrl = $"/uploads/apks/{Path.GetFileName(dto.FileName)}";
             return await SaveVersion(dto.VersionName, dto.VersionCode, apkUrl, dto.ReleaseNotes);
         }
 
@@ -117,7 +117,7 @@ namespace Ecommerce.Api.Controllers
             if (!System.IO.File.Exists(filePath))
                 await System.IO.File.WriteAllBytesAsync(filePath, bytes);
 
-            return await SaveVersion(versionName, versionCode, $"/apks/{fileName}", releaseNotes);
+            return await SaveVersion(versionName, versionCode, $"/uploads/apks/{fileName}", releaseNotes);
         }
 
         // ── PUT /{id} — edit version name / release notes ─────────────────────
