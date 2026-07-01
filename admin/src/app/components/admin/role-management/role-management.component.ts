@@ -33,12 +33,13 @@ export class RoleManagementComponent {
     { id: 'PAGE_PRODUCTS', name: 'Product Management', category: 'Shop Admin' },
     { id: 'PAGE_CATEGORIES', name: 'Category Management', category: 'Shop Admin' },
     { id: 'PAGE_REPORTS', name: 'Reports View', category: 'Shop Admin' },
-    { id: 'PAGE_STORE_CONFIG', name: 'Store Configuration', category: 'Shop Admin' }
+    { id: 'PAGE_STORE_CONFIG', name: 'Store Configuration', category: 'Shop Admin' },
+    { id: 'PAGE_PRICING', name: 'Pricing', category: 'Shop Admin' }
   ];
 
   roles: Role[] = [
     { id: 'r1', name: 'SUPER_ADMIN', type: 'Global', rights: this.availableRights.map(r => r.id) },
-    { id: 'r2', name: 'COMPANY_ADMIN', type: 'Company', rights: ['PAGE_SHOP_DASHBOARD', 'PAGE_POS', 'PAGE_PRODUCTS', 'PAGE_CATEGORIES', 'PAGE_REPORTS', 'PAGE_STORE_CONFIG'] },
+    { id: 'r2', name: 'COMPANY_ADMIN', type: 'Company', rights: ['PAGE_SHOP_DASHBOARD', 'PAGE_POS', 'PAGE_PRODUCTS', 'PAGE_CATEGORIES', 'PAGE_REPORTS', 'PAGE_STORE_CONFIG', 'PAGE_PRICING'] },
     { id: 'r3', name: 'CASHIER', type: 'Company', rights: ['PAGE_SHOP_DASHBOARD', 'PAGE_POS'] }
   ];
 

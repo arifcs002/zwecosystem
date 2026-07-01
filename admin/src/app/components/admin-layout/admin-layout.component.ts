@@ -14,6 +14,7 @@ export class AdminLayoutComponent {
   authService = inject(AuthService);
   router = inject(Router);
   sidebarCollapsed = false;
+  mobileSidebarOpen = false; // off-canvas drawer state, < 1024px only
 
   get basePath(): string {
     const user = this.authService.currentUserValue;
@@ -24,6 +25,8 @@ export class AdminLayoutComponent {
     }
     return '/admin';
   }
+
+  closeMobileSidebar() { this.mobileSidebarOpen = false; }
 
   logout() {
     const user = this.authService.currentUserValue;

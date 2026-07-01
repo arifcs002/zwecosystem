@@ -15,6 +15,22 @@ namespace Ecommerce.Api.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IFileTextLogger _fileLogger;
 
+        // Only these keys (plus the per-category "category_order_{id}" keys below)
+        // are safe to hand to an anonymous storefront visitor — branding/display
+        // config, never anything that could be a secret. Keep in sync with what
+        // dashboard-config writes for public consumption.
+        private const string CategoryOrderKeyPrefix = "category_order_";
+        private static readonly HashSet<string> PublicSettingKeys = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "store_name", "store_phone", "primary_color", "logo_url",
+            "footer_about_text", "facebook_link", "instagram_link",
+            "twitter_link", "youtube_link", "whatsapp_link", "tiktok_link", "linkedin_link",
+            "shop_currency", "visible_dashboard_categories"
+        };
+
+        private static bool IsPublicSettingKey(string key) =>
+            PublicSettingKeys.Contains(key) || key.StartsWith(CategoryOrderKeyPrefix, StringComparison.OrdinalIgnoreCase);
+
         public SettingsController(ApplicationDbContext context, IFileTextLogger fileLogger)
         {
             _context = context;
@@ -33,8 +49,21 @@ namespace Ecommerce.Api.Controllers
             return Ok(settings);
         }
 
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicSettings()
+        {
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return Ok(new List<SettingVm>());
+
+            var settings = await _context.Database
+                .SqlQueryRaw<SettingVm>("SELECT * FROM sp_get_settings({0})", companyId.Value)
+                .ToListAsync();
+            return Ok(settings.Where(s => IsPublicSettingKey(s.key)).ToList());
+        }
+
         [HttpPut]
-        public async Task<IActionResult> UpdateSettings([FromBody] List<CompanySetting> settingsList)
+        public async Task<IActionResult> UpdateSettings([FromBody] List<CompanySettingDto> settingsList)
         {
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
@@ -43,7 +72,7 @@ namespace Ecommerce.Api.Controllers
             {
                 await _context.Database.ExecuteSqlRawAsync(
                     "CALL sp_upsert_setting({0},{1},{2},{3})",
-                    companyId.Value, s.Key, s.Value, s.GroupName);
+                    companyId.Value, s.Key, s.Value ?? "", s.GroupName ?? "GENERAL");
             }
 
             return Ok(new { message = "Settings updated successfully" });

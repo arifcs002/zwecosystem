@@ -42,6 +42,11 @@ export class CompanyService {
     return this.http.get<Company[]>(this.apiUrl);
   }
 
+  // Anonymous-safe lookup for the public storefront — no auth token required.
+  getPublicCompany(subdomain: string): Observable<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }> {
+    return this.http.get<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }>(`${this.apiUrl}/public/${subdomain}`);
+  }
+
   getCompanyById(id: number): Observable<Company> {
     return this.http.get<Company>(`${this.apiUrl}/${id}`);
   }

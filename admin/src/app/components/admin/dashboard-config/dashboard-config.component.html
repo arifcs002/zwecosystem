@@ -1,8 +1,8 @@
 <div class="page-container">
   <div class="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h1 class="page-title">⚙️ Store Configuration</h1>
-      <p class="page-subtitle">Configure store info, branding, and storefront display</p>
+      <h1 class="page-title">⚙️ Settings</h1>
+      <p class="page-subtitle">Configure store info, branding, footer, and storefront display</p>
     </div>
     <button (click)="saveSettings()" [disabled]="saving || isLoading"
       class="btn-primary flex items-center gap-2">
@@ -17,6 +17,17 @@
   </div>
 
   <div *ngIf="!isLoading" class="space-y-6 max-w-4xl">
+
+    <!-- Mobile App Download (staff/super-admin only — no public/customer login exists) -->
+    <div *ngIf="latestAppVersion" class="bg-gradient-to-r from-violet-900/20 to-indigo-900/20 border border-violet-600/20 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h3 class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-1">📱 Mobile App</h3>
+        <p class="text-sm text-gray-300">Version {{ latestAppVersion.versionName }}<span *ngIf="latestAppVersion.releaseNotes"> — {{ latestAppVersion.releaseNotes }}</span></p>
+      </div>
+      <a [href]="latestAppVersion.apkUrl" download class="btn-primary flex items-center gap-2 flex-shrink-0">
+        ⬇ Download APK
+      </a>
+    </div>
 
     <!-- Basic Info -->
     <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
@@ -51,80 +62,146 @@
       </div>
     </div>
 
-    <!-- Social Links -->
+    <!-- Footer & Social Links -->
     <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Social Links</h3>
+      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Footer & Social Links</h3>
+      <div class="form-group mb-4">
+        <label>About / Footer Text</label>
+        <textarea [(ngModel)]="footerAboutText" name="footerAboutText" rows="2" class="form-input" placeholder="A short line about your store shown in the footer…"></textarea>
+      </div>
       <div class="space-y-3">
         <div class="flex items-center gap-0">
-          <span class="h-[38px] px-3 flex items-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-400 text-xs font-bold">fb</span>
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-400 text-xs font-bold">fb</span>
           <input type="text" [(ngModel)]="facebookLink" name="facebookLink" placeholder="https://facebook.com/yourshop" class="form-input rounded-l-none flex-1">
         </div>
         <div class="flex items-center gap-0">
-          <span class="h-[38px] px-3 flex items-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-pink-400 text-xs font-bold">ig</span>
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-pink-400 text-xs font-bold">ig</span>
           <input type="text" [(ngModel)]="instagramLink" name="instagramLink" placeholder="https://instagram.com/yourshop" class="form-input rounded-l-none flex-1">
         </div>
-      </div>
-    </div>
-
-    <!-- Featured Products (max 10) -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Featured Products</h3>
-        <span class="text-xs font-semibold" [ngClass]="selectedProductCount >= MAX_PRODUCTS ? 'text-rose-400' : 'text-gray-500'">
-          {{ selectedProductCount }} / {{ MAX_PRODUCTS }} selected
-        </span>
-      </div>
-      <p class="text-xs text-gray-500 mb-4">Select up to {{ MAX_PRODUCTS }} products to feature on the Store Preview and Public Storefront.</p>
-
-      <input type="text" [(ngModel)]="productSearch" (ngModelChange)="filterProducts()"
-        class="form-input text-sm mb-3" placeholder="Search products by name or category…">
-
-      <div *ngIf="filteredProducts.length === 0" class="text-center text-gray-600 text-sm py-4">
-        No products found. Add products first.
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-        <div *ngFor="let p of filteredProducts"
-          (click)="toggleProduct(p.id.toString())"
-          class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all select-none"
-          [ngClass]="selectedProductIds[p.id] ? 'border-violet-500/50 bg-violet-900/20' : 'border-white/5 bg-white/[0.02] hover:border-white/15'">
-          <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
-            <img *ngIf="p.imageUrl" [src]="p.imageUrl | imgUrl" [alt]="p.name" class="w-full h-full object-cover">
-            <div *ngIf="!p.imageUrl" class="w-full h-full flex items-center justify-center text-lg">📦</div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-200 truncate">{{ p.name }}</p>
-            <p class="text-xs text-gray-500">৳{{ p.price | number:'1.0-0' }} · {{ p.category?.name || 'No category' }}</p>
-          </div>
-          <div class="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
-            [ngClass]="selectedProductIds[p.id] ? 'bg-violet-500' : 'border border-white/20'">
-            <svg *ngIf="selectedProductIds[p.id]" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-          </div>
+        <div class="flex items-center gap-0">
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-sky-400 text-xs font-bold">𝕏</span>
+          <input type="text" [(ngModel)]="twitterLink" name="twitterLink" placeholder="https://x.com/yourshop" class="form-input rounded-l-none flex-1">
+        </div>
+        <div class="flex items-center gap-0">
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-red-400 text-xs font-bold">yt</span>
+          <input type="text" [(ngModel)]="youtubeLink" name="youtubeLink" placeholder="https://youtube.com/@yourshop" class="form-input rounded-l-none flex-1">
+        </div>
+        <div class="flex items-center gap-0">
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-emerald-400 text-xs font-bold">wa</span>
+          <input type="text" [(ngModel)]="whatsappLink" name="whatsappLink" placeholder="https://wa.me/8801XXXXXXXXX" class="form-input rounded-l-none flex-1">
+        </div>
+        <div class="flex items-center gap-0">
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-gray-300 text-xs font-bold">tt</span>
+          <input type="text" [(ngModel)]="tiktokLink" name="tiktokLink" placeholder="https://tiktok.com/@yourshop" class="form-input rounded-l-none flex-1">
+        </div>
+        <div class="flex items-center gap-0">
+          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-300 text-xs font-bold">in</span>
+          <input type="text" [(ngModel)]="linkedinLink" name="linkedinLink" placeholder="https://linkedin.com/company/yourshop" class="form-input rounded-l-none flex-1">
         </div>
       </div>
     </div>
 
-    <!-- Category Visibility -->
+    <!-- Storefront Sections: category/sub-category visibility + per-category top-10 ordering -->
     <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Category Visibility</h3>
-      <p class="text-xs text-gray-500 mb-4">Categories selected here will show as filter tabs on the storefront (used when no specific products are selected).</p>
+      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Storefront Sections</h3>
+      <p class="text-xs text-gray-500 mb-4">
+        Tick a category or sub-category to give it its own section on the public storefront homepage.
+        Open it to pick &amp; order up to {{ MAX_PER_CATEGORY }} products — leave empty to auto-show the latest products instead.
+      </p>
 
-      <div *ngIf="categories.length === 0" class="text-center text-gray-600 text-sm py-2">
+      <div *ngIf="categoryTree.length === 0" class="text-center text-gray-600 text-sm py-4">
         No categories available. Create categories first.
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <label *ngFor="let cat of categories"
-          class="flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all"
-          [ngClass]="selectedCategoryIds[cat.id!] ? 'border-sky-500/50 bg-sky-900/20' : 'border-white/5 bg-white/[0.02] hover:border-white/15'">
-          <input type="checkbox"
-            [id]="'cat-' + cat.id"
-            [(ngModel)]="selectedCategoryIds[cat.id!]"
-            [name]="'cat-' + cat.id"
-            class="rounded border-white/20 bg-transparent text-sky-500 h-4 w-4 flex-shrink-0">
-          <span class="text-sm text-gray-200 select-none">{{ cat.name }}</span>
-        </label>
-      </div>
+      <ng-container *ngFor="let node of categoryTree">
+        <ng-container *ngTemplateOutlet="categoryRow; context: { node: node, depth: 0 }"></ng-container>
+      </ng-container>
+
+      <!-- Recursive row template: renders a category + its children + its product picker -->
+      <ng-template #categoryRow let-node="node" let-depth="depth">
+        <div [style.margin-left.px]="depth * 20" class="mb-2">
+          <div class="flex items-center gap-2 p-3 rounded-xl border transition-all"
+            [ngClass]="selectedCategoryIds[node.id] ? 'border-sky-500/50 bg-sky-900/20' : 'border-white/5 bg-white/[0.02]'">
+
+            <button *ngIf="node.children.length" (click)="toggleCategoryExpand(node)"
+              class="text-gray-400 hover:text-gray-200 flex-shrink-0">
+              <svg class="w-3.5 h-3.5 transition-transform" [ngClass]="node.expanded ? 'rotate-90' : ''"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <span *ngIf="!node.children.length" class="w-3.5 flex-shrink-0"></span>
+
+            <label class="flex items-center gap-2 flex-1 cursor-pointer select-none">
+              <input type="checkbox" [checked]="!!selectedCategoryIds[node.id]" (change)="toggleCategoryVisible(node.id)"
+                class="rounded border-white/20 bg-transparent text-sky-500 h-4 w-4 flex-shrink-0">
+              <span class="text-sm text-gray-200">{{ node.name }}</span>
+            </label>
+
+            <button *ngIf="selectedCategoryIds[node.id]" (click)="togglePicker(node.id)"
+              class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-all flex-shrink-0"
+              [ngClass]="selectedCount(node.id) > 0 ? 'border-violet-500/50 bg-violet-900/20 text-violet-300' : 'border-white/10 text-gray-400 hover:border-white/20'">
+              {{ selectedCount(node.id) > 0 ? (selectedCount(node.id) + ' / ' + MAX_PER_CATEGORY + ' picked') : 'Auto (latest)' }}
+              <svg class="w-3 h-3 inline-block ml-1 transition-transform" [ngClass]="openPickerId === node.id ? 'rotate-180' : ''"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:inline">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Product picker / ordering panel -->
+          <div *ngIf="selectedCategoryIds[node.id] && openPickerId === node.id" class="mt-2 ml-6 p-4 rounded-xl border border-white/5 bg-black/20">
+
+            <!-- Selected & ordered (one card per product — all sizes folded together) -->
+            <div *ngIf="orderedGroupsInCategory(node.id).length > 0" class="space-y-1.5 mb-3">
+              <div *ngFor="let g of orderedGroupsInCategory(node.id); let i = index"
+                class="flex items-center gap-2 p-2 rounded-lg bg-violet-900/15 border border-violet-500/20">
+                <span class="text-xs font-bold text-violet-400 w-5 text-center flex-shrink-0">{{ i + 1 }}</span>
+                <div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
+                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
+                  <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-xs">📦</div>
+                </div>
+                <span class="text-sm text-gray-200 flex-1 truncate">{{ g.baseName }}<span *ngIf="g.variants.length > 1" class="text-gray-500"> · {{ g.variants.length }} sizes</span></span>
+                <button (click)="moveProduct(node.id, i, -1)" [disabled]="i === 0"
+                  class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↑</button>
+                <button (click)="moveProduct(node.id, i, 1)" [disabled]="i === orderedGroupsInCategory(node.id).length - 1"
+                  class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↓</button>
+                <button (click)="removeProductFromCategory(node.id, g)"
+                  class="text-rose-400 hover:text-rose-300 w-6 h-6 flex items-center justify-center">✕</button>
+              </div>
+            </div>
+            <p *ngIf="orderedGroupsInCategory(node.id).length === 0" class="text-xs text-gray-500 mb-3 italic">
+              No products picked yet — the storefront will auto-show the latest products from this category.
+            </p>
+
+            <!-- Add more -->
+            <input type="text" [(ngModel)]="categorySearch[node.id]"
+              class="form-input text-sm mb-2" placeholder="Search products to add…">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+              <button *ngFor="let g of filteredGroupsInCategory(node.id)" type="button"
+                (click)="addProductToCategory(node.id, g)"
+                class="flex items-center gap-2 p-2 rounded-lg border border-white/5 bg-white/[0.02] hover:border-white/15 transition-all text-left">
+                <div class="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
+                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
+                  <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-xs">📦</div>
+                </div>
+                <span class="text-xs text-gray-300 flex-1 truncate">{{ g.baseName }}<span *ngIf="g.variants.length > 1" class="text-gray-500"> · {{ g.variants.length }} sizes</span></span>
+                <span class="text-violet-400 text-sm flex-shrink-0">+</span>
+              </button>
+              <p *ngIf="filteredGroupsInCategory(node.id).length === 0" class="text-xs text-gray-600 italic py-2 col-span-full text-center">
+                No more products to add in this category.
+              </p>
+            </div>
+          </div>
+
+          <!-- Children -->
+          <ng-container *ngIf="node.children.length && node.expanded">
+            <ng-container *ngFor="let child of node.children">
+              <ng-container *ngTemplateOutlet="categoryRow; context: { node: child, depth: depth + 1 }"></ng-container>
+            </ng-container>
+          </ng-container>
+        </div>
+      </ng-template>
     </div>
 
     <!-- Save button bottom -->

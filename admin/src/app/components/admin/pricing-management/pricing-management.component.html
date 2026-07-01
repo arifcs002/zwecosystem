@@ -1,0 +1,156 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="page-title">💰 Pricing</h1>
+      <p class="page-subtitle">Profit-margin tags for products, and delivery charge</p>
+    </div>
+    <button class="btn-primary" (click)="openNew()">+ New Pricing Tag</button>
+  </div>
+
+  <!-- Delivery Charge -->
+  <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 mb-6 max-w-xl">
+    <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Delivery Charge</h3>
+    <p class="text-xs text-gray-500 mb-4">Set per-store — no longer configured when the store is created.</p>
+    <div class="flex items-end gap-3">
+      <div class="form-group flex-1">
+        <label>Amount (BDT)</label>
+        <input type="number" min="0" [(ngModel)]="deliveryCharge" name="deliveryCharge" class="form-input">
+      </div>
+      <button (click)="saveDeliveryCharge()" [disabled]="savingDelivery" class="btn-primary mb-0">
+        {{ savingDelivery ? 'Saving…' : 'Save' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Pricing Tags Table -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="flex justify-center items-center py-16 text-gray-500 text-sm">
+      <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading pricing tags…
+    </div>
+
+    <div *ngIf="!isLoading && tags.length === 0" class="py-16 text-center text-gray-500 text-sm">
+      No pricing tags yet. Create one to auto-calculate sell price from buy price on the Add Product page.
+    </div>
+
+    <table *ngIf="!isLoading && tags.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>Tag Name</th>
+          <th>Profit %</th>
+          <th>Promo Discount</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tag of tags">
+          <td><span class="font-semibold text-gray-200">{{ tag.name }}</span></td>
+          <td><span class="text-emerald-400 font-bold">+{{ tag.profitPercent }}%</span></td>
+          <td>
+            <span *ngIf="tag.discountPercent" class="text-xs px-2 py-0.5 rounded-full"
+              [ngClass]="isPromoActive(tag) ? 'bg-amber-900/30 border border-amber-600/30 text-amber-300' : 'bg-white/5 border border-white/10 text-gray-500'">
+              −{{ tag.discountPercent }}% {{ isPromoActive(tag) ? '(active)' : '(scheduled)' }}
+            </span>
+            <span *ngIf="!tag.discountPercent" class="text-gray-600 text-xs">—</span>
+          </td>
+          <td>
+            <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="tag.isActive ? 'bg-emerald-900/30 border border-emerald-600/30 text-emerald-300' : 'bg-white/5 border border-white/10 text-gray-500'">
+              {{ tag.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="text-right">
+            <button (click)="openEdit(tag)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-4">Edit</button>
+            <button (click)="confirmDelete(tag)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ── Create / Edit Modal ── -->
+<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeModal()"></div>
+  <div class="relative w-full max-w-md bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl p-6">
+
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-bold text-white">{{ isEditMode ? 'Edit Pricing Tag' : 'New Pricing Tag' }}</h2>
+      <button (click)="closeModal()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div *ngIf="errorMsg" class="alert-error mb-4 text-sm">{{ errorMsg }}</div>
+
+    <div class="space-y-4">
+      <div class="form-group">
+        <label>Tag Name <span class="text-rose-400">*</span></label>
+        <input [(ngModel)]="currentTag.name" name="tagName" type="text"
+          class="form-input" [ngClass]="{'border-rose-500': submitted && !currentTag.name.trim()}"
+          placeholder="e.g. Premium, Standard, Clearance">
+      </div>
+
+      <div class="form-group">
+        <label>Profit % <span class="text-rose-400">*</span> <span class="text-gray-500 text-[10px] font-normal">(sell = buy × (1 + profit / 100))</span></label>
+        <input [(ngModel)]="currentTag.profitPercent" name="profitPercent" type="number" min="0" step="0.5"
+          class="form-input" placeholder="e.g. 30">
+        <p class="text-gray-600 text-[11px] mt-1">Example: ৳100 buy price → ৳{{ previewSellPrice(100) }} sell price.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Promo Discount % <span class="text-gray-500 text-[10px] font-normal">(optional, off the sell price)</span></label>
+        <input [(ngModel)]="currentTag.discountPercent" name="discountPercent" type="number" min="0" max="100" step="0.5"
+          class="form-input" placeholder="e.g. 15">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3" *ngIf="currentTag.discountPercent">
+        <div class="form-group">
+          <label>Promo Starts</label>
+          <input [(ngModel)]="currentTag.promoStartDate" name="promoStart" type="date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Promo Ends</label>
+          <input [(ngModel)]="currentTag.promoEndDate" name="promoEnd" type="date" class="form-input">
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" [(ngModel)]="currentTag.isActive" name="isActive" class="rounded border-white/20 bg-transparent text-violet-500 h-4 w-4">
+        <span class="text-sm text-gray-300">Active (selectable when adding products)</span>
+      </label>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button (click)="closeModal()" class="btn-secondary px-5">Cancel</button>
+      <button (click)="save()" [disabled]="saving" class="btn-primary flex items-center gap-2 min-w-[120px] justify-center">
+        <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        {{ saving ? 'Saving…' : (isEditMode ? 'Save Changes' : 'Create') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ── -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="cancelDelete()"></div>
+  <div class="relative w-full max-w-sm bg-[#12122a] border border-white/10 rounded-2xl shadow-2xl p-6 text-center">
+    <div class="w-12 h-12 rounded-full bg-rose-900/30 border border-rose-700/30 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <h3 class="text-white font-bold text-base mb-1">Delete Pricing Tag?</h3>
+    <p class="text-gray-400 text-sm mb-5">
+      "<span class="text-gray-200 font-medium">{{ tagToDelete?.name }}</span>" will be permanently deleted.
+    </p>
+    <div class="flex gap-3 justify-center">
+      <button (click)="cancelDelete()" class="btn-secondary px-5">Cancel</button>
+      <button (click)="doDelete()" [disabled]="deleting"
+        class="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition disabled:opacity-50">
+        {{ deleting ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

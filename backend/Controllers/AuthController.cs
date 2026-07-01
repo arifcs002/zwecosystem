@@ -18,12 +18,14 @@ namespace Ecommerce.Api.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _config;
         private readonly IFileTextLogger _fileLogger;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _memCache;
 
-        public AuthController(ApplicationDbContext context, IConfiguration config, IFileTextLogger fileLogger)
+        public AuthController(ApplicationDbContext context, IConfiguration config, IFileTextLogger fileLogger, Microsoft.Extensions.Caching.Memory.IMemoryCache memCache)
         {
             _context = context;
             _config = config;
             _fileLogger = fileLogger;
+            _memCache = memCache;
         }
 
         [HttpPost("register-company")]
@@ -97,6 +99,7 @@ namespace Ecommerce.Api.Controllers
             {
                 var user = await _context.Users
                     .IgnoreQueryFilters()
+                    .AsNoTracking()
                     .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -171,6 +174,7 @@ namespace Ecommerce.Api.Controllers
                 var token = authHeader[7..].Trim();
                 var session = await _context.UserSessions.FirstOrDefaultAsync(s => s.SessionToken == token);
                 if (session != null) { session.IsActive = false; await _context.SaveChangesAsync(); }
+                _memCache.Remove($"session:{token}");
             }
             return Ok(new { message = "Logged out successfully." });
         }

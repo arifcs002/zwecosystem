@@ -1,0 +1,79 @@
+import { Injectable } from '@angular/core';
+
+export interface ShopProduct {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  categoryId: number;
+  stock: number;
+  size?: string;
+}
+
+export interface CartItem { product: ShopProduct; quantity: number; }
+
+const STORAGE_KEY = 'shop_cart_v1';
+
+// Singleton so the cart survives navigation between the storefront homepage,
+// category pages, and the product detail page (each is a separate routed
+// component — without a shared service the cart would reset on every route
+// change).
+@Injectable({ providedIn: 'root' })
+export class CartService {
+  cart: CartItem[] = [];
+  isCartOpen = false;
+  isCheckoutOpen = false;
+  customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
+
+  constructor() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) this.cart = JSON.parse(raw);
+    } catch { this.cart = []; }
+  }
+
+  private persist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.cart));
+  }
+
+  toggleCart() { this.isCartOpen = !this.isCartOpen; if (this.isCartOpen) this.isCheckoutOpen = false; }
+
+  addToCart(product: ShopProduct, quantity = 1) {
+    if (product.stock <= 0) return;
+    const item = this.cart.find(i => i.product.id === product.id);
+    if (item) item.quantity = Math.min(item.quantity + quantity, product.stock);
+    else this.cart.push({ product, quantity: Math.min(quantity, product.stock) });
+    this.persist();
+    this.isCartOpen = true;
+  }
+
+  updateQuantity(item: CartItem, delta: number) {
+    item.quantity += delta;
+    if (item.quantity <= 0) this.cart = this.cart.filter(c => c !== item);
+    else if (item.quantity > item.product.stock) item.quantity = item.product.stock;
+    this.persist();
+  }
+
+  removeFromCart(item: CartItem) {
+    this.cart = this.cart.filter(c => c !== item);
+    this.persist();
+  }
+
+  get cartTotalItems() { return this.cart.reduce((s, i) => s + i.quantity, 0); }
+  get cartSubtotal() { return this.cart.reduce((s, i) => s + i.product.price * i.quantity, 0); }
+
+  proceedToCheckout() { if (this.cart.length) { this.isCartOpen = false; this.isCheckoutOpen = true; } }
+  closeCheckout() { this.isCheckoutOpen = false; }
+
+  placeOrder(): boolean {
+    if (!this.customerInfo.name || !this.customerInfo.mobile || !this.customerInfo.address) {
+      return false;
+    }
+    this.cart = [];
+    this.persist();
+    this.isCheckoutOpen = false;
+    this.customerInfo = { name: '', mobile: '', address: '', paymentMethod: 'COD' };
+    return true;
+  }
+}

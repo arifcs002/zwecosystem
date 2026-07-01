@@ -1,16 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { SettingsService } from '../../../services/settings/settings.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
+import { ProductGroup, groupProducts, groupForProductId } from '../../../utils/product-group.util';
 
 @Component({
   selector: 'app-dashboard-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
+  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe],
   templateUrl: './dashboard-view.component.html',
   styleUrl: './dashboard-view.component.css'
 })
@@ -20,10 +22,13 @@ export class DashboardViewComponent implements OnInit {
   private productService = inject(ProductService);
   private router = inject(Router);
 
-  featuredProducts: Product[] = [];
   allProducts: Product[] = [];
-  categories: Category[] = [];
-  filteredProducts: Product[] = [];
+  allCategories: Category[] = [];
+  visibleCategories: Category[] = [];
+
+  // Grouped (one card per base product) per selected category.
+  featuredGroups: ProductGroup[] = [];
+  filteredGroups: ProductGroup[] = [];
 
   selectedCategory = 'All';
   isLoading = false;
@@ -33,72 +38,72 @@ export class DashboardViewComponent implements OnInit {
   primaryColor = '#7c3aed';
   logoUrl = '';
 
-  visibleCategoryIds: string[] = [];
-  visibleProductIds: string[] = [];
-
   ngOnInit() { this.loadData(); }
 
   loadData() {
     this.isLoading = true;
-    this.settingsService.getSettings().subscribe({
-      next: (settings) => {
+    forkJoin({
+      settings: this.settingsService.getSettings(),
+      categories: this.categoryService.getCategories(),
+      products: this.productService.getProducts()
+    }).subscribe({
+      next: ({ settings, categories, products }) => {
+        this.allCategories = categories;
+        this.allProducts = products;
+
+        let visibleCategoryIds: string[] = [];
+        const orderPrefix = 'category_order_';
+        const categoryOrders = new Map<number, number[]>();
         settings.forEach(s => {
-          if (s.key === 'visible_dashboard_categories') this.visibleCategoryIds = s.value ? s.value.split(',').filter(Boolean) : [];
-          if (s.key === 'visible_dashboard_products') this.visibleProductIds = s.value ? s.value.split(',').filter(Boolean) : [];
+          if (s.key === 'visible_dashboard_categories') visibleCategoryIds = s.value ? s.value.split(',').filter(Boolean) : [];
           if (s.key === 'store_name') this.storeName = s.value;
           if (s.key === 'primary_color') this.primaryColor = s.value;
           if (s.key === 'logo_url') this.logoUrl = s.value;
+          if (s.key.startsWith(orderPrefix) && s.value) {
+            categoryOrders.set(Number(s.key.slice(orderPrefix.length)), s.value.split(',').filter(Boolean).map(Number));
+          }
         });
-        this.loadProducts();
+
+        this.visibleCategories = visibleCategoryIds.length > 0
+          ? categories.filter(c => visibleCategoryIds.includes((c.id ?? '').toString()))
+          : categories.filter(c => !c.parentId);
+
+        // Same logic as the public storefront homepage: curated order per
+        // category if configured, else that category's latest products.
+        const seen = new Set<string>();
+        const groups: ProductGroup[] = [];
+        this.visibleCategories.forEach(cat => {
+          const catId = Number(cat.id);
+          const order = categoryOrders.get(catId);
+          const catGroups = order && order.length > 0
+            ? order.map(id => groupForProductId(products, id)).filter((g): g is ProductGroup => !!g)
+            : groupProducts(products.filter(p => this.productBelongsToCategory(Number(p.categoryId) || 0, catId, categories))).slice(0, 10);
+          catGroups.forEach(g => {
+            const key = `${g.baseName}::${g.categoryId}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            groups.push(g);
+          });
+        });
+
+        this.featuredGroups = groups;
+        this.filteredGroups = [...groups];
+        this.isLoading = false;
       },
       error: () => { this.errorMsg = 'Failed to load settings.'; this.isLoading = false; }
     });
   }
 
-  loadProducts() {
-    let loaded = 0;
-    const done = () => { if (++loaded === 2) { this.buildView(); this.isLoading = false; } };
-
-    this.categoryService.getCategories().subscribe({
-      next: (cats) => {
-        this.categories = cats.filter(c => this.visibleCategoryIds.includes((c.id ?? '').toString()));
-        done();
-      },
-      error: () => done()
-    });
-
-    this.productService.getProducts().subscribe({
-      next: (prods) => { this.allProducts = prods; done(); },
-      error: () => done()
-    });
-  }
-
-  buildView() {
-    if (this.visibleProductIds.length > 0) {
-      // Specific products selected → show those
-      this.featuredProducts = this.allProducts
-        .filter(p => this.visibleProductIds.includes(p.id.toString()))
-        .slice(0, 10);
-      this.filteredProducts = [...this.featuredProducts];
-      this.selectedCategory = 'All';
-    } else if (this.visibleCategoryIds.length > 0) {
-      // Category-based fallback
-      this.featuredProducts = this.allProducts.filter(p => this.visibleCategoryIds.includes((p.categoryId ?? '').toString()));
-      this.filteredProducts = [...this.featuredProducts];
-    } else {
-      this.featuredProducts = [];
-      this.filteredProducts = [];
-    }
+  private productBelongsToCategory(productCatId: number, catId: number, allCats: Category[]): boolean {
+    if (productCatId === catId) return true;
+    const subIds = allCats.filter(c => Number(c.parentId) === catId).map(c => Number(c.id));
+    return subIds.some(sid => this.productBelongsToCategory(productCatId, sid, allCats));
   }
 
   filterByCategory(catName: string) {
     this.selectedCategory = catName;
-    if (catName === 'All') {
-      this.filteredProducts = [...this.featuredProducts];
-    } else {
-      this.filteredProducts = this.featuredProducts.filter(p => p.category?.name === catName);
-    }
+    this.filteredGroups = catName === 'All'
+      ? [...this.featuredGroups]
+      : this.featuredGroups.filter(g => g.categoryName === catName);
   }
-
-  goToConfig() { this.router.navigate([], { relativeTo: null }); }
 }

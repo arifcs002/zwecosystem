@@ -22,6 +22,8 @@ const ROUTE_RIGHTS_MAP: { [key: string]: string } = {
   'payments': 'PAGE_POS',
   'reports': 'PAGE_REPORTS',
   'config': 'PAGE_STORE_CONFIG',
+  'pricing': 'PAGE_PRICING',
+  'app-releases': 'PAGE_APP_RELEASES',
   'dashboard-view': 'PAGE_DASHBOARD_VIEW'
 };
 

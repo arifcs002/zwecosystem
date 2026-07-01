@@ -41,6 +41,8 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<UserSession> UserSessions { get; set; }
+        public DbSet<PricingTag> PricingTags { get; set; }
+        public DbSet<AppVersion> AppVersions { get; set; }
 
         private void ResolveTenantAndUser()
         {
@@ -150,6 +152,7 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<CompanySetting>().HasQueryFilter(cs => cs.IsDeleted == 0 && (!CompanyId.HasValue || cs.CompanyId == CompanyId));
             modelBuilder.Entity<AuditLog>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
             modelBuilder.Entity<Supplier>().HasQueryFilter(s => s.IsDeleted == 0 && (!CompanyId.HasValue || s.CompanyId == CompanyId));
+            modelBuilder.Entity<PricingTag>().HasQueryFilter(pt => pt.IsDeleted == 0 && (!CompanyId.HasValue || pt.CompanyId == CompanyId));
             modelBuilder.Entity<Company>().HasQueryFilter(c => c.IsDeleted == 0);
             modelBuilder.Entity<SubscriptionPlan>().HasQueryFilter(sp => sp.IsDeleted == 0);
             modelBuilder.Entity<Role>().HasQueryFilter(r => r.IsDeleted == 0);

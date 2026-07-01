@@ -56,24 +56,21 @@ export class LoginComponent implements OnInit {
             this.companyName = 'ZW ECOSYSTEM';
             this.logoUrl = 'assets/zw-logo.png';
           } else {
-            this.companyService.getCompanies().subscribe({
-              next: (companies: any[]) => {
-                const company = companies.find((c: any) => c.subdomain === this.loginContext);
-                if (company) {
-                  this.companyName = company.name;
-                  localStorage.setItem('tenant_company_id', company.id);
-                  if (company.logoUrl) {
-                    this.logoUrl = company.logoUrl;
-                    this.companyLogoUrl = company.logoUrl;
-                  } else {
-                    this.logoUrl = '';
-                  }
+            this.companyService.getPublicCompany(this.loginContext).subscribe({
+              next: (company) => {
+                this.companyName = company.name;
+                localStorage.setItem('tenant_company_id', company.id.toString());
+                if (company.logoUrl) {
+                  this.logoUrl = company.logoUrl;
+                  this.companyLogoUrl = company.logoUrl;
                 } else {
-                  this.companyName = 'Store Not Found';
-                  this.loginContext = 'invalid';
+                  this.logoUrl = '';
                 }
               },
-              error: (err: any) => console.error('Error fetching companies:', err)
+              error: () => {
+                this.companyName = 'Store Not Found';
+                this.loginContext = 'invalid';
+              }
             });
           }
           this.themeService.applyTheme('cyberpunk-teal'); // Fallback or dynamic

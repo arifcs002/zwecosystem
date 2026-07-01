@@ -21,14 +21,38 @@ namespace Ecommerce.Api.Controllers
             _fileLogger = fileLogger;
         }
 
+        // Anonymous-safe storefront listing. Deliberately a separate endpoint (not
+        // [AllowAnonymous] on GetProducts) so wholesale/cost price never reaches a
+        // customer's browser — only the fields a storefront card needs.
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicProducts()
+        {
+            var items = await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .OrderByDescending(p => p.CreatedDate)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Name,
+                    p.Price,
+                    p.ImageUrl,
+                    p.StockQuantity,
+                    p.CategoryId,
+                    Category = p.Category != null ? new { p.Category.Name } : null
+                })
+                .ToListAsync();
+            return Ok(items);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] string? search)
         {
             var query = _context.Products
                 .IgnoreQueryFilters()
+                .AsNoTracking()
                 .Include(p => p.Category)
-                .Include(p => p.Brand)
-                .Include(p => p.Supplier)
                 .AsQueryable();
 
             if (_context.CompanyId.HasValue)
@@ -51,6 +75,7 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> GetProduct(int id)
         {
             var product = await _context.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .FirstOrDefaultAsync(p => p.Id == id);
@@ -73,10 +98,10 @@ namespace Ecommerce.Api.Controllers
             var slug = dto.Name.ToLower().Replace(" ", "-").Replace("/", "-");
 
             var productId = (await _context.Database.SqlQueryRaw<int>(
-                "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15})",
+                "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16})",
                 companyId.Value, dto.Name, slug, dto.SKU, barcode, dto.Description ?? "",
                 dto.Price, dto.WholesalePrice, dto.StockQuantity, dto.ImageUrl ?? "",
-                dto.CategoryId, dto.BrandId, "PUBLISHED", "", (int?)null, _context.CurrentUserId
+                dto.CategoryId, dto.BrandId, "PUBLISHED", "", (int?)null, _context.CurrentUserId, dto.PricingTagId
             ).ToListAsync()).FirstOrDefault();
 
             var product = await _context.Products.FindAsync(productId);
@@ -102,11 +127,11 @@ namespace Ecommerce.Api.Controllers
                 var slug = $"{dto.Name.ToLower().Replace(" ", "-").Replace("/", "-")}-{sizeQty.Size.ToLower()}";
 
                 var productId = (await _context.Database.SqlQueryRaw<int>(
-                    "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15})",
+                    "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16})",
                     companyId.Value, $"{dto.Name} (Size {sizeQty.Size})", slug, sku, barcode,
                     dto.Description ?? "", dto.Price, dto.WholesalePrice, sizeQty.Quantity,
                     dto.ImageUrl ?? "", dto.CategoryId, (int?)null, "PUBLISHED",
-                    sizeQty.Size, dto.SupplierId, _context.CurrentUserId
+                    sizeQty.Size, dto.SupplierId, _context.CurrentUserId, dto.PricingTagId
                 ).ToListAsync()).FirstOrDefault();
 
                 var product = await _context.Products.FindAsync(productId);
@@ -121,10 +146,10 @@ namespace Ecommerce.Api.Controllers
             if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
 
             await _context.Database.ExecuteSqlRawAsync(
-                "CALL sp_update_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12})",
+                "CALL sp_update_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13})",
                 id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity,
                 dto.Description ?? "", dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId,
-                "", (int?)null, _context.CurrentUserId);
+                "", (int?)null, _context.CurrentUserId, dto.PricingTagId);
 
             var product = await _context.Products.FindAsync(id);
             return Ok(product);

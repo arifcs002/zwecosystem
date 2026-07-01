@@ -65,13 +65,18 @@ namespace Ecommerce.Api.Models
     public record ProductCreateDto(
         string Name, string SKU, decimal Price, decimal WholesalePrice,
         int StockQuantity, string? Description, int? CategoryId, int? BrandId,
-        string? Barcode, string? ImageUrl);
+        string? Barcode, string? ImageUrl, int? PricingTagId = null);
 
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(
         string Name, decimal Price, decimal WholesalePrice,
         string? Description, int? CategoryId, int? SupplierId,
-        string? ImageUrl, List<SizeQtyDto> Sizes);
+        string? ImageUrl, List<SizeQtyDto> Sizes, int? PricingTagId = null);
+
+    // ── Pricing Tags ────────────────────────────────────────
+    public record PricingTagUpsertDto(
+        string Name, decimal ProfitPercent, decimal? DiscountPercent,
+        DateTime? PromoStartDate, DateTime? PromoEndDate, bool IsActive);
 
     // ── Orders / POS ────────────────────────────────────────
     public record OrderItemDto(int ProductId, int Quantity);
@@ -95,4 +100,9 @@ namespace Ecommerce.Api.Models
         string Name, string? LogoUrl, string? BannerUrl,
         string? ContactEmail, string? ContactPhone,
         string? Address, decimal DeliveryCharge);
+
+    // Value is intentionally nullable/optional here (unlike the CompanySetting
+    // entity's [Required]) — clearing a setting means writing an empty value,
+    // which is a legitimate request, not a validation error.
+    public record CompanySettingDto(string Key, string? Value, string? GroupName);
 }

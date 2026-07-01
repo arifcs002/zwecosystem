@@ -17,6 +17,7 @@ export interface BatchProductCreateDto {
   supplierId?: number;
   imageUrl?: string;
   sizes: SizeQtyDto[];
+  pricingTagId?: number | null;
 }
 
 export interface Product {
@@ -39,6 +40,7 @@ export interface Product {
   category?: any;
   brand?: any;
   supplier?: any;
+  pricingTagId?: number | null;
 }
 
 @Injectable({
@@ -52,6 +54,12 @@ export class ProductService {
     const params: any = {};
     if (search) params.search = search;
     return this.http.get<Product[]>(this.apiUrl, { params });
+  }
+
+  // Anonymous-safe storefront listing — excludes wholesale/cost price and other
+  // admin-only fields. Used by the public shop.
+  getPublicProducts(): Observable<Product[]> {
+    return this.http.get<Product[]>(`${this.apiUrl}/public`);
   }
 
   getProduct(id: number): Observable<Product> {

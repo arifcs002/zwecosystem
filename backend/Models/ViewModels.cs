@@ -76,6 +76,19 @@ namespace Ecommerce.Api.Models
         public DateTime createdAt   { get; set; }
     }
 
+    // ── Pricing Tags ────────────────────────────────────────
+    public class PricingTagListVm
+    {
+        public int       id              { get; set; }
+        public string    name            { get; set; } = string.Empty;
+        public decimal   profitPercent   { get; set; }
+        public decimal?  discountPercent { get; set; }
+        public DateTime? promoStartDate  { get; set; }
+        public DateTime? promoEndDate    { get; set; }
+        public bool      isActive        { get; set; }
+        public DateTime  createdAt       { get; set; }
+    }
+
     // ── Orders ──────────────────────────────────────────────
     public class OrderListVm
     {

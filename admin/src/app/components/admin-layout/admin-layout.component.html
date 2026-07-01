@@ -1,7 +1,11 @@
 <!-- ZW Ecosystem Admin Layout -->
 <div class="zw-layout">
+
+  <!-- Mobile overlay (click to close drawer) -->
+  <div class="zw-mobile-overlay" *ngIf="mobileSidebarOpen" (click)="closeMobileSidebar()"></div>
+
   <!-- Sidebar -->
-  <aside class="zw-sidebar" [class.collapsed]="sidebarCollapsed">
+  <aside class="zw-sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileSidebarOpen" (click)="closeMobileSidebar()">
     <!-- Brand -->
     <div class="sidebar-brand">
       <div class="brand-logo">
@@ -49,6 +53,10 @@
         <a [routerLink]="'/admin/theme'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">🎨</span>
           <span class="nav-label" *ngIf="!sidebarCollapsed">Theme & Settings</span>
+        </a>
+        <a [routerLink]="'/admin/app-releases'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📱</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Mobile App Releases</span>
         </a>
 
         <div class="nav-divider"></div>
@@ -109,9 +117,13 @@
         <span class="nav-icon">👤</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
       </a>
+      <a [routerLink]="basePath + '/pricing'" *ngIf="authService.hasRight('PAGE_PRICING')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">💰</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Pricing</span>
+      </a>
       <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Config</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
       </a>
 
     </nav>
@@ -130,6 +142,7 @@
     <!-- Topbar -->
     <header class="zw-topbar">
       <div class="topbar-left">
+        <button class="hamburger-btn" (click)="sidebarCollapsed = false; mobileSidebarOpen = true" aria-label="Open menu">☰</button>
         <h2 class="page-breadcrumb">
           {{ authService.isSuperAdmin() ? '⚡ ZW Ecosystem Admin' : '🏢 Company Workspace' }}
         </h2>

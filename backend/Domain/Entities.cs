@@ -401,6 +401,80 @@ namespace Ecommerce.Api.Domain
         public List<Product> Products { get; set; } = new();
     }
 
+    // Global mobile app (Capacitor APK) release history — not company-scoped,
+    // one APK build serves every company's workspace + super admin.
+    [Table("app_versions")]
+    public class AppVersion
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("version_name")]
+        public string VersionName { get; set; } = string.Empty;
+
+        [Column("version_code")]
+        public int VersionCode { get; set; }
+
+        [Required]
+        [Column("apk_url")]
+        public string ApkUrl { get; set; } = string.Empty;
+
+        [Column("release_notes")]
+        public string? ReleaseNotes { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        [Column("created_date")]
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("uploaded_by_user_id")]
+        public int? UploadedByUserId { get; set; }
+    }
+
+    [Table("pricing_tags")]
+    public class PricingTag : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [ForeignKey(nameof(CompanyId))]
+        [JsonIgnore]
+        public Company? Company { get; set; }
+
+        [Required]
+        [Column("name")]
+        public string Name { get; set; } = string.Empty;
+
+        // Sell price = buy (wholesale) price * (1 + ProfitPercent / 100)
+        [Required]
+        [Column("profit_percent")]
+        public decimal ProfitPercent { get; set; }
+
+        // Optional promotional discount off the computed sell price, only
+        // active between PromoStartDate and PromoEndDate when both are set.
+        [Column("discount_percent")]
+        public decimal? DiscountPercent { get; set; }
+
+        [Column("promo_start_date")]
+        public DateTime? PromoStartDate { get; set; }
+
+        [Column("promo_end_date")]
+        public DateTime? PromoEndDate { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        [JsonIgnore]
+        public List<Product> Products { get; set; } = new();
+    }
+
     [Table("products")]
     public class Product : AuditEntity
     {
@@ -471,6 +545,12 @@ namespace Ecommerce.Api.Domain
 
         [ForeignKey(nameof(SupplierId))]
         public Supplier? Supplier { get; set; }
+
+        [Column("pricing_tag_id")]
+        public int? PricingTagId { get; set; }
+
+        [ForeignKey(nameof(PricingTagId))]
+        public PricingTag? PricingTag { get; set; }
     }
 
     [Table("orders")]

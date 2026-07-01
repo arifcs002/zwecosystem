@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using System.Security.Cryptography;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -9,6 +13,9 @@ namespace Ecommerce.Api.Controllers
     [Authorize]
     public class UploadController : ControllerBase
     {
+        private const int MaxDimension = 1200; // px — product/logo photos never need to be larger than this on screen
+        private static readonly JpegEncoder JpegEncoder = new() { Quality = 82 };
+
         private readonly IWebHostEnvironment _env;
         private readonly IFileTextLogger _fileLogger;
 
@@ -31,11 +38,45 @@ namespace Ecommerce.Api.Controllers
             var uploadsFolder = Path.Combine(baseUploads, folder);
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            byte[] outputBytes;
+            bool reencoded;
+            try
+            {
+                using var image = await Image.LoadAsync(file.OpenReadStream());
+                if (image.Width > MaxDimension || image.Height > MaxDimension)
+                {
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max,
+                        Size = new Size(MaxDimension, MaxDimension)
+                    }));
+                }
+                using var ms = new MemoryStream();
+                await image.SaveAsJpegAsync(ms, JpegEncoder);
+                outputBytes = ms.ToArray();
+                reencoded = true;
+            }
+            catch (UnknownImageFormatException)
+            {
+                // Not an image we can decode (e.g. a non-image file uploaded by mistake) — store as-is.
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                outputBytes = ms.ToArray();
+                reencoded = false;
+            }
+
+            // Name the file after a hash of its own bytes: identical content always
+            // resolves to the identical URL, and any content change produces a new
+            // URL automatically — that's what lets us cache these responses on the
+            // client (and CDN) forever instead of re-validating on every request.
+            var hash = Convert.ToHexString(SHA256.HashData(outputBytes))[..16].ToLowerInvariant();
+            var ext = reencoded ? ".jpg" : Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(ext)) ext = ".bin";
+            var uniqueFileName = $"{hash}{ext}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            using var stream = new FileStream(filePath, FileMode.Create);
-            await file.CopyToAsync(stream);
+            if (!System.IO.File.Exists(filePath))
+                await System.IO.File.WriteAllBytesAsync(filePath, outputBytes);
 
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             return Ok(new { imageUrl = $"{baseUrl}/uploads/{folder}/{uniqueFileName}" });

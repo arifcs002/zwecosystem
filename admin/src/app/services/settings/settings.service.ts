@@ -21,6 +21,11 @@ export class SettingsService {
     return this.http.get<CompanySetting[]>(this.apiUrl);
   }
 
+  // Anonymous-safe whitelist of branding/display settings for the public shop.
+  getPublicSettings(): Observable<CompanySetting[]> {
+    return this.http.get<CompanySetting[]>(`${this.apiUrl}/public`);
+  }
+
   updateSettings(settings: CompanySetting[]): Observable<any> {
     return this.http.put<any>(this.apiUrl, settings);
   }

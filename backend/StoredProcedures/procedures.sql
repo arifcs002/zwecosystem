@@ -5,8 +5,11 @@
 
 -- Drop all existing SPs to allow signature/return-type changes
 DROP FUNCTION IF EXISTS sp_get_companies();
-DROP FUNCTION IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
-DROP PROCEDURE IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
+-- sp_update_company is a PROCEDURE (see CREATE OR REPLACE PROCEDURE below, which
+-- handles redefinition on its own) — DROP FUNCTION/PROCEDURE IF EXISTS here used
+-- to abort this entire script with "is not a function/procedure" whenever the
+-- live object's kind didn't match the DROP statement's kind, silently preventing
+-- every statement after it (including new SPs) from ever being (re)created.
 DROP PROCEDURE IF EXISTS sp_delete_company(INT);
 DROP FUNCTION IF EXISTS sp_toggle_company_status(INT);
 DROP FUNCTION IF EXISTS sp_get_users(INT,BOOLEAN);
@@ -74,7 +77,6 @@ RETURNS TABLE(
     ORDER BY c.created_date DESC;
 $$;
 
-DROP FUNCTION IF EXISTS sp_update_company(INT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT);
 CREATE OR REPLACE PROCEDURE sp_update_company(
     p_id INT, p_name TEXT, p_subdomain TEXT,
     p_contact_email TEXT, p_contact_phone TEXT,
@@ -184,6 +186,21 @@ RETURNS TABLE(
     FROM categories c
     WHERE c.is_deleted = 0 AND c.company_id = p_company_id
     ORDER BY c.name;
+$$;
+
+-- ── Pricing Tags ─────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION sp_get_pricing_tags(p_company_id INT)
+RETURNS TABLE(
+    id INT, name TEXT, "profitPercent" DECIMAL, "discountPercent" DECIMAL,
+    "promoStartDate" TIMESTAMPTZ, "promoEndDate" TIMESTAMPTZ,
+    "isActive" BOOLEAN, "createdAt" TIMESTAMPTZ
+) LANGUAGE sql STABLE AS $$
+    SELECT pt.id, pt.name, pt.profit_percent, pt.discount_percent,
+           pt.promo_start_date, pt.promo_end_date, pt.is_active, pt.created_date
+    FROM pricing_tags pt
+    WHERE pt.is_deleted = 0 AND pt.company_id = p_company_id
+    ORDER BY pt.name;
 $$;
 
 -- ── Orders ───────────────────────────────────────────────────
@@ -593,6 +610,52 @@ BEGIN
 END;
 $$;
 
+-- ── Pricing Tags CRUD ────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION sp_create_pricing_tag(
+    p_company_id INT, p_name TEXT, p_profit_percent DECIMAL,
+    p_discount_percent DECIMAL, p_promo_start TIMESTAMPTZ, p_promo_end TIMESTAMPTZ,
+    p_is_active BOOLEAN, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_id INT;
+BEGIN
+    INSERT INTO pricing_tags (
+        company_id, name, profit_percent, discount_percent, promo_start_date, promo_end_date,
+        is_active, created_by, created_date, updated_date, is_deleted)
+    VALUES (
+        p_company_id, p_name, p_profit_percent, p_discount_percent, p_promo_start, p_promo_end,
+        p_is_active, p_created_by, NOW(), NOW(), 0)
+    RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_update_pricing_tag(
+    p_id INT, p_name TEXT, p_profit_percent DECIMAL,
+    p_discount_percent DECIMAL, p_promo_start TIMESTAMPTZ, p_promo_end TIMESTAMPTZ,
+    p_is_active BOOLEAN, p_updated_by INT
+) LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE pricing_tags SET
+        name             = p_name,
+        profit_percent   = p_profit_percent,
+        discount_percent = p_discount_percent,
+        promo_start_date = p_promo_start,
+        promo_end_date   = p_promo_end,
+        is_active        = p_is_active,
+        updated_by       = p_updated_by,
+        updated_date     = NOW()
+    WHERE id = p_id AND is_deleted = 0;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_delete_pricing_tag(p_id INT, p_deleted_by INT)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE pricing_tags SET is_deleted = 1, deleted_date = NOW(), deleted_by = p_deleted_by WHERE id = p_id;
+END;
+$$;
+
 -- ── Products CRUD ────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION sp_create_product(
@@ -600,20 +663,20 @@ CREATE OR REPLACE FUNCTION sp_create_product(
     p_description TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
     p_stock_quantity INT, p_image_url TEXT,
     p_category_id INT, p_brand_id INT, p_status TEXT,
-    p_size TEXT, p_supplier_id INT, p_created_by INT
+    p_size TEXT, p_supplier_id INT, p_created_by INT, p_pricing_tag_id INT DEFAULT NULL
 ) RETURNS INT LANGUAGE plpgsql AS $$
 DECLARE v_id INT;
 BEGIN
     INSERT INTO products (
         company_id, name, slug, sku, barcode, description,
         price, wholesale_price, stock_quantity, image_url,
-        category_id, brand_id, supplier_id, status, size,
+        category_id, brand_id, supplier_id, status, size, pricing_tag_id,
         created_by, created_date, updated_date, is_deleted)
     VALUES (
         p_company_id, p_name, p_slug, p_sku, p_barcode, NULLIF(trim(p_description),''),
         p_price, p_wholesale_price, p_stock_quantity, NULLIF(trim(p_image_url),''),
         NULLIF(p_category_id, 0), NULLIF(p_brand_id, 0), NULLIF(p_supplier_id, 0),
-        p_status, NULLIF(trim(p_size),''),
+        p_status, NULLIF(trim(p_size),''), p_pricing_tag_id,
         p_created_by, NOW(), NOW(), 0)
     RETURNING id INTO v_id;
     RETURN v_id;
@@ -623,7 +686,8 @@ $$;
 CREATE OR REPLACE PROCEDURE sp_update_product(
     p_id INT, p_name TEXT, p_sku TEXT, p_price DECIMAL, p_wholesale_price DECIMAL,
     p_stock_quantity INT, p_description TEXT, p_image_url TEXT,
-    p_category_id INT, p_brand_id INT, p_size TEXT, p_supplier_id INT, p_updated_by INT
+    p_category_id INT, p_brand_id INT, p_size TEXT, p_supplier_id INT, p_updated_by INT,
+    p_pricing_tag_id INT DEFAULT NULL
 ) LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE products SET
@@ -638,6 +702,7 @@ BEGIN
         brand_id        = NULLIF(p_brand_id, 0),
         supplier_id     = NULLIF(p_supplier_id, 0),
         size            = NULLIF(trim(p_size), ''),
+        pricing_tag_id  = p_pricing_tag_id,
         updated_by      = p_updated_by,
         updated_date    = NOW()
     WHERE id = p_id;

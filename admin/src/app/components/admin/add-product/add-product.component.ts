@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { ProductService, BatchProductCreateDto, SizeQtyDto } from '../../../services/product/product.service';
+import { PricingTagService, PricingTag } from '../../../services/pricing-tag/pricing-tag.service';
 import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
@@ -18,10 +19,12 @@ export class AddProductComponent implements OnInit {
   private supplierService = inject(SupplierService);
   private categoryService = inject(CategoryService);
   private productService = inject(ProductService);
+  private pricingTagService = inject(PricingTagService);
   private router = inject(Router);
 
   suppliers: Supplier[] = [];
   categories: Category[] = [];
+  pricingTags: PricingTag[] = [];
 
   formData: BatchProductCreateDto = {
     supplierId: undefined,
@@ -31,7 +34,8 @@ export class AddProductComponent implements OnInit {
     wholesalePrice: 0,
     description: '',
     imageUrl: '',
-    sizes: []
+    sizes: [],
+    pricingTagId: null
   };
 
   selectedCategoryObj: Category | null = null;
@@ -59,6 +63,19 @@ export class AddProductComponent implements OnInit {
       next: (data) => this.categories = data.sort((a: any, b: any) => a.name.localeCompare(b.name)),
       error: (err) => console.error(err)
     });
+
+    this.pricingTagService.getPricingTags().subscribe({
+      next: (data) => this.pricingTags = data.filter(t => t.isActive),
+      error: (err) => console.error(err)
+    });
+  }
+
+  // Auto-calculates sell price from the buy (wholesale) price using the
+  // selected tag's profit % — admin can still edit the price afterward.
+  applyPricingTag() {
+    const tag = this.pricingTags.find(t => t.id === this.formData.pricingTagId);
+    if (!tag || !this.formData.wholesalePrice) return;
+    this.formData.price = Math.round(this.formData.wholesalePrice * (1 + tag.profitPercent / 100));
   }
 
   onCategoryChange() {

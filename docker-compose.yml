@@ -27,6 +27,18 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: zwecosystem-redis
+    networks:
+      - zwecosystem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -38,6 +50,7 @@ services:
       # These env vars are picked up by Program.cs (DB_CONNECTION_STRING, JWT_SECRET)
       - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
       - JWT_SECRET=${JWT_SECRET}
+      - REDIS_CONNECTION_STRING=redis:6379
       # SMTP (optional)
       - SmtpSettings__Host=${SMTP_HOST:-smtp.gmail.com}
       - SmtpSettings__Port=${SMTP_PORT:-587}
@@ -52,6 +65,8 @@ services:
       - /data/apps/zwecosystem/upload:/app/wwwroot/uploads
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - zwecosystem-network

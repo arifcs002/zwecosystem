@@ -34,14 +34,21 @@
       </div>
 
       <!-- Pricing -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="form-group">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Wholesale Price (BDT)</label>
+          <input type="number" [(ngModel)]="formData.wholesalePrice" name="wholesalePrice" (ngModelChange)="applyPricingTag()" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pricing Tag <span class="text-gray-600 normal-case font-normal">(optional, auto-fills price)</span></label>
+          <select [(ngModel)]="formData.pricingTagId" name="pricingTagId" (ngModelChange)="applyPricingTag()" class="form-input">
+            <option [ngValue]="null">— Manual price —</option>
+            <option *ngFor="let t of pricingTags" [ngValue]="t.id">{{ t.name }} (+{{ t.profitPercent }}%)</option>
+          </select>
+        </div>
         <div class="form-group">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Retail Price (BDT)</label>
           <input type="number" [(ngModel)]="formData.price" name="price" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Wholesale Price (BDT)</label>
-          <input type="number" [(ngModel)]="formData.wholesalePrice" name="wholesalePrice" class="form-input">
         </div>
       </div>
 

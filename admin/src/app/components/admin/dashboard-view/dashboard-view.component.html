@@ -12,7 +12,7 @@
     <!-- Preview banner -->
     <div class="bg-violet-900/30 border-b border-violet-700/30 px-4 py-2 flex items-center justify-between">
       <span class="text-xs text-violet-300 font-semibold">🛍️ Store Preview — this is how customers see your shop</span>
-      <a routerLink="../config" class="text-xs text-violet-400 hover:text-violet-300 underline">Edit in Config →</a>
+      <a routerLink="../config" class="text-xs text-violet-400 hover:text-violet-300 underline">Edit in Settings →</a>
     </div>
 
     <!-- Store Header -->
@@ -26,56 +26,53 @@
     </header>
 
     <!-- No products configured state -->
-    <div *ngIf="featuredProducts.length === 0" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+    <div *ngIf="featuredGroups.length === 0" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
       <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4 text-3xl">🛍️</div>
       <h2 class="text-white font-bold text-lg mb-2">No products configured</h2>
-      <p class="text-gray-500 text-sm max-w-sm mb-6">Go to <strong class="text-gray-300">Store Config</strong> and select up to 10 featured products (or choose categories) to display here and on the public storefront.</p>
-      <a routerLink="../config" class="btn-primary text-sm">⚙️ Open Store Config</a>
+      <p class="text-gray-500 text-sm max-w-sm mb-6">Go to <strong class="text-gray-300">Settings</strong> and enable categories/sub-categories (optionally curating &amp; ordering up to 10 products each) to display here and on the public storefront.</p>
+      <a routerLink="../config" class="btn-primary text-sm">⚙️ Open Settings</a>
     </div>
 
-    <div *ngIf="featuredProducts.length > 0" class="max-w-5xl mx-auto px-4 py-6">
+    <div *ngIf="featuredGroups.length > 0" class="max-w-5xl mx-auto px-4 py-6">
 
-      <!-- Category filter tabs (only if category mode) -->
-      <div *ngIf="visibleProductIds.length === 0 && categories.length > 0" class="flex gap-2 flex-wrap mb-6">
+      <!-- Category filter tabs -->
+      <div *ngIf="visibleCategories.length > 0" class="flex gap-2 flex-wrap mb-6">
         <button (click)="filterByCategory('All')"
           class="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
           [ngClass]="selectedCategory === 'All' ? 'bg-violet-600 border-violet-500 text-white' : 'border-white/10 text-gray-400 hover:border-white/30'">
-          All ({{ featuredProducts.length }})
+          All ({{ featuredGroups.length }})
         </button>
-        <button *ngFor="let cat of categories" (click)="filterByCategory(cat.name)"
+        <button *ngFor="let cat of visibleCategories" (click)="filterByCategory(cat.name)"
           class="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
           [ngClass]="selectedCategory === cat.name ? 'bg-violet-600 border-violet-500 text-white' : 'border-white/10 text-gray-400 hover:border-white/30'">
           {{ cat.name }}
         </button>
       </div>
 
-      <!-- Section heading if specific products -->
-      <div *ngIf="visibleProductIds.length > 0" class="mb-5">
-        <h2 class="text-white font-bold text-lg">Featured Products</h2>
-        <p class="text-gray-500 text-xs mt-0.5">{{ filteredProducts.length }} products featured</p>
-      </div>
-
       <!-- Product Grid -->
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <div *ngFor="let p of filteredProducts"
+        <div *ngFor="let g of filteredGroups"
           class="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-violet-500/40 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
 
           <!-- Image -->
           <div class="relative aspect-square bg-black/30 flex items-center justify-center overflow-hidden">
-            <img *ngIf="p.imageUrl" [src]="p.imageUrl | imgUrl" [alt]="p.name" class="w-full h-full object-cover">
-            <span *ngIf="!p.imageUrl" class="text-4xl">📦</span>
-            <span *ngIf="p.stockQuantity <= 0"
+            <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
+            <span *ngIf="!g.imageUrl" class="text-4xl">📦</span>
+            <span *ngIf="g.totalStock <= 0"
               class="absolute top-2 left-2 text-[10px] font-bold bg-rose-600 text-white px-1.5 py-0.5 rounded">
               Out of Stock
+            </span>
+            <span *ngIf="g.variants.length > 1" class="absolute top-2 right-2 text-[10px] font-bold bg-white/90 text-gray-700 px-1.5 py-0.5 rounded">
+              {{ g.variants.length }} sizes
             </span>
           </div>
 
           <!-- Info -->
           <div class="p-3">
-            <p class="text-xs text-gray-500 mb-0.5 truncate">{{ p.category?.name || 'Uncategorized' }}</p>
-            <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 leading-tight mb-2" [title]="p.name">{{ p.name }}</h3>
+            <p class="text-xs text-gray-500 mb-0.5 truncate">{{ g.categoryName }}</p>
+            <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 leading-tight mb-2" [title]="g.baseName">{{ g.baseName }}</h3>
             <div class="flex items-center justify-between">
-              <span class="text-base font-bold text-violet-400">৳{{ p.price | number:'1.0-0' }}</span>
+              <span class="text-base font-bold text-violet-400">৳{{ g.price | number:'1.0-0' }}</span>
               <button class="text-[10px] px-2 py-1 rounded-lg bg-violet-700/30 border border-violet-600/30 text-violet-300 hover:bg-violet-700/50 transition">
                 Add
               </button>
@@ -83,7 +80,7 @@
           </div>
         </div>
 
-        <div *ngIf="filteredProducts.length === 0" class="col-span-full text-center py-12 text-gray-500 text-sm">
+        <div *ngIf="filteredGroups.length === 0" class="col-span-full text-center py-12 text-gray-500 text-sm">
           No products in this category.
         </div>
       </div>

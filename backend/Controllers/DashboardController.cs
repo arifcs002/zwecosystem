@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -13,11 +15,34 @@ namespace Ecommerce.Api.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IFileTextLogger _fileLogger;
+        private readonly IDistributedCache _cache;
+        private static readonly DistributedCacheEntryOptions CacheTtl = new()
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
+        };
 
-        public DashboardController(ApplicationDbContext context, IFileTextLogger fileLogger)
+        public DashboardController(ApplicationDbContext context, IFileTextLogger fileLogger, IDistributedCache cache)
         {
             _context = context;
             _fileLogger = fileLogger;
+            _cache = cache;
+        }
+
+        // Dashboard data changes with every order/sale, but tolerating up to 60s of
+        // staleness is fine and turns repeat page visits into cache hits instead of
+        // re-running the stored procedures every time.
+        private async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory)
+        {
+            var cached = await _cache.GetStringAsync(key);
+            if (cached != null)
+            {
+                var value = JsonSerializer.Deserialize<T>(cached);
+                if (value != null) return value;
+            }
+
+            var result = await factory();
+            await _cache.SetStringAsync(key, JsonSerializer.Serialize(result), CacheTtl);
+            return result;
         }
 
         [HttpGet("stats")]
@@ -27,11 +52,12 @@ namespace Ecommerce.Api.Controllers
             if (cid == null)
                 return Ok(new DashboardStatsVm());
 
-            var stats = await _context.Database
-                .SqlQueryRaw<DashboardStatsVm>("SELECT * FROM sp_get_dashboard_stats({0})", cid.Value)
-                .ToListAsync();
+            var stats = await GetOrSetAsync($"dash:stats:{cid.Value}", async () =>
+                (await _context.Database
+                    .SqlQueryRaw<DashboardStatsVm>("SELECT * FROM sp_get_dashboard_stats({0})", cid.Value)
+                    .ToListAsync()).FirstOrDefault() ?? new DashboardStatsVm());
 
-            return Ok(stats.FirstOrDefault() ?? new DashboardStatsVm());
+            return Ok(stats);
         }
 
         [HttpGet("sales-chart")]
@@ -40,9 +66,10 @@ namespace Ecommerce.Api.Controllers
             var cid = ResolveCompanyId(companyId);
             if (cid == null) return Ok(new List<object>());
 
-            var chart = await _context.Database
-                .SqlQueryRaw<SalesChartVm>("SELECT * FROM sp_get_sales_chart({0},{1})", cid.Value, days)
-                .ToListAsync();
+            var chart = await GetOrSetAsync($"dash:chart:{cid.Value}:{days}", () =>
+                _context.Database
+                    .SqlQueryRaw<SalesChartVm>("SELECT * FROM sp_get_sales_chart({0},{1})", cid.Value, days)
+                    .ToListAsync());
 
             return Ok(chart);
         }
@@ -53,9 +80,10 @@ namespace Ecommerce.Api.Controllers
             var cid = ResolveCompanyId(companyId);
             if (cid == null) return Ok(new List<object>());
 
-            var topProducts = await _context.Database
-                .SqlQueryRaw<TopProductVm>("SELECT * FROM sp_get_top_products({0},{1})", cid.Value, limit)
-                .ToListAsync();
+            var topProducts = await GetOrSetAsync($"dash:top:{cid.Value}:{limit}", () =>
+                _context.Database
+                    .SqlQueryRaw<TopProductVm>("SELECT * FROM sp_get_top_products({0},{1})", cid.Value, limit)
+                    .ToListAsync());
 
             return Ok(topProducts);
         }
@@ -66,9 +94,10 @@ namespace Ecommerce.Api.Controllers
             var cid = ResolveCompanyId(companyId);
             if (cid == null) return Ok(new List<object>());
 
-            var orders = await _context.Database
-                .SqlQueryRaw<RecentOrderVm>("SELECT * FROM sp_get_recent_orders({0},{1})", cid.Value, limit)
-                .ToListAsync();
+            var orders = await GetOrSetAsync($"dash:recent:{cid.Value}:{limit}", () =>
+                _context.Database
+                    .SqlQueryRaw<RecentOrderVm>("SELECT * FROM sp_get_recent_orders({0},{1})", cid.Value, limit)
+                    .ToListAsync());
 
             return Ok(orders);
         }

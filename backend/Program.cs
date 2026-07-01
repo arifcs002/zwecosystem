@@ -1,19 +1,53 @@
 using Microsoft.EntityFrameworkCore;
 using Ecommerce.Api.Infrastructure;
+using Ecommerce.Api.Domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Net.Sockets;
 using System.Security.Claims;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// APK uploads (Mobile App Releases) run well past Kestrel's 30MB default —
+// raise the body size limit so a release upload doesn't get rejected mid-stream.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 300_000_000; // 300 MB
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 300_000_000;
+});
 
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+// Distributed cache: Redis when REDIS_CONNECTION_STRING is set, otherwise falls back to
+// an in-memory distributed cache so local dev / single-instance deploys work without Redis.
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+if (!string.IsNullOrEmpty(redisConnectionString))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "zwecosystem:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
 
 // Configure Swagger with JWT support
 builder.Services.AddSwaggerGen(options =>
@@ -125,14 +159,30 @@ app.Use(async (context, next) =>
 // Configure the HTTP request pipeline.
 app.UseCors("AllowAll"); // MUST be first so CORS headers appear even on errors
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "POS SaaS API v1");
-    c.RoutePrefix = "swagger"; // Swagger dashboard is at /swagger
-});
+app.UseResponseCompression();
 
-app.UseStaticFiles();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "POS SaaS API v1");
+        c.RoutePrefix = "swagger"; // Swagger dashboard is at /swagger
+    });
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Uploaded files are named with a content hash, so the same URL always
+        // serves the same bytes — safe to cache for a year on the client.
+        if (ctx.File.Name.Length > 0)
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "public,max-age=31536000,immutable";
+        }
+    }
+});
 
 app.UseAuthentication();
 
@@ -150,9 +200,19 @@ app.Use(async (context, next) =>
         if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             var token = authHeader.Substring(7).Trim();
-            var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
-            var session = await dbContext.UserSessions
-                .FirstOrDefaultAsync(s => s.SessionToken == token && s.IsActive && s.ExpiresAt > DateTime.UtcNow);
+            var memCache = context.RequestServices.GetRequiredService<IMemoryCache>();
+            var cacheKey = $"session:{token}";
+
+            // Session lookups happen on every single request; a 20s cache turns N DB
+            // round-trips per page load into ~1 every 20s without meaningfully
+            // delaying logout/expiry enforcement.
+            if (!memCache.TryGetValue(cacheKey, out UserSession? session))
+            {
+                var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+                session = await dbContext.UserSessions.AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.SessionToken == token && s.IsActive && s.ExpiresAt > DateTime.UtcNow);
+                memCache.Set(cacheKey, session, TimeSpan.FromSeconds(20));
+            }
 
             if (session == null)
             {
@@ -246,6 +306,43 @@ using (var scope = app.Services.CreateScope())
             )");
         dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)");
         dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)");
+
+        // Ensure pricing_tags table + products.pricing_tag_id column exist
+        // (same reason as user_sessions above — EnsureCreated only creates
+        // tables/columns that exist on the very first run).
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS pricing_tags (
+                id SERIAL PRIMARY KEY,
+                company_id INTEGER NOT NULL REFERENCES companies(id),
+                name TEXT NOT NULL,
+                profit_percent DECIMAL NOT NULL DEFAULT 0,
+                discount_percent DECIMAL,
+                promo_start_date TIMESTAMPTZ,
+                promo_end_date TIMESTAMPTZ,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_by INTEGER,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_by INTEGER,
+                updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                deleted_by INTEGER,
+                deleted_date TIMESTAMPTZ,
+                is_deleted INTEGER NOT NULL DEFAULT 0
+            )");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_tag_id INTEGER REFERENCES pricing_tags(id)");
+
+        // Mobile app (Capacitor APK) version history — global, not per-company:
+        // one APK build serves every company's workspace + super admin.
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS app_versions (
+                id SERIAL PRIMARY KEY,
+                version_name TEXT NOT NULL,
+                version_code INTEGER NOT NULL,
+                apk_url TEXT NOT NULL,
+                release_notes TEXT,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                uploaded_by_user_id INTEGER
+            )");
 
         Console.WriteLine("--> Database is ready & seeded.");
     }

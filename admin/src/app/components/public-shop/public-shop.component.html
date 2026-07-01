@@ -1,41 +1,45 @@
-<div class="min-h-screen bg-gray-50 font-sans flex flex-col" style="font-family: 'Inter', sans-serif;">
+<div class="min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
 
   <!-- ══ NAVBAR ══ -->
-  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-    <div class="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+  <nav class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-screen-xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 cursor-pointer flex-shrink-0" (click)="goHome()">
-        <img *ngIf="companyLogo" [src]="companyLogo" class="h-8 w-8 rounded-lg object-contain border border-gray-100" alt="">
-        <div *ngIf="!companyLogo" class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">{{ companyName.charAt(0) }}</div>
-        <span class="font-bold text-gray-900 text-base">{{ companyName }}</span>
+        <img *ngIf="companyLogo" [src]="companyLogo" class="h-9 w-9 rounded-xl object-contain border border-gray-100 shadow-sm" alt="">
+        <div *ngIf="!companyLogo" class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">{{ companyName.charAt(0) }}</div>
+        <span class="font-bold text-gray-900 text-lg tracking-tight">{{ companyName }}</span>
       </div>
-      <div *ngIf="detailCategory" class="hidden sm:flex items-center gap-1 text-sm text-gray-400">
-        <span class="cursor-pointer hover:text-indigo-600" (click)="goHome()">Home</span>
-        <span>/</span>
-        <span class="text-gray-700 font-medium">{{ detailCategory.name }}</span>
+      <div *ngIf="detailCategory" class="hidden sm:flex items-center gap-1.5 text-sm text-gray-400">
+        <span class="cursor-pointer hover:text-indigo-600 transition" (click)="goHome()">Home</span>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-gray-700 font-semibold">{{ detailCategory.name }}</span>
       </div>
 
-      <div class="flex items-center gap-2 ml-auto">
+      <div class="flex items-center gap-1.5 ml-auto">
         <!-- 3-dot category toggle (mobile + desktop) -->
         <button (click)="sidebarOpen = !sidebarOpen"
           title="Browse Categories"
-          class="p-2 text-gray-500 hover:text-indigo-600 transition rounded-lg hover:bg-gray-50">
+          class="p-2.5 text-gray-500 hover:text-indigo-600 transition rounded-xl hover:bg-indigo-50">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
           </svg>
         </button>
-        <button (click)="toggleCart()" class="relative p-2 text-gray-600 hover:text-indigo-600 transition">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-          </svg>
-          <span *ngIf="cartTotalItems > 0" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{{ cartTotalItems }}</span>
-        </button>
+        <app-cart-widget></app-cart-widget>
+        <span class="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></span>
+        <a [routerLink]="['/', companySlug, 'login']"
+          class="hidden sm:inline-flex px-3.5 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition rounded-xl hover:bg-indigo-50">
+          Sign In
+        </a>
+        <a routerLink="/company/register"
+          class="inline-flex px-3.5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition rounded-xl shadow-sm">
+          Register
+        </a>
       </div><!-- end right controls -->
     </div><!-- end nav inner -->
   </nav>
 
   <!-- Loading -->
-  <div *ngIf="isLoading" class="flex justify-center items-center py-24 text-gray-400 text-sm gap-2">
-    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+  <div *ngIf="isLoading" class="flex flex-col justify-center items-center py-32 text-gray-400 text-sm gap-3">
+    <svg class="w-7 h-7 animate-spin text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
     Loading store…
   </div>
 
@@ -50,48 +54,70 @@
   <div *ngIf="!isLoading && isValidStore === true" class="flex flex-col flex-1">
 
     <!-- Hero Banner (homepage only) -->
-    <div *ngIf="!selectedCategoryId" class="relative bg-gray-900 overflow-hidden">
-      <div class="absolute inset-0">
-        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200"
-          alt="" class="w-full h-full object-cover opacity-25">
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-transparent"></div>
-      </div>
-      <div class="relative max-w-screen-xl mx-auto px-6 py-14 sm:py-20">
-        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-          Discover the latest trends
+    <div *ngIf="!selectedCategoryId" class="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700">
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-32 -left-16 w-80 h-80 bg-fuchsia-400/20 rounded-full blur-3xl"></div>
+      <div class="relative max-w-screen-xl mx-auto px-6 py-16 sm:py-24">
+        <span class="inline-block px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold tracking-wide mb-4 backdrop-blur-sm">
+          ✨ Welcome to {{ companyName }}
+        </span>
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight max-w-2xl">
+          Discover the latest trends, all in one place
         </h1>
-        <p class="mt-3 text-gray-300 text-base sm:text-lg max-w-xl">
-          Welcome to {{ companyName }}. Shop our curated collection — quality guaranteed.
+        <p class="mt-4 text-indigo-100 text-base sm:text-lg max-w-xl">
+          Shop our curated collection — quality guaranteed, delivered to your door.
         </p>
         <button (click)="sidebarOpen = true"
-          class="mt-6 inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-gray-100 transition shadow-lg">
+          class="mt-7 inline-flex items-center gap-2 bg-white text-indigo-700 px-6 py-3 rounded-full font-semibold text-sm hover:bg-indigo-50 transition shadow-lg shadow-indigo-900/30">
           Browse Categories
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </button>
       </div>
     </div>
 
+    <!-- Trust Strip -->
+    <div *ngIf="!selectedCategoryId" class="bg-white border-b border-gray-100">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="flex items-center gap-2.5 text-gray-600">
+          <span class="text-xl">🚚</span>
+          <span class="text-xs sm:text-sm font-medium">Fast Delivery</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-gray-600">
+          <span class="text-xl">💵</span>
+          <span class="text-xs sm:text-sm font-medium">Cash on Delivery</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-gray-600">
+          <span class="text-xl">🔒</span>
+          <span class="text-xs sm:text-sm font-medium">Secure Checkout</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-gray-600">
+          <span class="text-xl">✅</span>
+          <span class="text-xs sm:text-sm font-medium">Quality Guaranteed</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Sidebar overlay (triggered by 3-dot or Browse button) ── -->
     <div *ngIf="sidebarOpen" class="fixed inset-0 z-50 flex">
-      <div class="absolute inset-0 bg-black/40" (click)="sidebarOpen = false"></div>
-      <aside class="relative w-64 bg-white h-full shadow-2xl overflow-y-auto flex flex-col">
-        <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px]" (click)="sidebarOpen = false"></div>
+      <aside class="relative w-72 bg-white h-full shadow-2xl overflow-y-auto flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-violet-50">
           <p class="text-sm font-bold text-gray-800">Browse Categories</p>
-          <button (click)="sidebarOpen = false" class="text-gray-400 hover:text-gray-700 text-lg">✕</button>
+          <button (click)="sidebarOpen = false" class="text-gray-400 hover:text-gray-700 text-lg w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white transition">✕</button>
         </div>
         <div class="p-3 flex-1">
           <ul class="space-y-0.5">
             <li>
               <button (click)="goHomeAndClose()"
-                class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+                class="w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2"
                 [ngClass]="!selectedCategoryId ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
-                🏠 All Products
+                <span>🏠</span> All Products
               </button>
             </li>
             <ng-container *ngFor="let node of categoryTree">
               <li>
                 <button (click)="node.children.length ? toggleCategoryExpand(node) : navAndClose(node.id)"
-                  class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-1"
+                  class="w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center justify-between gap-1"
                   [ngClass]="selectedCategoryId === node.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
                   <span class="truncate">{{ node.name }}</span>
                   <svg *ngIf="node.children.length" class="w-3 h-3 flex-shrink-0 transition-transform"
@@ -103,7 +129,7 @@
                 <ul *ngIf="node.expanded && node.children.length" class="ml-3 mt-0.5 space-y-0.5 border-l-2 border-indigo-100 pl-2">
                   <li *ngFor="let child of node.children">
                     <button (click)="navAndClose(child.id)"
-                      class="w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all truncate"
+                      class="w-full text-left px-2.5 py-2 rounded-lg text-xs transition-all truncate"
                       [ngClass]="selectedCategoryId === child.id ? 'text-indigo-600 font-semibold bg-indigo-50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">
                       {{ child.name }}
                     </button>
@@ -121,22 +147,22 @@
 
     <!-- Left Sidebar: Category Tree (desktop, only on category detail page) -->
     <aside *ngIf="selectedCategoryId"
-      class="hidden lg:block w-56 flex-shrink-0 border-r border-gray-200 bg-white pt-5 pb-10 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+      class="hidden lg:block w-60 flex-shrink-0 border-r border-gray-200 bg-white pt-5 pb-10 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
       <div class="px-3">
         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">Categories</p>
         <ul class="space-y-0.5">
           <li>
             <button (click)="goHome()"
-              class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+              class="w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2"
               [ngClass]="!selectedCategoryId ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
-              🏠 All Products
+              <span>🏠</span> All Products
             </button>
           </li>
           <ng-container *ngFor="let node of categoryTree">
             <li>
               <button
                 (click)="node.children.length ? toggleCategoryExpand(node) : navigateToCategory(node.id)"
-                class="w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-1"
+                class="w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center justify-between gap-1"
                 [ngClass]="selectedCategoryId === node.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'">
                 <span class="truncate">{{ node.name }}</span>
                 <svg *ngIf="node.children.length" class="w-3 h-3 flex-shrink-0 transition-transform duration-200"
@@ -148,7 +174,7 @@
               <ul *ngIf="node.expanded && node.children.length" class="ml-3 mt-0.5 space-y-0.5 border-l-2 border-indigo-100 pl-2">
                 <li *ngFor="let child of node.children">
                   <button (click)="navigateToCategory(child.id)"
-                    class="w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all truncate"
+                    class="w-full text-left px-2.5 py-2 rounded-lg text-xs transition-all truncate"
                     [ngClass]="selectedCategoryId === child.id ? 'text-indigo-600 font-semibold bg-indigo-50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'">
                     {{ child.name }}
                   </button>
@@ -161,7 +187,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 min-w-0 px-4 sm:px-6 py-6">
+    <main class="flex-1 min-w-0 px-4 sm:px-6 py-8">
 
       <!-- ── HOME: Category Sections ── -->
       <ng-container *ngIf="!selectedCategoryId">
@@ -169,15 +195,19 @@
         <div *ngIf="categorySections.length === 0" class="text-center py-24 text-gray-400">
           <div class="text-5xl mb-4">🛍️</div>
           <p class="text-lg font-semibold text-gray-600 mb-1">No products configured</p>
-          <p class="text-sm">Admin needs to configure categories from the Store Config page.</p>
+          <p class="text-sm">Admin needs to configure categories from the Settings page.</p>
         </div>
 
-        <div *ngFor="let section of categorySections" class="mb-10">
+        <div *ngFor="let section of categorySections" class="mb-12">
           <!-- Section Header -->
-          <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
-            <h2 class="text-base font-bold text-gray-900">{{ section.name }}</h2>
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <span class="w-1.5 h-6 rounded-full bg-gradient-to-b from-indigo-600 to-violet-600"></span>
+              <h2 class="text-lg font-bold text-gray-900">{{ section.name }}</h2>
+              <span class="text-xs text-gray-400 font-medium">{{ section.groups.length }} items</span>
+            </div>
             <button (click)="seeMore(section.id)"
-              class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5 hover:underline">
+              class="text-xs font-semibold text-indigo-600 hover:text-white border border-indigo-200 hover:bg-indigo-600 hover:border-indigo-600 px-3 py-1.5 rounded-full flex items-center gap-1 transition-all">
               See all
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -186,21 +216,29 @@
           </div>
 
           <!-- Products Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            <div *ngFor="let p of section.products"
-              class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
-              <div class="aspect-square bg-gray-50 overflow-hidden">
-                <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                <div *ngIf="!p.image" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div *ngFor="let g of section.groups" (click)="openProduct(g)"
+              class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col group cursor-pointer">
+              <div class="relative aspect-square bg-gray-50 overflow-hidden">
+                <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+                <span *ngIf="stockLabel(g.totalStock)" class="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm"
+                  [ngClass]="g.totalStock <= 0 ? 'bg-gray-900/85 text-white' : 'bg-amber-500 text-white'">
+                  {{ stockLabel(g.totalStock) }}
+                </span>
+                <span *ngIf="g.variants.length > 1" class="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm bg-white/90 text-gray-700">
+                  {{ g.variants.length }} sizes
+                </span>
               </div>
-              <div class="p-3 flex-1 flex flex-col">
-                <p class="text-xs text-gray-400 mb-0.5 truncate">{{ p.category }}</p>
-                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ p.name }}</h3>
-                <div class="flex items-center justify-between mt-2">
-                  <span class="text-sm font-bold text-gray-900">৳{{ p.price | number:'1.0-0' }}</span>
-                  <button (click)="addToCart(p)"
-                    class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+              <div class="p-3.5 flex-1 flex flex-col">
+                <p class="text-[11px] text-indigo-500 font-semibold mb-0.5 truncate uppercase tracking-wide">{{ g.categoryName }}</p>
+                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ g.baseName }}</h3>
+                <div class="flex items-center justify-between mt-2.5">
+                  <span class="text-base font-bold text-gray-900">৳{{ g.price | number:'1.0-0' }}</span>
+                  <button (click)="$event.stopPropagation(); quickAddToCart(g)" [disabled]="g.totalStock <= 0"
+                    [title]="g.variants.length > 1 ? 'Choose a size' : 'Add to cart'"
+                    class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0 shadow-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                   </button>
                 </div>
               </div>
@@ -211,37 +249,46 @@
 
       <!-- ── CATEGORY DETAIL VIEW ── -->
       <ng-container *ngIf="selectedCategoryId && detailCategory">
-        <div class="flex items-center gap-2 mb-5">
-          <button (click)="goHome()" class="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition">
+        <div class="flex items-center gap-2 mb-6">
+          <button (click)="goHome()" class="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition font-medium">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Back
           </button>
           <span class="text-gray-300">|</span>
+          <span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-indigo-600 to-violet-600"></span>
           <h2 class="text-lg font-bold text-gray-900">{{ detailCategory.name }}</h2>
-          <span class="text-xs text-gray-400">({{ detailCategory.products.length }} products)</span>
+          <span class="text-xs text-gray-400">({{ detailCategory.groups.length }} products)</span>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <div *ngFor="let p of detailCategory.products"
-            class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
-            <div class="aspect-square bg-gray-50 overflow-hidden">
-              <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-              <div *ngIf="!p.image" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+          <div *ngFor="let g of detailCategory.groups" (click)="openProduct(g)"
+            class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col group cursor-pointer">
+            <div class="relative aspect-square bg-gray-50 overflow-hidden">
+              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-4xl">📦</div>
+              <span *ngIf="stockLabel(g.totalStock)" class="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm"
+                [ngClass]="g.totalStock <= 0 ? 'bg-gray-900/85 text-white' : 'bg-amber-500 text-white'">
+                {{ stockLabel(g.totalStock) }}
+              </span>
+              <span *ngIf="g.variants.length > 1" class="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm bg-white/90 text-gray-700">
+                {{ g.variants.length }} sizes
+              </span>
             </div>
-            <div class="p-3 flex-1 flex flex-col">
-              <p class="text-xs text-gray-400 mb-0.5 truncate">{{ p.category }}</p>
-              <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ p.name }}</h3>
-              <div class="flex items-center justify-between mt-2">
-                <span class="text-sm font-bold text-gray-900">৳{{ p.price | number:'1.0-0' }}</span>
-                <button (click)="addToCart(p)"
-                  class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            <div class="p-3.5 flex-1 flex flex-col">
+              <p class="text-[11px] text-indigo-500 font-semibold mb-0.5 truncate uppercase tracking-wide">{{ g.categoryName }}</p>
+              <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug flex-1">{{ g.baseName }}</h3>
+              <div class="flex items-center justify-between mt-2.5">
+                <span class="text-base font-bold text-gray-900">৳{{ g.price | number:'1.0-0' }}</span>
+                <button (click)="$event.stopPropagation(); quickAddToCart(g)" [disabled]="g.totalStock <= 0"
+                  [title]="g.variants.length > 1 ? 'Choose a size' : 'Add to cart'"
+                  class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition flex-shrink-0 shadow-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                 </button>
               </div>
             </div>
           </div>
 
-          <div *ngIf="detailCategory.products.length === 0" class="col-span-full py-16 text-center text-gray-400 text-sm">
+          <div *ngIf="detailCategory.groups.length === 0" class="col-span-full py-16 text-center text-gray-400 text-sm">
             No products in this category.
           </div>
         </div>
@@ -251,64 +298,24 @@
   </div><!-- end body row -->
   </div><!-- end flex-col flex-1 -->
 
-  <!-- ══ CART SIDEBAR ══ -->
-  <div *ngIf="isCartOpen" class="fixed inset-0 z-50 flex justify-end">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="toggleCart()"></div>
-    <div class="relative w-full max-w-sm bg-white shadow-2xl flex flex-col h-full">
-      <div class="flex items-center justify-between px-5 py-4 border-b">
-        <h2 class="font-bold text-gray-900">Cart ({{ cartTotalItems }})</h2>
-        <button (click)="toggleCart()" class="text-gray-400 hover:text-gray-700">✕</button>
-      </div>
-      <div class="flex-1 overflow-y-auto px-5 py-3 space-y-3">
-        <p *ngIf="cart.length === 0" class="text-center text-gray-400 py-12 text-sm">Your cart is empty.</p>
-        <div *ngFor="let item of cart" class="flex items-center gap-3">
-          <img *ngIf="item.product.image" [src]="item.product.image" class="w-12 h-12 rounded-lg object-cover border border-gray-100" alt="">
-          <div *ngIf="!item.product.image" class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl">📦</div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}</p>
-            <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
-          </div>
-          <div class="flex items-center gap-1">
-            <button (click)="updateQuantity(item, -1)" class="w-6 h-6 rounded border border-gray-200 text-sm flex items-center justify-center hover:bg-gray-50">−</button>
-            <span class="w-5 text-center text-sm font-semibold">{{ item.quantity }}</span>
-            <button (click)="updateQuantity(item, 1)" class="w-6 h-6 rounded border border-gray-200 text-sm flex items-center justify-center hover:bg-gray-50">+</button>
-          </div>
+  <!-- ══ FOOTER ══ -->
+  <footer *ngIf="!isLoading && isValidStore === true" class="bg-gray-900 text-gray-400 mt-auto">
+    <div class="max-w-screen-xl mx-auto px-6 py-10">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2.5">
+          <img *ngIf="companyLogo" [src]="companyLogo" class="h-7 w-7 rounded-lg object-contain" alt="">
+          <span class="font-bold text-white text-sm">{{ companyName }}</span>
+        </div>
+        <div *ngIf="socialLinks.length > 0" class="flex items-center gap-3">
+          <a *ngFor="let s of socialLinks" [href]="s.url" target="_blank" rel="noopener noreferrer" [title]="s.label"
+            class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white transition">
+            {{ s.label.charAt(0) }}
+          </a>
         </div>
       </div>
-      <div class="px-5 py-4 border-t">
-        <div class="flex justify-between text-sm font-bold mb-3">
-          <span>Total</span><span>৳{{ cartSubtotal | number:'1.0-0' }}</span>
-        </div>
-        <button (click)="proceedToCheckout()" [disabled]="cart.length === 0"
-          class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition disabled:opacity-40 text-sm">
-          Checkout →
-        </button>
-      </div>
+      <p *ngIf="footerAboutText" class="text-xs text-gray-500 mt-5 max-w-2xl">{{ footerAboutText }}</p>
+      <p class="text-xs text-gray-600 mt-4">© {{ currentYear }} {{ companyName }}. All rights reserved.</p>
     </div>
-  </div>
-
-  <!-- ══ CHECKOUT MODAL ══ -->
-  <div *ngIf="isCheckoutOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-    <div class="absolute inset-0 bg-black/50" (click)="closeCheckout()"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-      <h2 class="font-bold text-gray-900 text-lg mb-4">Confirm Order</h2>
-      <div class="space-y-3 mb-4">
-        <input [(ngModel)]="customerInfo.name" placeholder="Your Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-        <input [(ngModel)]="customerInfo.mobile" placeholder="Mobile Number *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-        <textarea [(ngModel)]="customerInfo.address" rows="2" placeholder="Delivery Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
-        <select [(ngModel)]="customerInfo.paymentMethod" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 bg-white">
-          <option>COD</option>
-          <option>Online Payment</option>
-        </select>
-      </div>
-      <div class="flex justify-between text-sm font-bold text-gray-900 mb-4">
-        <span>Total</span><span>৳{{ cartSubtotal | number:'1.0-0' }}</span>
-      </div>
-      <div class="flex gap-3">
-        <button (click)="closeCheckout()" class="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-        <button (click)="placeOrder()" class="flex-1 py-2 bg-indigo-600 text-white font-semibold rounded-lg text-sm hover:bg-indigo-700">Place Order</button>
-      </div>
-    </div>
-  </div>
+  </footer>
 
 </div>

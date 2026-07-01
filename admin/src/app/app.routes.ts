@@ -1,95 +1,97 @@
 import { Routes } from '@angular/router';
-
-import { AdminLayoutComponent } from './components/admin-layout/admin-layout.component';
-import { PublicShopComponent } from './components/public-shop/public-shop.component';
-import { LoginComponent } from './components/auth/login/login.component';
-import { DashboardComponent } from './components/admin/dashboard/dashboard.component';
-import { CompanyManagementComponent } from './components/admin/company-management/company-management.component';
-import { CompanyFormComponent } from './components/admin/company-form/company-form.component';
-import { ThemeManagementComponent } from './components/admin/theme-management/theme-management.component';
-import { UserManagementComponent } from './components/admin/user-management/user-management.component';
-import { RoleManagementComponent } from './components/admin/role-management/role-management.component';
-import { PosManagementComponent } from './components/admin/pos-management/pos-management.component';
-import { ProductManagementComponent } from './components/admin/product-management/product-management.component';
-import { AddProductComponent } from './components/admin/add-product/add-product.component';
-import { CategoryManagementComponent } from './components/admin/category-management/category-management.component';
-import { ReportsComponent } from './components/admin/reports/reports.component';
-import { PriceTagComponent } from './components/admin/price-tag/price-tag.component';
-import { DashboardConfigComponent } from './components/admin/dashboard-config/dashboard-config.component';
-import { DashboardViewComponent } from './components/admin/dashboard-view/dashboard-view.component';
-import { SupplierManagementComponent } from './components/admin/supplier-management/supplier-management.component';
-import { OrderManagementComponent } from './components/admin/order-management/order-management.component';
-import { DeliveryManagementComponent } from './components/admin/delivery-management/delivery-management.component';
-import { PaymentManagementComponent } from './components/admin/payment-management/payment-management.component';
-import { BarcodeManagementComponent } from './components/admin/barcode-management/barcode-management.component';
 import { authGuard } from './guards/auth/auth.guard';
-import { CompanyRegisterComponent } from './components/company-register/company-register.component';
 
+// Route-level code splitting: every component below is loaded on-demand via
+// loadComponent() instead of being eagerly bundled into main.js. This keeps the
+// initial bundle to just the app shell + router, and each admin page is only
+// downloaded the first time that route is visited.
 export const routes: Routes = [
   // --- PUBLIC ROUTES ---
-  { path: 'company/register', component: CompanyRegisterComponent },
+  {
+    path: 'company/register',
+    loadComponent: () => import('./components/company-register/company-register.component').then(m => m.CompanyRegisterComponent)
+  },
 
   // --- SUPER ADMIN ROUTES ---
-  { path: 'admin/login', component: LoginComponent },
+  {
+    path: 'admin/login',
+    loadComponent: () => import('./components/auth/login/login.component').then(m => m.LoginComponent)
+  },
   {
     path: 'admin',
-    component: AdminLayoutComponent,
+    loadComponent: () => import('./components/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'companies', component: CompanyManagementComponent },
-      { path: 'company/create', component: CompanyFormComponent },
-      { path: 'company/edit/:id', component: CompanyFormComponent },
-      { path: 'theme', component: ThemeManagementComponent },
-      { path: 'users', component: UserManagementComponent },
-      { path: 'roles', component: RoleManagementComponent },
+      { path: 'dashboard', loadComponent: () => import('./components/admin/dashboard/dashboard.component').then(m => m.DashboardComponent) },
+      { path: 'companies', loadComponent: () => import('./components/admin/company-management/company-management.component').then(m => m.CompanyManagementComponent) },
+      { path: 'company/create', loadComponent: () => import('./components/admin/company-form/company-form.component').then(m => m.CompanyFormComponent) },
+      { path: 'company/edit/:id', loadComponent: () => import('./components/admin/company-form/company-form.component').then(m => m.CompanyFormComponent) },
+      { path: 'theme', loadComponent: () => import('./components/admin/theme-management/theme-management.component').then(m => m.ThemeManagementComponent) },
+      { path: 'users', loadComponent: () => import('./components/admin/user-management/user-management.component').then(m => m.UserManagementComponent) },
+      { path: 'roles', loadComponent: () => import('./components/admin/role-management/role-management.component').then(m => m.RoleManagementComponent) },
       // Company Module routes (Super Admin views any company)
-      { path: 'products', component: ProductManagementComponent },
-      { path: 'add-product', component: AddProductComponent },
-      { path: 'categories', component: CategoryManagementComponent },
-      { path: 'barcodes', component: BarcodeManagementComponent },
-      { path: 'price-tag', component: PriceTagComponent },
-      { path: 'suppliers', component: SupplierManagementComponent },
-      { path: 'pos', component: PosManagementComponent },
-      { path: 'orders', component: OrderManagementComponent },
-      { path: 'delivery', component: DeliveryManagementComponent },
-      { path: 'payments', component: PaymentManagementComponent },
-      { path: 'reports', component: ReportsComponent },
-      { path: 'config', component: DashboardConfigComponent },
-      { path: 'dashboard-view', component: DashboardViewComponent },
+      { path: 'products', loadComponent: () => import('./components/admin/product-management/product-management.component').then(m => m.ProductManagementComponent) },
+      { path: 'add-product', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
+      { path: 'categories', loadComponent: () => import('./components/admin/category-management/category-management.component').then(m => m.CategoryManagementComponent) },
+      { path: 'barcodes', loadComponent: () => import('./components/admin/barcode-management/barcode-management.component').then(m => m.BarcodeManagementComponent) },
+      { path: 'price-tag', loadComponent: () => import('./components/admin/price-tag/price-tag.component').then(m => m.PriceTagComponent) },
+      { path: 'suppliers', loadComponent: () => import('./components/admin/supplier-management/supplier-management.component').then(m => m.SupplierManagementComponent) },
+      { path: 'pos', loadComponent: () => import('./components/admin/pos-management/pos-management.component').then(m => m.PosManagementComponent) },
+      { path: 'orders', loadComponent: () => import('./components/admin/order-management/order-management.component').then(m => m.OrderManagementComponent) },
+      { path: 'delivery', loadComponent: () => import('./components/admin/delivery-management/delivery-management.component').then(m => m.DeliveryManagementComponent) },
+      { path: 'payments', loadComponent: () => import('./components/admin/payment-management/payment-management.component').then(m => m.PaymentManagementComponent) },
+      { path: 'reports', loadComponent: () => import('./components/admin/reports/reports.component').then(m => m.ReportsComponent) },
+      { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
+      { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
+      { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
+      { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
 
   // --- COMPANY USER ROUTES ---
-  { path: ':companySlug/login', component: LoginComponent },
+  {
+    path: ':companySlug/login',
+    loadComponent: () => import('./components/auth/login/login.component').then(m => m.LoginComponent)
+  },
   {
     path: ':companySlug/workspace',
-    component: AdminLayoutComponent,
+    loadComponent: () => import('./components/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'pos', component: PosManagementComponent },
-      { path: 'products', component: ProductManagementComponent },
-      { path: 'add-product', component: AddProductComponent },
-      { path: 'categories', component: CategoryManagementComponent },
-      { path: 'barcodes', component: BarcodeManagementComponent },
-      { path: 'price-tag', component: PriceTagComponent },
-      { path: 'suppliers', component: SupplierManagementComponent },
-      { path: 'orders', component: OrderManagementComponent },
-      { path: 'delivery', component: DeliveryManagementComponent },
-      { path: 'payments', component: PaymentManagementComponent },
-      { path: 'reports', component: ReportsComponent },
-      { path: 'users', component: UserManagementComponent },
-      { path: 'config', component: DashboardConfigComponent },
-      { path: 'dashboard-view', component: DashboardViewComponent },
+      { path: 'dashboard', loadComponent: () => import('./components/admin/dashboard/dashboard.component').then(m => m.DashboardComponent) },
+      { path: 'pos', loadComponent: () => import('./components/admin/pos-management/pos-management.component').then(m => m.PosManagementComponent) },
+      { path: 'products', loadComponent: () => import('./components/admin/product-management/product-management.component').then(m => m.ProductManagementComponent) },
+      { path: 'add-product', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
+      { path: 'categories', loadComponent: () => import('./components/admin/category-management/category-management.component').then(m => m.CategoryManagementComponent) },
+      { path: 'barcodes', loadComponent: () => import('./components/admin/barcode-management/barcode-management.component').then(m => m.BarcodeManagementComponent) },
+      { path: 'price-tag', loadComponent: () => import('./components/admin/price-tag/price-tag.component').then(m => m.PriceTagComponent) },
+      { path: 'suppliers', loadComponent: () => import('./components/admin/supplier-management/supplier-management.component').then(m => m.SupplierManagementComponent) },
+      { path: 'orders', loadComponent: () => import('./components/admin/order-management/order-management.component').then(m => m.OrderManagementComponent) },
+      { path: 'delivery', loadComponent: () => import('./components/admin/delivery-management/delivery-management.component').then(m => m.DeliveryManagementComponent) },
+      { path: 'payments', loadComponent: () => import('./components/admin/payment-management/payment-management.component').then(m => m.PaymentManagementComponent) },
+      { path: 'reports', loadComponent: () => import('./components/admin/reports/reports.component').then(m => m.ReportsComponent) },
+      { path: 'users', loadComponent: () => import('./components/admin/user-management/user-management.component').then(m => m.UserManagementComponent) },
+      { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
+      { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
+      { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
 
   // --- PUBLIC SHOP ROUTES ---
-  { path: ':companySlug', component: PublicShopComponent },
-  { path: ':companySlug/category/:categoryId', component: PublicShopComponent },
+  {
+    path: ':companySlug',
+    loadComponent: () => import('./components/public-shop/public-shop.component').then(m => m.PublicShopComponent)
+  },
+  {
+    path: ':companySlug/category/:categoryId',
+    loadComponent: () => import('./components/public-shop/public-shop.component').then(m => m.PublicShopComponent)
+  },
+  {
+    path: ':companySlug/product/:id',
+    loadComponent: () => import('./components/public-shop/product-detail/product-detail.component').then(m => m.ProductDetailComponent)
+  },
 
   // --- DEFAULT REDIRECT ---
   { path: '', redirectTo: '/admin/login', pathMatch: 'full' }

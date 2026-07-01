@@ -1,0 +1,100 @@
+<div class="min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
+
+  <!-- ══ NAVBAR ══ -->
+  <nav class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-screen-xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 cursor-pointer flex-shrink-0" (click)="goBack()">
+        <img *ngIf="companyLogo" [src]="companyLogo" class="h-9 w-9 rounded-xl object-contain border border-gray-100 shadow-sm" alt="">
+        <div *ngIf="!companyLogo" class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">{{ companyName.charAt(0) }}</div>
+        <span class="font-bold text-gray-900 text-lg tracking-tight">{{ companyName }}</span>
+      </div>
+      <div class="flex items-center gap-1.5 ml-auto">
+        <app-cart-widget></app-cart-widget>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="flex flex-col justify-center items-center py-32 text-gray-400 text-sm gap-3">
+    <svg class="w-7 h-7 animate-spin text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Loading product…
+  </div>
+
+  <!-- Not found -->
+  <div *ngIf="!isLoading && notFound" class="flex flex-col items-center justify-center py-32 text-center px-4">
+    <div class="text-6xl mb-4">📦</div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Product Not Found</h2>
+    <button (click)="goBack()" class="mt-4 text-sm font-semibold text-indigo-600 hover:underline">← Back to store</button>
+  </div>
+
+  <!-- ══ DETAIL ══ -->
+  <main *ngIf="!isLoading && group && selectedVariant" class="max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-8 flex-1">
+    <button (click)="goBack()" class="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition font-medium mb-6">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to store
+    </button>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+
+      <!-- Image -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm aspect-square overflow-hidden flex items-center justify-center">
+        <img *ngIf="group.imageUrl" [src]="group.imageUrl | imgUrl" [alt]="group.baseName" class="w-full h-full object-cover">
+        <div *ngIf="!group.imageUrl" class="text-7xl">📦</div>
+      </div>
+
+      <!-- Info -->
+      <div>
+        <p class="text-xs text-indigo-500 font-semibold uppercase tracking-wide mb-1">{{ group.categoryName }}</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{{ group.baseName }}</h1>
+        <div class="text-3xl font-extrabold text-gray-900 mb-5">৳{{ selectedVariant.price | number:'1.0-0' }}</div>
+
+        <!-- Size selector -->
+        <div *ngIf="group.variants.length > 1" class="mb-6">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Select Size</p>
+          <div class="flex flex-wrap gap-2">
+            <button *ngFor="let v of group.variants" (click)="selectVariant(v)" [disabled]="v.stockQuantity <= 0"
+              class="px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
+              [ngClass]="selectedVariant.id === v.id
+                ? 'border-indigo-600 bg-indigo-600 text-white'
+                : v.stockQuantity <= 0
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                  : 'border-gray-200 text-gray-700 hover:border-indigo-300'">
+              {{ v.size || v.name }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Stock status -->
+        <div class="mb-6">
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+            [ngClass]="selectedVariant.stockQuantity <= 0 ? 'bg-gray-100 text-gray-500' : selectedVariant.stockQuantity <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+            {{ stockLabel(selectedVariant.stockQuantity) }}
+          </span>
+        </div>
+
+        <!-- Quantity -->
+        <div class="flex items-center gap-3 mb-6">
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Qty</span>
+          <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
+            <button (click)="changeQuantity(-1)" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">−</button>
+            <span class="w-10 text-center text-sm font-semibold">{{ quantity }}</span>
+            <button (click)="changeQuantity(1)" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">+</button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button (click)="addToCart()" [disabled]="selectedVariant.stockQuantity <= 0"
+            class="flex-1 py-3 rounded-xl border-2 border-indigo-600 text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            Add to Cart
+          </button>
+          <button (click)="buyNow()" [disabled]="selectedVariant.stockQuantity <= 0"
+            class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            Buy Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>

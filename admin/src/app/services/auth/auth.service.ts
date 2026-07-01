@@ -122,6 +122,8 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_CATEGORIES',
     'PAGE_REPORTS',
     'PAGE_STORE_CONFIG',
+    'PAGE_PRICING',
+    'PAGE_APP_RELEASES',
     'PAGE_DASHBOARD_VIEW'
   ],
   'superadmin': [
@@ -135,6 +137,8 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_CATEGORIES',
     'PAGE_REPORTS',
     'PAGE_STORE_CONFIG',
+    'PAGE_PRICING',
+    'PAGE_APP_RELEASES',
     'PAGE_DASHBOARD_VIEW'
   ],
   'COMPANY_ADMIN': [
@@ -144,6 +148,7 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_CATEGORIES',
     'PAGE_REPORTS',
     'PAGE_STORE_CONFIG',
+    'PAGE_PRICING',
     'PAGE_USER_MANAGEMENT',
     'PAGE_DASHBOARD_VIEW'
   ],
@@ -154,6 +159,7 @@ const ROLE_RIGHTS: { [role: string]: string[] } = {
     'PAGE_CATEGORIES',
     'PAGE_REPORTS',
     'PAGE_STORE_CONFIG',
+    'PAGE_PRICING',
     'PAGE_USER_MANAGEMENT',
     'PAGE_DASHBOARD_VIEW'
   ],
