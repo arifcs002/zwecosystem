@@ -78,8 +78,9 @@ namespace Ecommerce.Api.Controllers
             if (!System.IO.File.Exists(filePath))
                 await System.IO.File.WriteAllBytesAsync(filePath, outputBytes);
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            return Ok(new { imageUrl = $"{baseUrl}/uploads/{folder}/{uniqueFileName}" });
+            // Return relative path — Angular resolveImageUrl() prepends siteUrl
+            // (port 85 via nginx) so the URL works on any host, not just localhost.
+            return Ok(new { imageUrl = $"/uploads/{folder}/{uniqueFileName}" });
         }
     }
 }

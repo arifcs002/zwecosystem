@@ -53,6 +53,7 @@ namespace Ecommerce.Api.Controllers
                 .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Include(p => p.Category)
+                .Where(p => p.IsDeleted == 0)   // always exclude soft-deleted
                 .AsQueryable();
 
             if (_context.CompanyId.HasValue)
