@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { UserService, User } from '../../../services/user/user.service';
 import { CompanyService, Company } from '../../../services/company/company.service';
 import { AuthService } from '../../../services/auth/auth.service';
+import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
+import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 @Component({
   selector: 'app-user-management',
@@ -15,6 +17,8 @@ import { AuthService } from '../../../services/auth/auth.service';
 export class UserManagementComponent implements OnInit {
   
   private userService = inject(UserService);
+  private confirmSvc = inject(ConfirmDialogService);
+  private notify = inject(GlobalNotificationService);
   private companyService = inject(CompanyService);
   public authService = inject(AuthService);
 
@@ -212,23 +216,24 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
-  toggleStatus(user: any) {
+  async toggleStatus(user: any) {
+    const action = user.isActive ? 'deactivate' : 'activate';
+    const ok = await this.confirmSvc.confirm({ title: 'Change User Status', message: `${action.charAt(0).toUpperCase() + action.slice(1)} "${user.firstName}"?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), danger: !user.isActive });
+    if (!ok) return;
     const payload = { ...user, role: user.roles?.[0] || 'companyadmin', isActive: !user.isActive };
-    if(confirm(`Are you sure you want to change status for ${user.firstName}?`)) {
-      this.userService.updateUser(user.id, payload).subscribe({
-        next: () => this.loadUsers(),
-        error: (err) => alert('Failed to update status')
-      });
-    }
+    this.userService.updateUser(user.id, payload).subscribe({
+      next: () => this.loadUsers(),
+      error: () => this.notify.notify({ type: 'error', title: 'Failed', message: 'Could not update user status.', ttlMs: 4000 })
+    });
   }
 
-  deleteUser(user: any) {
-    if(confirm(`Are you sure you want to delete user ${user.firstName}?`)) {
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => this.loadUsers(),
-        error: (err) => alert('Failed to delete user')
-      });
-    }
+  async deleteUser(user: any) {
+    const ok = await this.confirmSvc.confirm({ title: 'Delete User', message: `Permanently delete "${user.firstName}"? This cannot be undone.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
+    this.userService.deleteUser(user.id).subscribe({
+      next: () => this.loadUsers(),
+      error: () => this.notify.notify({ type: 'error', title: 'Failed', message: 'Could not delete user.', ttlMs: 4000 })
+    });
   }
 
   getCompanyName(companyId: number | null | undefined): string {

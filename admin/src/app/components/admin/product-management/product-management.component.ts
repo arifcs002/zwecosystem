@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ProductService, Product } from '../../../services/product/product.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
+import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
 
 export interface ProductGroup {
   baseName: string;
@@ -23,6 +24,7 @@ export interface ProductGroup {
 })
 export class ProductManagementComponent implements OnInit {
   private productService = inject(ProductService);
+  private confirmSvc = inject(ConfirmDialogService);
 
   allProducts: Product[] = [];
   productGroups: ProductGroup[] = [];
@@ -111,8 +113,14 @@ export class ProductManagementComponent implements OnInit {
     });
   }
 
-  deleteVariant(variant: Product) {
-    if (!confirm(`Delete ${variant.name}?`)) return;
+  async deleteVariant(variant: Product) {
+    const ok = await this.confirmSvc.confirm({
+      title: 'Delete Size',
+      message: `Remove "${variant.name}" from inventory? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (!ok) return;
     this.productService.deleteProduct(variant.id).subscribe({
       next: () => {
         if (this.detailGroup) {
@@ -125,8 +133,14 @@ export class ProductManagementComponent implements OnInit {
     });
   }
 
-  deleteGroup(group: ProductGroup) {
-    if (!confirm(`Delete all sizes of "${group.baseName}"?`)) return;
+  async deleteGroup(group: ProductGroup) {
+    const ok = await this.confirmSvc.confirm({
+      title: 'Delete All Sizes',
+      message: `Delete all ${group.variants.length} sizes of "${group.baseName}"? This cannot be undone.`,
+      confirmLabel: 'Delete All',
+      danger: true
+    });
+    if (!ok) return;
     const ids = group.variants.map(v => v.id);
     let done = 0;
     ids.forEach(id => {

@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
+import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 interface PageRight {
   id: string;
@@ -23,6 +25,8 @@ interface Role {
   styleUrl: './role-management.component.css'
 })
 export class RoleManagementComponent {
+  private confirmSvc = inject(ConfirmDialogService);
+  private notify = inject(GlobalNotificationService);
   availableRights: PageRight[] = [
     { id: 'PAGE_SUPER_DASHBOARD', name: 'Super Admin Dashboard', category: 'Super Admin' },
     { id: 'PAGE_COMPANY_MANAGEMENT', name: 'Company Management', category: 'Super Admin' },
@@ -118,15 +122,15 @@ export class RoleManagementComponent {
     setTimeout(() => this.successMsg = '', 3000);
   }
 
-  deleteRole(role: Role) {
+  async deleteRole(role: Role) {
     if (role.name === 'SUPER_ADMIN') {
-      alert('Cannot delete the root SUPER_ADMIN role.');
+      this.notify.notify({ type: 'warning', title: 'Cannot Delete', message: 'The root SUPER_ADMIN role cannot be deleted.', ttlMs: 4000 });
       return;
     }
-    if (confirm(`Are you sure you want to delete role: ${role.name}?`)) {
-      this.roles = this.roles.filter(r => r.id !== role.id);
-      this.successMsg = 'Role deleted successfully!';
-      setTimeout(() => this.successMsg = '', 3000);
-    }
+    const ok = await this.confirmSvc.confirm({ title: 'Delete Role', message: `Delete role "${role.name}"? This cannot be undone.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
+    this.roles = this.roles.filter(r => r.id !== role.id);
+    this.successMsg = 'Role deleted successfully!';
+    setTimeout(() => this.successMsg = '', 3000);
   }
 }

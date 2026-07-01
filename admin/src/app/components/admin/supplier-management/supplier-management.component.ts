@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
+import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
 import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
@@ -13,6 +14,7 @@ import { RequiredErrorComponent } from '../../../shared/required-error/required-
 })
 export class SupplierManagementComponent implements OnInit {
   private supplierService = inject(SupplierService);
+  private confirmSvc = inject(ConfirmDialogService);
 
   suppliers: Supplier[] = [];
   filteredSuppliers: Supplier[] = [];
@@ -62,8 +64,9 @@ export class SupplierManagementComponent implements OnInit {
     });
   }
 
-  delete(id: number) {
-    if (!confirm('Delete this supplier?')) return;
+  async delete(id: number) {
+    const ok = await this.confirmSvc.confirm({ title: 'Delete Supplier', message: 'Remove this supplier? This cannot be undone.', confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     this.supplierService.deleteSupplier(id).subscribe({
       next: () => { this.successMsg = 'Supplier deleted!'; this.load(); setTimeout(() => this.successMsg = '', 3000); },
       error: () => { this.errorMsg = 'Failed to delete supplier.'; }

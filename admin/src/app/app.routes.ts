@@ -32,6 +32,7 @@ export const routes: Routes = [
       // Company Module routes (Super Admin views any company)
       { path: 'products', loadComponent: () => import('./components/admin/product-management/product-management.component').then(m => m.ProductManagementComponent) },
       { path: 'add-product', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
+      { path: 'edit-product/:id', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
       { path: 'categories', loadComponent: () => import('./components/admin/category-management/category-management.component').then(m => m.CategoryManagementComponent) },
       { path: 'barcodes', loadComponent: () => import('./components/admin/barcode-management/barcode-management.component').then(m => m.BarcodeManagementComponent) },
       { path: 'price-tag', loadComponent: () => import('./components/admin/price-tag/price-tag.component').then(m => m.PriceTagComponent) },
@@ -63,6 +64,7 @@ export const routes: Routes = [
       { path: 'pos', loadComponent: () => import('./components/admin/pos-management/pos-management.component').then(m => m.PosManagementComponent) },
       { path: 'products', loadComponent: () => import('./components/admin/product-management/product-management.component').then(m => m.ProductManagementComponent) },
       { path: 'add-product', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
+      { path: 'edit-product/:id', loadComponent: () => import('./components/admin/add-product/add-product.component').then(m => m.AddProductComponent) },
       { path: 'categories', loadComponent: () => import('./components/admin/category-management/category-management.component').then(m => m.CategoryManagementComponent) },
       { path: 'barcodes', loadComponent: () => import('./components/admin/barcode-management/barcode-management.component').then(m => m.BarcodeManagementComponent) },
       { path: 'price-tag', loadComponent: () => import('./components/admin/price-tag/price-tag.component').then(m => m.PriceTagComponent) },
