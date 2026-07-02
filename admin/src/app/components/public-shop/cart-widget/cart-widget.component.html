@@ -37,41 +37,9 @@
       <div class="flex justify-between text-sm font-bold mb-3">
         <span>Total</span><span>৳{{ cartService.cartSubtotal | number:'1.0-0' }}</span>
       </div>
-      <button (click)="cartService.proceedToCheckout()" [disabled]="cartService.cart.length === 0"
+      <button (click)="goToCheckout()" [disabled]="cartService.cart.length === 0"
         class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition disabled:opacity-40 text-sm">
         Checkout →
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ CHECKOUT MODAL ══ -->
-<div *ngIf="cartService.isCheckoutOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-  <div class="absolute inset-0 bg-black/50" (click)="cartService.closeCheckout()"></div>
-  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-    <h2 class="font-bold text-gray-900 text-lg mb-4">Confirm Order</h2>
-    <div class="space-y-3 mb-4">
-      <input [(ngModel)]="cartService.customerInfo.name" placeholder="Your Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-      <input [(ngModel)]="cartService.customerInfo.mobile" placeholder="Mobile Number *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-      <textarea [(ngModel)]="cartService.customerInfo.address" rows="2" placeholder="Delivery Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
-      <div class="grid grid-cols-2 gap-3">
-        <input [(ngModel)]="cartService.customerInfo.district" placeholder="District" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-        <input [(ngModel)]="cartService.customerInfo.thana" placeholder="Thana / Area" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-      </div>
-      <textarea [(ngModel)]="cartService.customerInfo.notes" rows="1" placeholder="Special notes (optional)" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
-      <select [(ngModel)]="cartService.customerInfo.paymentMethod" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 bg-white">
-        <option value="COD">Cash on Delivery</option>
-        <option value="BKASH">bKash</option>
-        <option value="ONLINE">Online Payment</option>
-      </select>
-    </div>
-    <div class="flex justify-between text-sm font-bold text-gray-900 mb-4">
-      <span>Subtotal</span><span>৳{{ cartService.cartSubtotal | number:'1.0-0' }}</span>
-    </div>
-    <div class="flex gap-3">
-      <button (click)="cartService.closeCheckout()" [disabled]="cartService.placingOrder" class="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">Cancel</button>
-      <button (click)="placeOrder()" [disabled]="cartService.placingOrder" class="flex-1 py-2 bg-indigo-600 text-white font-semibold rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60">
-        {{ cartService.placingOrder ? 'Placing…' : 'Place Order' }}
       </button>
     </div>
   </div>

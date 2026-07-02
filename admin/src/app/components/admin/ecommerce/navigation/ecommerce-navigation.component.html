@@ -1,0 +1,53 @@
+<div class="cfg-wrap">
+  <div class="cfg-header">
+    <div>
+      <h1 class="cfg-title">🧭 Header &amp; Navigation</h1>
+      <p class="cfg-sub">Announcement bar and the category menu shown in your shop header.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <!-- Announcement bar -->
+    <div class="card">
+      <p class="card-title">Announcement Bar</p>
+      <div class="switch-row" style="margin-bottom:14px;">
+        <label>Show announcement bar at the top of the shop</label>
+        <label class="switch">
+          <input type="checkbox" [(ngModel)]="announcementEnabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="fg">
+        <label>Message</label>
+        <input class="inp" [(ngModel)]="announcementText" placeholder="🚚 Free delivery on orders over ৳2000!">
+      </div>
+      <div class="fg">
+        <label>Link <span class="hint">(optional — where the bar sends visitors on click)</span></label>
+        <input class="inp" [(ngModel)]="announcementLink" placeholder="/category/1">
+      </div>
+    </div>
+
+    <!-- Nav categories -->
+    <div class="card">
+      <p class="card-title">Navigation Categories</p>
+      <p class="muted" style="margin-bottom:10px;">Pick which categories appear in the header menu bar. Order them below.</p>
+      <div class="chip-grid">
+        <button *ngFor="let c of categories" class="chip" [class.on]="isNavSelected(+c.id!)" (click)="toggleNav(+c.id!)">
+          {{ c.name }}
+        </button>
+      </div>
+
+      <div class="ord-list" *ngIf="navCategoryIds.length">
+        <div *ngFor="let id of navCategoryIds; let i = index" class="ord-item">
+          <span class="nm">{{ catName(id) }}</span>
+          <button class="mini" (click)="moveNav(i, -1)" [disabled]="i === 0">▲</button>
+          <button class="mini" (click)="moveNav(i, 1)" [disabled]="i === navCategoryIds.length - 1">▼</button>
+          <button class="mini" (click)="toggleNav(id)">✕</button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

@@ -9,6 +9,7 @@
       *ngFor="let g of groups"
       [group]="g"
       [lowStockThreshold]="lowStockThreshold"
+      [newBadgeDays]="newBadgeDays"
       (add)="add.emit($event)"
       (open)="open.emit($event)"
       class="item">

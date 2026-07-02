@@ -137,6 +137,18 @@
           <span class="nav-icon">🧱</span>
           <span class="nav-label" *ngIf="!sidebarCollapsed">Storefront Builder</span>
         </a>
+        <a [routerLink]="basePath + '/ecommerce/navigation'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🧭</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Header &amp; Navigation</span>
+        </a>
+        <a [routerLink]="basePath + '/ecommerce/products'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🏷️</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Product Display</span>
+        </a>
+        <a [routerLink]="basePath + '/ecommerce/checkout'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">💳</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Checkout &amp; Payment</span>
+        </a>
       </ng-container>
 
     </nav>

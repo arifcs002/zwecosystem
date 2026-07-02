@@ -4,9 +4,12 @@
     <img *ngIf="group.imageUrl" [src]="group.imageUrl | imgUrl" [alt]="group.baseName" loading="lazy">
     <div *ngIf="!group.imageUrl" class="ph">🛍️</div>
 
-    <span *ngIf="discount > 0" class="badge save">Save {{ discount }}%</span>
-    <span *ngIf="soldOut" class="badge out">Out of Stock</span>
-    <span *ngIf="!soldOut && lowStock" class="badge low">Only {{ group.totalStock }} left</span>
+    <div class="badge-stack">
+      <span *ngIf="discount > 0" class="badge save">Save {{ discount }}%</span>
+      <span *ngIf="isNew" class="badge new">New</span>
+      <span *ngIf="soldOut" class="badge out">Out of Stock</span>
+      <span *ngIf="!soldOut && lowStock" class="badge low">Only {{ group.totalStock }} left</span>
+    </div>
     <span *ngIf="isMultiVariant" class="badge sizes">{{ group.variants.length }} sizes</span>
   </div>
 

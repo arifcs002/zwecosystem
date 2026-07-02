@@ -85,8 +85,10 @@ export class ProductDetailComponent implements OnInit {
   }
 
   buyNow() {
+    if (!this.selectedVariant || this.selectedVariant.stockQuantity <= 0) return;
     this.addToCart();
-    this.cartService.proceedToCheckout();
+    this.cartService.isCartOpen = false;
+    this.router.navigate(['/', this.companySlug, 'checkout']);
   }
 
   goBack() { this.router.navigate(['/', this.companySlug]); }

@@ -45,6 +45,9 @@ export const routes: Routes = [
       { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
       { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
       { path: 'ecommerce/builder', loadComponent: () => import('./components/admin/ecommerce/builder/ecommerce-builder.component').then(m => m.EcommerceBuilderComponent) },
+      { path: 'ecommerce/navigation', loadComponent: () => import('./components/admin/ecommerce/navigation/ecommerce-navigation.component').then(m => m.EcommerceNavigationComponent) },
+      { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
+      { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -78,6 +81,9 @@ export const routes: Routes = [
       { path: 'config', loadComponent: () => import('./components/admin/dashboard-config/dashboard-config.component').then(m => m.DashboardConfigComponent) },
       { path: 'pricing', loadComponent: () => import('./components/admin/pricing-management/pricing-management.component').then(m => m.PricingManagementComponent) },
       { path: 'ecommerce/builder', loadComponent: () => import('./components/admin/ecommerce/builder/ecommerce-builder.component').then(m => m.EcommerceBuilderComponent) },
+      { path: 'ecommerce/navigation', loadComponent: () => import('./components/admin/ecommerce/navigation/ecommerce-navigation.component').then(m => m.EcommerceNavigationComponent) },
+      { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
+      { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
@@ -95,6 +101,10 @@ export const routes: Routes = [
   {
     path: ':companySlug/product/:id',
     loadComponent: () => import('./components/public-shop/product-detail/product-detail.component').then(m => m.ProductDetailComponent)
+  },
+  {
+    path: ':companySlug/checkout',
+    loadComponent: () => import('./components/public-shop/checkout/checkout.component').then(m => m.CheckoutComponent)
   },
 
   // --- DEFAULT REDIRECT ---

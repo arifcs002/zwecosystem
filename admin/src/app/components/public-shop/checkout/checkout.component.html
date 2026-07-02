@@ -1,0 +1,113 @@
+<div class="min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
+
+  <!-- Header -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-screen-lg mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" (click)="backToShop()">
+        <img *ngIf="companyLogo" [src]="companyLogo" class="h-9 w-9 rounded-xl object-contain border border-gray-100" alt="">
+        <span class="font-bold text-gray-900 text-lg">{{ companyName }}</span>
+      </div>
+      <button (click)="backToShop()" class="text-sm text-gray-500 hover:text-indigo-600 font-medium">← Continue shopping</button>
+    </div>
+  </nav>
+
+  <div class="max-w-screen-lg mx-auto w-full px-4 py-8 flex-1">
+
+    <!-- ══ SUCCESS ══ -->
+    <div *ngIf="placedOrderNumber" class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mt-8">
+      <div class="text-5xl mb-4">✅</div>
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+      <p class="text-gray-500 mb-1">Your order <span class="font-semibold text-gray-800">{{ placedOrderNumber }}</span> has been placed.</p>
+      <p class="text-gray-500 mb-6">Total: <span class="font-bold text-gray-900">৳{{ placedTotal | number:'1.0-0' }}</span> — we'll call you to confirm delivery.</p>
+      <button (click)="backToShop()" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">Back to Shop</button>
+    </div>
+
+    <!-- ══ EMPTY CART ══ -->
+    <div *ngIf="!placedOrderNumber && cart.cart.length === 0" class="max-w-md mx-auto text-center mt-16 text-gray-400">
+      <div class="text-5xl mb-4">🛒</div>
+      <p class="text-lg font-semibold text-gray-600 mb-3">Your cart is empty</p>
+      <button (click)="backToShop()" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">Start Shopping</button>
+    </div>
+
+    <!-- ══ CHECKOUT ══ -->
+    <div *ngIf="!placedOrderNumber && cart.cart.length > 0" class="grid lg:grid-cols-3 gap-6">
+
+      <!-- Left: review + shipping -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Order review -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>Order Review</h2>
+          <div class="space-y-3">
+            <div *ngFor="let item of cart.cart" class="flex items-center gap-3">
+              <img *ngIf="item.product.image" [src]="item.product.image" class="w-14 h-14 rounded-lg object-cover border border-gray-100" alt="">
+              <div *ngIf="!item.product.image" class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl">📦</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}<span *ngIf="item.product.size" class="text-gray-400 font-normal"> · {{ item.product.size }}</span></p>
+                <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button (click)="cart.updateQuantity(item, -1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">−</button>
+                <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
+                <button (click)="cart.updateQuantity(item, 1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
+              </div>
+              <span class="text-sm font-bold text-gray-900 w-16 text-right">৳{{ (item.product.price * item.quantity) | number:'1.0-0' }}</span>
+              <button (click)="cart.removeFromCart(item)" class="text-gray-300 hover:text-rose-500 ml-1">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shipping -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>Shipping Address</h2>
+          <div class="space-y-3">
+            <div class="grid sm:grid-cols-2 gap-3">
+              <input [(ngModel)]="cart.customerInfo.name" placeholder="Full Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <input [(ngModel)]="cart.customerInfo.mobile" placeholder="Mobile Number *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+            </div>
+            <textarea [(ngModel)]="cart.customerInfo.address" rows="2" placeholder="Full Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <input [(ngModel)]="cart.customerInfo.district" placeholder="District" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <input [(ngModel)]="cart.customerInfo.thana" placeholder="Thana / Area" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+            </div>
+            <textarea [(ngModel)]="cart.customerInfo.notes" rows="1" placeholder="Special notes (optional)" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: payment + summary -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>Payment Method</h2>
+          <div class="space-y-2">
+            <label *ngFor="let m of payMethods"
+              class="flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition"
+              [ngClass]="cart.customerInfo.paymentMethod === m.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+              <input type="radio" name="pay" [value]="m.value" [(ngModel)]="cart.customerInfo.paymentMethod" class="accent-indigo-600">
+              <div>
+                <span class="text-sm font-semibold text-gray-800">{{ m.label }}</span>
+                <span *ngIf="m.note" class="block text-xs text-gray-500">{{ m.note }}</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
+            <div class="flex justify-between text-gray-600">
+              <span>Delivery</span>
+              <span [class.text-emerald-600]="shippingFee === 0" [class.font-semibold]="shippingFee === 0">{{ shippingFee === 0 ? 'FREE' : '৳' + (shippingFee | number:'1.0-0') }}</span>
+            </div>
+            <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
+          </div>
+          <button (click)="placeOrder()" [disabled]="placing"
+            class="w-full mt-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-60">
+            {{ placing ? 'Placing Order…' : 'Place Order' }}
+          </button>
+          <p class="text-[11px] text-gray-400 text-center mt-2">By placing this order you agree to be contacted for delivery.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

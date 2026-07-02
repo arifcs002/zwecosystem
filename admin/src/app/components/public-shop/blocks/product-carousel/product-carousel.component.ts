@@ -21,6 +21,7 @@ export class ProductCarouselComponent {
   @Input() columns = 4;
   @Input() showViewAll = false;
   @Input() lowStockThreshold = 5;
+  @Input() newBadgeDays = 0;
 
   @Output() add = new EventEmitter<ProductGroup>();
   @Output() open = new EventEmitter<ProductGroup>();

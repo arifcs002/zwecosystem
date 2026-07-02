@@ -10,13 +10,13 @@
 .thumb img { width: 100%; height: 100%; object-fit: cover; }
 .ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #c7c9d4; }
 
-.badge {
-  position: absolute; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: #fff;
-}
-.badge.save { top: 8px; left: 8px; background: #16a34a; }
-.badge.out  { top: 8px; left: 8px; background: #6b7280; }
-.badge.low  { top: 8px; left: 8px; background: #f97316; }
-.badge.sizes{ top: 8px; right: 8px; background: rgba(17,17,42,.72); }
+.badge-stack { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; color: #fff; }
+.badge.save { background: #16a34a; }
+.badge.new  { background: #7c3aed; }
+.badge.out  { background: #6b7280; }
+.badge.low  { background: #f97316; }
+.badge.sizes{ position: absolute; top: 8px; right: 8px; background: rgba(17,17,42,.72); }
 
 .info { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .cat { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #7c3aed; }

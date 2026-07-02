@@ -84,6 +84,13 @@ export class PublicShopComponent implements OnInit {
   // Homepage block layout (Storefront Builder) resolved to renderable data.
   renderBlocks: RenderBlock[] = [];
   lowStockThreshold = 5;
+  newBadgeDays = 0;
+
+  // Header config (Navigation settings)
+  announcementEnabled = false;
+  announcementText = '';
+  announcementLink = '';
+  navCategories: { id: number; name: string }[] = [];
   // Kept raw for block source resolution + category detail.
   private allProductsRaw: any[] = [];
   private allCategoriesRaw: Category[] = [];
@@ -158,6 +165,19 @@ export class PublicShopComponent implements OnInit {
         this.allCategoriesRaw = allCats;
         const lowStock = settings.find(s => s.key === 'low_stock_threshold')?.value;
         if (lowStock && !isNaN(+lowStock)) this.lowStockThreshold = +lowStock;
+        const newDays = settings.find(s => s.key === 'new_badge_days')?.value;
+        if (newDays && !isNaN(+newDays)) this.newBadgeDays = +newDays;
+
+        // Header: announcement bar + top nav categories
+        this.announcementEnabled = settings.find(s => s.key === 'announcement_enabled')?.value === 'true';
+        this.announcementText = settings.find(s => s.key === 'announcement_text')?.value || '';
+        this.announcementLink = settings.find(s => s.key === 'announcement_link')?.value || '';
+        const navCsv = settings.find(s => s.key === 'nav_categories')?.value || '';
+        const navIds = navCsv ? navCsv.split(',').filter(Boolean).map(Number) : [];
+        this.navCategories = navIds
+          .map(id => allCats.find(c => Number(c.id) === id))
+          .filter(Boolean)
+          .map(c => ({ id: Number(c!.id), name: c!.name }));
 
         // Build the homepage from the Storefront Builder layout.
         const layout = parseLayout(settings.find(s => s.key === 'storefront_layout')?.value);
@@ -260,6 +280,12 @@ export class PublicShopComponent implements OnInit {
   bannerLink(block: StorefrontBlock) {
     if (!block.link) return;
     const parts = block.link.replace(/^\/+/, '').split('/').filter(Boolean);
+    this.router.navigate(['/', this.companySlug, ...parts]);
+  }
+
+  announcementClick() {
+    if (!this.announcementLink) return;
+    const parts = this.announcementLink.replace(/^\/+/, '').split('/').filter(Boolean);
     this.router.navigate(['/', this.companySlug, ...parts]);
   }
 

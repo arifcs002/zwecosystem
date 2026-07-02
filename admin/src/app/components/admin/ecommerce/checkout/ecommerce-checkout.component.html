@@ -1,0 +1,49 @@
+<div class="cfg-wrap">
+  <div class="cfg-header">
+    <div>
+      <h1 class="cfg-title">💳 Checkout &amp; Payment</h1>
+      <p class="cfg-sub">Payment methods and delivery charges applied at checkout.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="card">
+      <p class="card-title">Payment Methods</p>
+      <div class="switch-row" style="margin-bottom:12px;">
+        <label>Cash on Delivery (COD)</label>
+        <label class="switch"><input type="checkbox" [(ngModel)]="paymentCod"><span class="slider"></span></label>
+      </div>
+      <div class="switch-row" style="margin-bottom:12px;">
+        <label>bKash</label>
+        <label class="switch"><input type="checkbox" [(ngModel)]="paymentBkash"><span class="slider"></span></label>
+      </div>
+      <div class="fg" *ngIf="paymentBkash">
+        <label>bKash number <span class="hint">(shown to customers for manual payment)</span></label>
+        <input class="inp" [(ngModel)]="bkashNumber" placeholder="01XXXXXXXXX">
+      </div>
+      <div class="switch-row" style="margin-top:4px;">
+        <label>Online Payment <span class="hint">(card / gateway)</span></label>
+        <label class="switch"><input type="checkbox" [(ngModel)]="paymentOnline"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Delivery</p>
+      <div class="grid2">
+        <div class="fg">
+          <label>Delivery charge (BDT)</label>
+          <input type="number" class="inp" [(ngModel)]="deliveryCharge">
+          <span class="hint">Flat fee added to every order.</span>
+        </div>
+        <div class="fg">
+          <label>Free delivery above (BDT)</label>
+          <input type="number" class="inp" [(ngModel)]="freeDeliveryAbove">
+          <span class="hint">Orders at or above this subtotal ship free. 0 disables it.</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

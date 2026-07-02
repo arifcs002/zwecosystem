@@ -16,6 +16,7 @@ import { ProductGroup, discountPercent } from '../../../../utils/product-group.u
 export class ProductCardComponent {
   @Input() group!: ProductGroup;
   @Input() lowStockThreshold = 5;
+  @Input() newBadgeDays = 0;
 
   @Output() add = new EventEmitter<ProductGroup>();   // single-variant quick add
   @Output() open = new EventEmitter<ProductGroup>();  // open detail (multi-variant / card click)
@@ -24,6 +25,13 @@ export class ProductCardComponent {
   get isMultiVariant(): boolean { return this.group.variants.length > 1; }
   get soldOut(): boolean { return this.group.totalStock <= 0; }
   get lowStock(): boolean { return this.group.totalStock > 0 && this.group.totalStock <= this.lowStockThreshold; }
+
+  // "New" when the product was created within the configured window (0 = off).
+  get isNew(): boolean {
+    if (!this.newBadgeDays || !this.group.createdDate) return false;
+    const ageMs = Date.now() - new Date(this.group.createdDate).getTime();
+    return ageMs <= this.newBadgeDays * 86400000;
+  }
 
   onPrimary(event: Event) {
     event.stopPropagation();

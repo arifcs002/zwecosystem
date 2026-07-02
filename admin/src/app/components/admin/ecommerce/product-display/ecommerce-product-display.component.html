@@ -1,0 +1,50 @@
+<div class="cfg-wrap">
+  <div class="cfg-header">
+    <div>
+      <h1 class="cfg-title">🏷️ Product Display</h1>
+      <p class="cfg-sub">Badge rules and quick-order buttons shown on product cards &amp; detail pages.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="card">
+      <p class="card-title">Badges</p>
+      <div class="grid2">
+        <div class="fg">
+          <label>Low-stock threshold</label>
+          <input type="number" class="inp" [(ngModel)]="lowStockThreshold">
+          <span class="hint">Show "Only N left" when stock is at or below this number.</span>
+        </div>
+        <div class="fg">
+          <label>"New" badge days</label>
+          <input type="number" class="inp" [(ngModel)]="newBadgeDays">
+          <span class="hint">Products added within this many days show a "New" badge. 0 disables it.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Quick-order Buttons</p>
+      <div class="switch-row" style="margin-bottom:12px;">
+        <label>Show "Order on WhatsApp" button</label>
+        <label class="switch"><input type="checkbox" [(ngModel)]="enableWhatsapp"><span class="slider"></span></label>
+      </div>
+      <div class="fg" *ngIf="enableWhatsapp">
+        <label>WhatsApp number <span class="hint">(with country code, e.g. 8801XXXXXXXXX)</span></label>
+        <input class="inp" [(ngModel)]="whatsappNumber" placeholder="8801XXXXXXXXX">
+      </div>
+
+      <div class="switch-row" style="margin:16px 0 12px;">
+        <label>Show "Call for Order" button</label>
+        <label class="switch"><input type="checkbox" [(ngModel)]="enableCall"><span class="slider"></span></label>
+      </div>
+      <div class="fg" *ngIf="enableCall">
+        <label>Phone number</label>
+        <input class="inp" [(ngModel)]="callNumber" placeholder="01XXXXXXXXX">
+      </div>
+    </div>
+  </ng-container>
+</div>
