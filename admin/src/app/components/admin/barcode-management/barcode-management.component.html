@@ -1,82 +1,73 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-header mb-5">
+    <h1 class="page-title">🏷️ Barcode &amp; Price Tags</h1>
+    <p class="page-subtitle">Print professional price tags with barcode, secret code &amp; product ID.</p>
+  </div>
+
+  <!-- Tag options -->
+  <div class="opt-bar">
+    <div class="opt-group">
+      <span class="opt-lbl">Format</span>
+      <div class="seg">
+        <button [class.on]="format==='thermal'" (click)="format='thermal'">Thermal</button>
+        <button [class.on]="format==='label'" (click)="format='label'">Label</button>
+        <button [class.on]="format==='a4'" (click)="format='a4'">A4 Sheet</button>
+      </div>
+    </div>
+    <label class="chk"><input type="checkbox" [(ngModel)]="showPrice"> Show price</label>
+    <button class="btn-primary ml-auto" (click)="printSelected()" [disabled]="selectedProducts.size===0">
+      🖨 Print Selected ({{ selectedProducts.size }})
+    </button>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <!-- Product list -->
+    <div class="lg:col-span-2">
+      <div class="toolbar">
+        <input class="inp" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" placeholder="Search name / ID / barcode…">
+        <select class="inp" [(ngModel)]="selectedCategory" (ngModelChange)="applyFilter()">
+          <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <div *ngIf="isLoading" class="muted">Loading…</div>
+      <table class="tbl" *ngIf="!isLoading">
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" [checked]="isAllSelected()" (change)="selectAll()"></th>
+            <th>Product</th><th>Product ID</th><th class="r">Price</th><th class="r">Print</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filteredProducts" [class.sel]="selectedProducts.has(p.id)">
+            <td><input type="checkbox" [checked]="selectedProducts.has(p.id)" (change)="toggleSelect(p.id)"></td>
+            <td><div class="nm">{{ p.name }}</div><div class="dim">{{ p.category?.name || '—' }}<span *ngIf="p.size"> · {{ p.size }}</span></div></td>
+            <td class="mono">{{ codeOf(p) || '—' }}</td>
+            <td class="r">৳{{ p.price }}</td>
+            <td class="r"><button class="btn-mini" (click)="printSingle(p)">🖨</button></td>
+          </tr>
+          <tr *ngIf="filteredProducts.length===0"><td colspan="5" class="muted center">No products.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live tag preview -->
     <div>
-      <h1 class="page-title">🏷️ Barcode Management</h1>
-      <p class="page-subtitle">Print and manage product barcodes</p>
+      <div class="preview-card" *ngIf="previewProduct as p">
+        <div class="preview-lbl">Tag preview</div>
+        <div class="tag-preview">
+          <div class="tp-company" *ngIf="companyName">{{ companyName }}</div>
+          <div class="tp-name">{{ p.name }}</div>
+          <div class="tp-meta">{{ p.category?.name }}<span *ngIf="p.size"> · {{ p.size }}</span></div>
+          <div class="tp-bc" [innerHTML]="previewBarcode(p)"></div>
+          <div class="tp-code">{{ codeOf(p) }}</div>
+          <div class="tp-bottom">
+            <span class="tp-price" *ngIf="showPrice">৳{{ p.price }}</span>
+            <span class="tp-secret">{{ secretOf(p) }}</span>
+          </div>
+        </div>
+        <p class="muted center" style="margin-top:10px">Secret code = selling price in your configured code.</p>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="btn-secondary" (click)="selectAll()">
-        {{ isAllSelected() ? 'Deselect All' : 'Select All' }}
-      </button>
-      <button class="btn-primary" (click)="printSelected()" [disabled]="selectedProducts.size === 0">
-        🖨️ Print Selected ({{ selectedProducts.size }})
-      </button>
-    </div>
-  </div>
-
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-
-  <!-- Filters -->
-  <div class="filter-row">
-    <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="🔍 Search by name, SKU, barcode..." class="search-input" />
-    <div class="category-tabs">
-      <button *ngFor="let cat of categories" [class.active]="selectedCategory === cat" (click)="selectedCategory = cat; applyFilter()" class="cat-btn">{{ cat }}</button>
-    </div>
-  </div>
-
-  <!-- Summary -->
-  <div class="summary-row">
-    <div class="summary-card">
-      <span class="summary-val">{{ products.length }}</span>
-      <span class="summary-label">Total Products</span>
-    </div>
-    <div class="summary-card">
-      <span class="summary-val">{{ selectedProducts.size }}</span>
-      <span class="summary-label">Selected</span>
-    </div>
-    <div class="summary-card">
-      <span class="summary-val">{{ filteredProducts.length }}</span>
-      <span class="summary-label">Showing</span>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading products...</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr>
-          <th><input type="checkbox" [checked]="isAllSelected()" (change)="selectAll()" /></th>
-          <th>Product</th>
-          <th>SKU</th>
-          <th>Barcode</th>
-          <th>Category</th>
-          <th>Price</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let p of filteredProducts" [class.selected-row]="selectedProducts.has(p.id)">
-          <td><input type="checkbox" [checked]="selectedProducts.has(p.id)" (change)="toggleSelect(p.id)" /></td>
-          <td>
-            <div class="product-info">
-              <img *ngIf="p.imageUrl" [src]="p.imageUrl | imgUrl" class="product-thumb" alt="" />
-              <span>{{ p.name }}</span>
-            </div>
-          </td>
-          <td><code class="code-badge">{{ p.sku }}</code></td>
-          <td><code class="code-badge barcode">{{ p.barcode || 'N/A' }}</code></td>
-          <td>{{ p.category?.name || '—' }}</td>
-          <td>৳{{ p.price | number:'1.0-0' }}</td>
-          <td>
-            <button class="btn-edit" (click)="printSingle(p)">🖨️ Print</button>
-          </td>
-        </tr>
-        <tr *ngIf="filteredProducts.length === 0">
-          <td colspan="7" class="empty-row">No products found.</td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </div>
