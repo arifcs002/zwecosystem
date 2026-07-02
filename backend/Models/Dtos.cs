@@ -99,6 +99,12 @@ namespace Ecommerce.Api.Models
         public string? Notes  { get; set; }
     }
 
+    // ── Inventory ───────────────────────────────────────────
+    // Manual stock correction. Positive delta = add, negative = remove.
+    public record InventoryAdjustDto(int ProductId, int Delta, string? Reason);
+    // Restock from a supplier — always adds stock.
+    public record InventoryPurchaseDto(int ProductId, int Quantity, decimal? UnitCost, string? Supplier, string? Reason);
+
     // ── Payments ────────────────────────────────────────────
     public record MfsPaymentVerifyDto(
         int OrderId, string TransactionId, string Provider,

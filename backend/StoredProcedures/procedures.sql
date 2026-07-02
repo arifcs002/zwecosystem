@@ -732,6 +732,55 @@ BEGIN
 END;
 $$;
 
+-- ── Inventory ────────────────────────────────────────────────
+-- Apply a signed stock change AND record it in the movement ledger in one shot.
+-- p_delta > 0 = stock in (purchase/adjust-in/return), < 0 = stock out.
+CREATE OR REPLACE FUNCTION sp_inventory_move(
+    p_company_id INT, p_product_id INT, p_delta INT, p_type TEXT,
+    p_reason TEXT, p_unit_cost DECIMAL, p_reference TEXT, p_created_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_stock INT;
+BEGIN
+    UPDATE products
+    SET stock_quantity = GREATEST(0, stock_quantity + p_delta), updated_date = NOW()
+    WHERE id = p_product_id AND company_id = p_company_id AND is_deleted = 0
+    RETURNING stock_quantity INTO v_stock;
+
+    IF v_stock IS NULL THEN
+        RAISE EXCEPTION 'Product % not found for company %', p_product_id, p_company_id;
+    END IF;
+
+    INSERT INTO inventory_movements(
+        company_id, product_id, movement_type, quantity, reason, unit_cost, reference, stock_after, created_by, created_date)
+    VALUES (p_company_id, p_product_id, p_type, p_delta, NULLIF(trim(p_reason),''), NULLIF(p_unit_cost,0),
+            NULLIF(trim(p_reference),''), v_stock, p_created_by, NOW());
+
+    RETURN v_stock;
+END;
+$$;
+
+-- Movement report — optional product + date-range filters (0/NULL = ignore).
+CREATE OR REPLACE FUNCTION sp_get_inventory_movements(
+    p_company_id INT, p_product_id INT, p_from TIMESTAMPTZ, p_to TIMESTAMPTZ
+) RETURNS TABLE(
+    id INT, product_id INT, product_name TEXT, movement_type TEXT, quantity INT,
+    reason TEXT, unit_cost DECIMAL, reference TEXT, stock_after INT, created_date TIMESTAMPTZ
+) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.id, m.product_id, p.name::text, m.movement_type::text, m.quantity,
+           m.reason::text, m.unit_cost, m.reference::text, m.stock_after, m.created_date
+    FROM inventory_movements m
+    LEFT JOIN products p ON p.id = m.product_id
+    WHERE m.company_id = p_company_id
+      AND (p_product_id IS NULL OR p_product_id = 0 OR m.product_id = p_product_id)
+      AND (p_from IS NULL OR m.created_date >= p_from)
+      AND (p_to   IS NULL OR m.created_date <  p_to)
+    ORDER BY m.created_date DESC
+    LIMIT 500;
+END;
+$$;
+
 -- ── Orders CRUD ──────────────────────────────────────────────
 
 CREATE OR REPLACE PROCEDURE sp_update_order_status(
@@ -751,6 +800,13 @@ BEGIN
     SET stock_quantity = p.stock_quantity + oi.quantity
     FROM order_items oi
     WHERE oi.order_id = p_id AND oi.product_id = p.id;
+    -- Log the restock as RETURN movements (stock_after = restored level)
+    INSERT INTO inventory_movements(company_id, product_id, movement_type, quantity, reference, stock_after, created_date)
+    SELECT p.company_id, oi.product_id, 'RETURN', oi.quantity, o.order_number, p.stock_quantity, NOW()
+    FROM order_items oi
+    JOIN products p ON p.id = oi.product_id
+    JOIN orders o  ON o.id = oi.order_id
+    WHERE oi.order_id = p_id;
 END;
 $$;
 
@@ -765,6 +821,7 @@ CREATE OR REPLACE FUNCTION sp_checkout_order(
 DECLARE
     v_order_id INT;
     i INT;
+    v_stock INT;
 BEGIN
     INSERT INTO orders (
         company_id, order_number, sale_type, sales_staff_id,
@@ -788,7 +845,11 @@ BEGIN
         UPDATE products SET
             stock_quantity = stock_quantity - p_quantities[i],
             updated_date   = NOW()
-        WHERE id = p_product_ids[i];
+        WHERE id = p_product_ids[i]
+        RETURNING stock_quantity INTO v_stock;
+
+        INSERT INTO inventory_movements(company_id, product_id, movement_type, quantity, reference, stock_after, created_date)
+        VALUES (p_company_id, p_product_ids[i], 'SALE', -p_quantities[i], p_order_number, v_stock, NOW());
     END LOOP;
 
     RETURN v_order_id;
@@ -810,6 +871,7 @@ CREATE OR REPLACE FUNCTION sp_create_online_order(
 DECLARE
     v_order_id INT;
     i INT;
+    v_stock INT;
 BEGIN
     INSERT INTO orders (
         company_id, order_number, sale_type, sales_staff_id,
@@ -835,7 +897,11 @@ BEGIN
         UPDATE products SET
             stock_quantity = stock_quantity - p_quantities[i],
             updated_date   = NOW()
-        WHERE id = p_product_ids[i];
+        WHERE id = p_product_ids[i]
+        RETURNING stock_quantity INTO v_stock;
+
+        INSERT INTO inventory_movements(company_id, product_id, movement_type, quantity, reference, stock_after, created_date)
+        VALUES (p_company_id, p_product_ids[i], 'SALE', -p_quantities[i], p_order_number, v_stock, NOW());
     END LOOP;
 
     RETURN v_order_id;

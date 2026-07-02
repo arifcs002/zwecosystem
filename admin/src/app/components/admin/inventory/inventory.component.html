@@ -1,0 +1,120 @@
+<div class="inv-wrap">
+  <div class="inv-head">
+    <div>
+      <h1 class="inv-title">📦 Inventory</h1>
+      <p class="inv-sub">Stock levels, restock, adjustments and movement history.</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button [class.on]="tab==='overview'" (click)="setTab('overview')">Overview</button>
+    <button [class.on]="tab==='purchase'" (click)="setTab('purchase')">Purchase / Restock</button>
+    <button [class.on]="tab==='movements'" (click)="setTab('movements')">Movements</button>
+  </div>
+
+  <!-- ══ OVERVIEW ══ -->
+  <ng-container *ngIf="tab==='overview'">
+    <div class="cards" *ngIf="overview">
+      <div class="stat"><span class="lbl">SKUs</span><span class="val">{{ overview.summary.skuCount }}</span></div>
+      <div class="stat"><span class="lbl">Total Units</span><span class="val">{{ overview.summary.totalUnits }}</span></div>
+      <div class="stat"><span class="lbl">Stock Value</span><span class="val">৳{{ overview.summary.stockValue | number:'1.0-0' }}</span></div>
+      <div class="stat warn"><span class="lbl">Low Stock</span><span class="val">{{ overview.summary.lowCount }}</span></div>
+      <div class="stat danger"><span class="lbl">Out of Stock</span><span class="val">{{ overview.summary.outCount }}</span></div>
+    </div>
+
+    <div class="toolbar">
+      <input class="inp" [(ngModel)]="search" placeholder="Search name or SKU…">
+      <div class="seg">
+        <button [class.on]="stockFilter==='all'" (click)="stockFilter='all'">All</button>
+        <button [class.on]="stockFilter==='low'" (click)="stockFilter='low'">Low</button>
+        <button [class.on]="stockFilter==='out'" (click)="stockFilter='out'">Out</button>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="muted">Loading…</div>
+    <table class="tbl" *ngIf="!isLoading && overview">
+      <thead>
+        <tr><th>Product</th><th>SKU</th><th>Category</th><th class="r">Stock</th><th class="r">Buy Price</th><th class="r">Value</th><th class="r">Action</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let i of filteredItems">
+          <td class="nm">{{ i.name }}</td>
+          <td class="dim">{{ i.sku }}</td>
+          <td class="dim">{{ i.category || '—' }}</td>
+          <td class="r"><span class="pill" [ngClass]="stockClass(i)">{{ i.stockQuantity }}</span></td>
+          <td class="r dim">৳{{ i.wholesalePrice | number:'1.0-0' }}</td>
+          <td class="r">৳{{ (i.stockQuantity * i.wholesalePrice) | number:'1.0-0' }}</td>
+          <td class="r"><button class="btn-mini" (click)="openAdjust(i)">Adjust</button></td>
+        </tr>
+        <tr *ngIf="filteredItems.length===0"><td colspan="7" class="muted center">No products match.</td></tr>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <!-- ══ PURCHASE ══ -->
+  <ng-container *ngIf="tab==='purchase'">
+    <div class="panel">
+      <h3 class="panel-title">Record a Purchase / Restock</h3>
+      <p class="muted">Adds stock and logs a PURCHASE movement.</p>
+      <div class="form-grid">
+        <div class="fg">
+          <label>Product</label>
+          <select class="inp" [(ngModel)]="purchaseProductId">
+            <option [ngValue]="null">— Select product —</option>
+            <option *ngFor="let i of overview?.items" [ngValue]="i.id">{{ i.name }} ({{ i.stockQuantity }} in stock)</option>
+          </select>
+        </div>
+        <div class="fg"><label>Quantity received</label><input type="number" class="inp" [(ngModel)]="purchaseQty"></div>
+        <div class="fg"><label>Unit cost (BDT)</label><input type="number" class="inp" [(ngModel)]="purchaseCost" placeholder="optional"></div>
+        <div class="fg"><label>Supplier</label><input class="inp" [(ngModel)]="purchaseSupplier" placeholder="optional"></div>
+      </div>
+      <button class="btn-primary" (click)="savePurchase()" [disabled]="saving">{{ saving ? 'Saving…' : 'Add Stock' }}</button>
+    </div>
+  </ng-container>
+
+  <!-- ══ MOVEMENTS ══ -->
+  <ng-container *ngIf="tab==='movements'">
+    <div class="toolbar">
+      <select class="inp" [(ngModel)]="moveProductId">
+        <option [ngValue]="null">All products</option>
+        <option *ngFor="let i of overview?.items" [ngValue]="i.id">{{ i.name }}</option>
+      </select>
+      <input type="date" class="inp" [(ngModel)]="moveFrom">
+      <input type="date" class="inp" [(ngModel)]="moveTo">
+      <button class="btn-mini" (click)="loadMovements()">Filter</button>
+    </div>
+
+    <div *ngIf="isLoading" class="muted">Loading…</div>
+    <table class="tbl" *ngIf="!isLoading">
+      <thead>
+        <tr><th>Date</th><th>Product</th><th>Type</th><th class="r">Qty</th><th class="r">Stock After</th><th>Reason / Ref</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of movements">
+          <td class="dim">{{ m.created_date | date:'MMM d, y h:mm a' }}</td>
+          <td class="nm">{{ m.product_name || '#' + m.product_id }}</td>
+          <td><span class="tag" [ngClass]="m.quantity >= 0 ? 'in' : 'out'">{{ movementLabel(m.movement_type) }}</span></td>
+          <td class="r" [ngClass]="m.quantity >= 0 ? 'pos' : 'neg'">{{ m.quantity > 0 ? '+' : '' }}{{ m.quantity }}</td>
+          <td class="r">{{ m.stock_after }}</td>
+          <td class="dim">{{ m.reason || m.reference || '—' }}</td>
+        </tr>
+        <tr *ngIf="movements.length===0"><td colspan="6" class="muted center">No movements yet.</td></tr>
+      </tbody>
+    </table>
+  </ng-container>
+</div>
+
+<!-- Adjust modal -->
+<div *ngIf="adjustItem" class="modal-back" (click)="closeAdjust()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3 class="panel-title">Adjust Stock — {{ adjustItem.name }}</h3>
+    <p class="muted">Current stock: <strong>{{ adjustItem.stockQuantity }}</strong>. Use + to add, − to remove.</p>
+    <div class="fg"><label>Change (+/−)</label><input type="number" class="inp" [(ngModel)]="adjustDelta" placeholder="e.g. 10 or -3"></div>
+    <div class="fg"><label>Reason</label><input class="inp" [(ngModel)]="adjustReason" placeholder="damaged, correction, found…"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" (click)="closeAdjust()">Cancel</button>
+      <button class="btn-primary" (click)="saveAdjust()" [disabled]="saving">{{ saving ? 'Saving…' : 'Apply' }}</button>
+    </div>
+  </div>
+</div>

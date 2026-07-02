@@ -96,6 +96,10 @@
         <span class="nav-icon">🏭</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
       </a>
+      <a [routerLink]="basePath + '/inventory'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Inventory</span>
+      </a>
       <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🧾</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
@@ -177,6 +181,8 @@
         </h2>
       </div>
       <div class="topbar-right">
+        <!-- Super admin: switch which company every page operates on -->
+        <app-company-selector *ngIf="authService.isSuperAdmin()"></app-company-selector>
         <div class="topbar-user">
           <div class="user-dot"></div>
           <span>{{ authService.currentUserValue?.fullName || 'Admin' }}</span>

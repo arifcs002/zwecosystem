@@ -49,20 +49,31 @@ namespace Ecommerce.Api.Infrastructure
             if (_httpContextAccessor?.HttpContext != null)
             {
                 var claimsPrincipal = _httpContextAccessor.HttpContext.User;
-                
-                // Resolve CompanyId (Tenant)
+
+                // Resolve CompanyId (Tenant).
+                // A super admin isn't locked to one company: the X-Tenant-ID header
+                // (set by the company-selector dropdown) lets them act as any company,
+                // and its ABSENCE means "all companies" (global view). A normal user is
+                // always pinned to their token's company_id — the header can't widen it.
+                bool isSuperAdmin = claimsPrincipal?.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Any(c => c.Value.Equals("superadmin", StringComparison.OrdinalIgnoreCase)
+                           || c.Value.Equals("super_admin", StringComparison.OrdinalIgnoreCase)) ?? false;
+
+                int? headerTenantId = null;
+                if (_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Tenant-ID", out var headerTenant)
+                    && int.TryParse(headerTenant.ToString(), out var parsedHeaderTenant))
+                {
+                    headerTenantId = parsedHeaderTenant;
+                }
+
                 var tenantClaim = claimsPrincipal?.FindFirst("company_id")?.Value;
-                if (int.TryParse(tenantClaim, out var tokenTenantId))
-                {
-                    CompanyId = tokenTenantId;
-                }
-                else if (_httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Tenant-ID", out var headerTenant))
-                {
-                    if (int.TryParse(headerTenant.ToString(), out var headerTenantId))
-                    {
-                        CompanyId = headerTenantId;
-                    }
-                }
+                int? tokenTenantId = int.TryParse(tenantClaim, out var parsedTokenTenant) ? parsedTokenTenant : null;
+
+                if (isSuperAdmin)
+                    CompanyId = headerTenantId;                 // header wins; null => all companies
+                else
+                    CompanyId = tokenTenantId ?? headerTenantId; // pinned to own company (header for anonymous)
 
                 // Resolve UserId
                 var subClaim = claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value 

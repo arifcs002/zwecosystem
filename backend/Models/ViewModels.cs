@@ -166,6 +166,22 @@ namespace Ecommerce.Api.Models
         public string? groupName { get; set; }
     }
 
+    // ── Inventory ────────────────────────────────────────────
+    // Column names lower-cased to match sp_get_inventory_movements output.
+    public class InventoryMovementVm
+    {
+        public int       id            { get; set; }
+        public int       product_id    { get; set; }
+        public string?   product_name  { get; set; }
+        public string    movement_type { get; set; } = string.Empty;
+        public int       quantity      { get; set; }
+        public string?   reason        { get; set; }
+        public decimal?  unit_cost     { get; set; }
+        public string?   reference     { get; set; }
+        public int?      stock_after   { get; set; }
+        public DateTime  created_date  { get; set; }
+    }
+
     // ── POS Product Lookup ───────────────────────────────────
     public class ProductLookupVm
     {

@@ -356,6 +356,25 @@ using (var scope = app.Services.CreateScope())
         // shows a strikethrough original + a Save% badge. NULL = no discount shown.
         dbContext.Database.ExecuteSqlRaw("ALTER TABLE products ADD COLUMN IF NOT EXISTS compare_at_price DECIMAL");
 
+        // Inventory movement ledger — one row per stock change (purchase, manual
+        // adjust, sale, return) so the Inventory module can show history + reports.
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS inventory_movements (
+                id SERIAL PRIMARY KEY,
+                company_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                movement_type TEXT NOT NULL,   -- PURCHASE, ADJUST_IN, ADJUST_OUT, SALE, RETURN
+                quantity INTEGER NOT NULL,      -- signed: +in / -out
+                reason TEXT,
+                unit_cost DECIMAL,
+                reference TEXT,
+                stock_after INTEGER,
+                created_by INTEGER,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_inv_moves_company ON inventory_movements(company_id, created_date DESC)");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_inv_moves_product ON inventory_movements(product_id)");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)
