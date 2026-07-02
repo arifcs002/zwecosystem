@@ -108,6 +108,9 @@ namespace Ecommerce.Api.Controllers
                 dto.CompareAtPrice ?? 0
             ).ToListAsync()).FirstOrDefault();
 
+            var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
+            await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
+
             var product = await _context.Products.FindAsync(productId);
             return CreatedAtAction(nameof(GetProduct), new { id = productId }, product);
         }
@@ -119,6 +122,7 @@ namespace Ecommerce.Api.Controllers
             if (!companyId.HasValue) return BadRequest("Company context is required.");
 
             var created = new List<Product>();
+            var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
             foreach (var sizeQty in dto.Sizes)
             {
                 if (sizeQty.Quantity <= 0) continue;
@@ -139,6 +143,7 @@ namespace Ecommerce.Api.Controllers
                     dto.CompareAtPrice ?? 0
                 ).ToListAsync()).FirstOrDefault();
 
+                await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
                 var product = await _context.Products.FindAsync(productId);
                 if (product != null) created.Add(product);
             }
@@ -155,6 +160,7 @@ namespace Ecommerce.Api.Controllers
             if (dto.Products == null || dto.Products.Count == 0) return BadRequest("Add at least one product.");
 
             var created = new List<Product>();
+            var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -190,6 +196,7 @@ namespace Ecommerce.Api.Controllers
                             line.CompareAtPrice ?? 0
                         ).ToListAsync()).FirstOrDefault();
 
+                        await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
                         var product = await _context.Products.FindAsync(productId);
                         if (product != null) created.Add(product);
                     }
@@ -258,5 +265,47 @@ namespace Ecommerce.Api.Controllers
 
         private static string GenerateBarcode(int companyId)
             => $"ZW-{new Random().Next(100000, 999999)}";
+
+        // ── Product Unique ID (configurable format) ──────────────────────────
+        // Reads the company's format/prefix/pad once so a bulk create doesn't
+        // re-query per row.
+        private async Task<(string format, string prefix, int pad)> GetIdFormatAsync(int companyId)
+        {
+            var s = await _context.CompanySettings
+                .Where(x => x.CompanyId == companyId &&
+                    (x.Key == "product_id_format" || x.Key == "product_id_prefix" || x.Key == "product_id_seq_pad"))
+                .ToDictionaryAsync(x => x.Key, x => x.Value);
+            var format = s.GetValueOrDefault("product_id_format", "");
+            if (string.IsNullOrWhiteSpace(format)) format = "{PREFIX}{YY}{MM}-{SEQ}";
+            var prefix = s.GetValueOrDefault("product_id_prefix", "P");
+            int pad = int.TryParse(s.GetValueOrDefault("product_id_seq_pad", "4"), out var p) ? p : 4;
+            return (format, prefix, pad);
+        }
+
+        private static string BuildCode(string format, string prefix, int seq, int pad)
+        {
+            var now = DateTime.Now;
+            return format
+                .Replace("{PREFIX}", prefix)
+                .Replace("{SEQ}", seq.ToString().PadLeft(pad, '0'))
+                .Replace("{YYYY}", now.ToString("yyyy"))
+                .Replace("{YY}", now.ToString("yy"))
+                .Replace("{MM}", now.ToString("MM"))
+                .Replace("{DD}", now.ToString("dd"))
+                .Replace("{HH}", now.ToString("HH"))
+                .Replace("{mm}", now.ToString("mm"))
+                .Replace("{ss}", now.ToString("ss"));
+        }
+
+        // Assigns the generated code to unique_code AND barcode (Feature: barcode
+        // derives from the unique id), using an atomic per-company sequence.
+        private async Task AssignCodeAsync(int productId, int companyId, string format, string prefix, int pad)
+        {
+            var seq = (await _context.Database.SqlQueryRaw<int>(
+                "SELECT sp_next_product_seq({0})", companyId).ToListAsync()).FirstOrDefault();
+            var code = BuildCode(format, prefix, seq, pad);
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE products SET unique_code = {0}, barcode = {0} WHERE id = {1}", code, productId);
+        }
     }
 }

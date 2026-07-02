@@ -43,6 +43,7 @@ export interface Product {
   slug: string;
   sku: string;
   barcode: string;
+  uniqueCode?: string;
   description?: string;
   price: number;
   compareAtPrice?: number | null;

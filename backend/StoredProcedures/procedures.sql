@@ -732,6 +732,17 @@ BEGIN
 END;
 $$;
 
+-- Atomically bump and return a company's product running-number (for {SEQ}).
+CREATE OR REPLACE FUNCTION sp_next_product_seq(p_company_id INT)
+RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_seq INT;
+BEGIN
+    UPDATE companies SET product_seq = product_seq + 1 WHERE id = p_company_id
+    RETURNING product_seq INTO v_seq;
+    RETURN COALESCE(v_seq, 0);
+END;
+$$;
+
 -- ── Inventory ────────────────────────────────────────────────
 -- Apply a signed stock change AND record it in the movement ledger in one shot.
 -- p_delta > 0 = stock in (purchase/adjust-in/return), < 0 = stock out.

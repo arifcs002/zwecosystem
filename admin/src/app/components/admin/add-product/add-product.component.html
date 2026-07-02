@@ -47,26 +47,30 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="form-group">
-        <label>Buy Price (BDT)</label>
-        <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="applyPricingTag(line)" class="form-input">
+        <label>Buy Price</label>
+        <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="computePrice(line)" class="form-input">
       </div>
       <div class="form-group">
-        <label>Pricing Tag <span class="hint">(auto price)</span></label>
-        <select [(ngModel)]="line.pricingTagId" [name]="'tag'+i" (ngModelChange)="applyPricingTag(line)" class="form-input">
-          <option [ngValue]="null">— Manual —</option>
-          <option *ngFor="let t of pricingTags" [ngValue]="t.id">{{ t.name }} (+{{ t.profitPercent }}%)</option>
-        </select>
+        <label>Profit %</label>
+        <input type="number" [(ngModel)]="line.profitPercent" [name]="'pp'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="e.g. 30">
       </div>
       <div class="form-group">
-        <label>Sell Price (BDT)</label>
+        <label>+ Profit Amt</label>
+        <input type="number" [(ngModel)]="line.profitAmount" [name]="'pa'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="flat">
+      </div>
+      <div class="form-group">
+        <label>Sell Price</label>
         <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
       </div>
       <div class="form-group">
-        <label>Compare-at <span class="hint">(optional)</span></label>
-        <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was price">
+        <label>Compare-at <span class="hint">(opt)</span></label>
+        <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was">
       </div>
+    </div>
+    <div class="secret-row" *ngIf="line.price > 0">
+      Secret code: <strong>{{ secretOf(line.price) }}</strong>
     </div>
 
     <!-- Sizes -->

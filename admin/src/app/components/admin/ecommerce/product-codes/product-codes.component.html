@@ -1,0 +1,47 @@
+<div class="cfg-wrap">
+  <div class="cfg-header">
+    <div>
+      <h1 class="cfg-title">🔢 Product ID &amp; Secret Codes</h1>
+      <p class="cfg-sub">Configure how product unique IDs are generated and your secret price code.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <!-- Product ID format -->
+    <div class="card">
+      <p class="card-title">Product Unique ID Format</p>
+      <div class="grid2">
+        <div class="fg"><label>Prefix</label><input class="inp" [(ngModel)]="prefix" placeholder="e.g. P, SKU, ZW"></div>
+        <div class="fg"><label>Running number padding (digits)</label><input type="number" class="inp" [(ngModel)]="pad"></div>
+      </div>
+      <div class="fg">
+        <label>Format template</label>
+        <input class="inp" [(ngModel)]="format" placeholder="{PREFIX}{YY}{MM}-{SEQ}">
+        <div class="token-row">
+          <button *ngFor="let t of tokens" class="token" (click)="addToken(t)">{{ t }}</button>
+        </div>
+        <span class="hint">Tokens: {{ '{PREFIX}' }} prefix · {{ '{SEQ}' }} running number · {{ '{YYYY}/{YY}' }} year · {{ '{MM}' }} month · {{ '{DD}' }} day · {{ '{HH}{mm}{ss}' }} time</span>
+      </div>
+      <div class="preview">Next ID preview: <strong>{{ idPreview }}</strong></div>
+    </div>
+
+    <!-- Secret price code -->
+    <div class="card">
+      <p class="card-title">Secret Price Code</p>
+      <p class="muted" style="margin-bottom:12px;">Assign a character to each digit. Selling prices are shown to staff in this code on price tags.</p>
+      <div class="digit-grid">
+        <div class="digit-cell" *ngFor="let d of [0,1,2,3,4,5,6,7,8,9]">
+          <span class="digit-lbl">{{ d }}</span>
+          <input class="digit-inp" maxlength="1" [(ngModel)]="secretChars[d]">
+        </div>
+      </div>
+      <div class="preview">
+        Sample price <input type="number" class="inp inline" [(ngModel)]="samplePrice"> →
+        <strong>{{ secretPreview }}</strong>
+      </div>
+    </div>
+  </ng-container>
+</div>

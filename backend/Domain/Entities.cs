@@ -544,6 +544,10 @@ namespace Ecommerce.Api.Domain
         [Column("size")]
         public string? Size { get; set; }
 
+        // Generated per the company's Product ID format (Feature: Product Unique ID).
+        [Column("unique_code")]
+        public string? UniqueCode { get; set; }
+
         [Column("supplier_id")]
         public int? SupplierId { get; set; }
 

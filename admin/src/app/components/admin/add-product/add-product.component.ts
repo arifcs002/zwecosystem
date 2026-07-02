@@ -8,13 +8,17 @@ import { CategoryService, Category } from '../../../services/category/category.s
 import { ProductService, BulkProductLineDto } from '../../../services/product/product.service';
 import { PricingTagService, PricingTag } from '../../../services/pricing-tag/pricing-tag.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { SettingsService } from '../../../services/settings/settings.service';
 import { buildIndentedList, FlatCategory } from '../../../utils/category-tree.util';
+import { toSecretCode, DEFAULT_SECRET_MAP } from '../../../utils/secret-code.util';
 
 // One product entry in the bulk form.
 interface ProductLine {
   name: string;
-  wholesalePrice: number;
-  price: number;
+  wholesalePrice: number;   // buying price
+  profitPercent: number | null;
+  profitAmount: number | null;
+  price: number;            // selling price (auto-computed, editable)
   compareAtPrice: number | null;
   pricingTagId: number | null;
   description: string;
@@ -36,8 +40,11 @@ export class AddProductComponent implements OnInit {
   private categoryService = inject(CategoryService);
   private productService = inject(ProductService);
   private pricingTagService = inject(PricingTagService);
+  private settingsService = inject(SettingsService);
   private router = inject(Router);
   private notify = inject(GlobalNotificationService);
+
+  secretMap = DEFAULT_SECRET_MAP;
 
   suppliers: Supplier[] = [];
   categories: Category[] = [];
@@ -56,24 +63,37 @@ export class AddProductComponent implements OnInit {
     forkJoin({
       suppliers: this.supplierService.getSuppliers(),
       categories: this.categoryService.getCategories(),
-      tags: this.pricingTagService.getPricingTags()
+      tags: this.pricingTagService.getPricingTags(),
+      settings: this.settingsService.getSettings()
     }).subscribe({
-      next: ({ suppliers, categories, tags }) => {
+      next: ({ suppliers, categories, tags, settings }) => {
         this.suppliers = suppliers.sort((a: any, b: any) => a.name.localeCompare(b.name));
         this.categories = categories;
         this.pricingTags = tags.filter(t => t.isActive);
+        const map = settings.find(s => s.key === 'secret_price_map')?.value;
+        if (map && map.length >= 10) this.secretMap = map;
       },
       error: (err) => console.error(err)
     });
   }
+
+  // Buying price + profit% (and/or flat profit amount) → selling price.
+  computePrice(line: ProductLine) {
+    const buy = line.wholesalePrice || 0;
+    const pct = line.profitPercent || 0;
+    const amt = line.profitAmount || 0;
+    if (buy > 0 && (pct || amt)) line.price = Math.round(buy * (1 + pct / 100) + amt);
+  }
+
+  secretOf(price: number): string { return toSecretCode(price, this.secretMap); }
 
   // Indented category options (any nesting depth) — the chosen value is the
   // deepest/last-selected category, which is where products are saved.
   get categoryOptions(): FlatCategory[] { return buildIndentedList(this.categories); }
 
   newLine(): ProductLine {
-    return { name: '', wholesalePrice: 0, price: 0, compareAtPrice: null, pricingTagId: null,
-             description: '', sizeQuantities: {}, imageFile: null, imagePreview: null, imageUrl: '' };
+    return { name: '', wholesalePrice: 0, profitPercent: null, profitAmount: null, price: 0, compareAtPrice: null,
+             pricingTagId: null, description: '', sizeQuantities: {}, imageFile: null, imagePreview: null, imageUrl: '' };
   }
 
   addLine() { this.lines.push(this.newLine()); }

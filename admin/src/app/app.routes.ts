@@ -50,6 +50,7 @@ export const routes: Routes = [
       { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
+      { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -88,6 +89,7 @@ export const routes: Routes = [
       { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
+      { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

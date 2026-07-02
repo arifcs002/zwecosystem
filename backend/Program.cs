@@ -375,6 +375,12 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_inv_moves_company ON inventory_movements(company_id, created_date DESC)");
         dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_inv_moves_product ON inventory_movements(product_id)");
 
+        // Configurable human-readable product code (Feature: Product Unique ID).
+        // company.product_seq is the per-company running number the format's {SEQ}
+        // token draws from; products.unique_code stores the generated id.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE products ADD COLUMN IF NOT EXISTS unique_code TEXT");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE companies ADD COLUMN IF NOT EXISTS product_seq INTEGER NOT NULL DEFAULT 0");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)
