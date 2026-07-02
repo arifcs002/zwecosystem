@@ -8,7 +8,10 @@
   </div>
 
   <!-- ══ NAVBAR ══ -->
-  <nav class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40">
+  <!-- NOTE: no backdrop-blur here — a backdrop-filter ancestor becomes the
+       containing block for the cart drawer's `fixed inset-0`, trapping it inside
+       the 64px navbar instead of covering the viewport. -->
+  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
     <div class="max-w-screen-xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 cursor-pointer flex-shrink-0" (click)="goHome()">
         <img *ngIf="companyLogo" [src]="companyLogo" class="h-9 w-9 rounded-xl object-contain border border-gray-100 shadow-sm" alt="">

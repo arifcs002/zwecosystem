@@ -2,11 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { CompanyService } from '../../services/company/company.service';
-import { CategoryService, Category } from '../../services/category/category.service';
-import { ProductService } from '../../services/product/product.service';
-import { SettingsService } from '../../services/settings/settings.service';
+import { Category } from '../../services/category/category.service';
 import { CartService } from '../../services/cart/cart.service';
 import { ImgUrlPipe } from '../../pipes/img-url.pipe';
 import { CartWidgetComponent } from './cart-widget/cart-widget.component';
@@ -18,7 +14,8 @@ import { CategoryIconsComponent, IconCategory } from './blocks/category-icons/ca
 import { ProductCarouselComponent } from './blocks/product-carousel/product-carousel.component';
 import { BrandCarouselComponent } from './blocks/brand-carousel/brand-carousel.component';
 import { TestimonialsComponent } from './blocks/testimonials/testimonials.component';
-import { BrandService, Brand } from '../../services/brand/brand.service';
+import { Brand } from '../../services/brand/brand.service';
+import { StorefrontService, StorefrontData } from '../../services/storefront/storefront.service';
 
 export interface CategorySection {
   id: number;
@@ -55,11 +52,7 @@ export interface CategoryTree {
 export class PublicShopComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private companyService = inject(CompanyService);
-  private categoryService = inject(CategoryService);
-  private productService = inject(ProductService);
-  private settingsService = inject(SettingsService);
-  private brandService = inject(BrandService);
+  private storefrontService = inject(StorefrontService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -95,6 +88,9 @@ export class PublicShopComponent implements OnInit {
   private allProductsRaw: any[] = [];
   private allCategoriesRaw: Category[] = [];
   private allBrandsRaw: Brand[] = [];
+  // Cache the aggregate per slug so navigating between home ⇄ category pages
+  // re-derives from memory instead of refetching the whole storefront.
+  private loadedSlug: string | null = null;
 
   // Sidebar toggle
   sidebarOpen = false;
@@ -108,39 +104,56 @@ export class PublicShopComponent implements OnInit {
   contactPhone = '';
   contactEmail = '';
 
+  private displayCatsCache: Category[] = [];
+
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       this.companySlug = params.get('companySlug') || '';
       const catId = params.get('categoryId');
       this.selectedCategoryId = catId ? Number(catId) : null;
 
-      this.companyService.getPublicCompany(this.companySlug).subscribe({
-        next: (comp) => {
-          this.companyName = comp.name;
-          this.companyLogo = comp.logoUrl || '';
+      // Only refetch when the store (slug) changes — navigating between the
+      // homepage and a category page re-derives from the cached aggregate.
+      if (this.companySlug === this.loadedSlug) {
+        this.applyCategoryRoute();
+        return;
+      }
+
+      this.isLoading = true;
+      this.storefrontService.getStorefront(this.companySlug).subscribe({
+        next: (data) => {
+          this.companyName = data.company.name;
+          this.companyLogo = data.company.logoUrl || '';
           this.isValidStore = true;
-          localStorage.setItem('tenant_company_id', comp.id.toString());
-          this.loadStorefrontData();
+          localStorage.setItem('tenant_company_id', data.company.id.toString());
+          this.loadedSlug = this.companySlug;
+          this.processStorefront(data.settings, data.categories, data.products, data.brands);
+          this.isLoading = false;
         },
         error: () => {
           this.companyName = 'Store Not Found';
           this.isValidStore = false;
+          this.isLoading = false;
         }
       });
     });
   }
 
-  loadStorefrontData() {
-    this.isLoading = true;
-    // Settings, categories, and products are independent of each other — fetch them
-    // in parallel instead of waiting on each one in sequence.
-    forkJoin({
-      settings: this.settingsService.getPublicSettings(),
-      allCats: this.categoryService.getCategories(),
-      allProds: this.productService.getPublicProducts(),
-      allBrands: this.brandService.getPublicBrands()
-    }).subscribe({
-      next: ({ settings, allCats, allProds, allBrands }) => {
+  // Re-derive the category-detail view from already-loaded data (no refetch).
+  private applyCategoryRoute() {
+    if (!this.selectedCategoryId) { this.detailCategory = null; return; }
+    const cat = this.displayCatsCache.find(c => Number(c.id) === this.selectedCategoryId);
+    if (!cat) { this.detailCategory = null; return; }
+    const catId = Number(cat.id);
+    this.detailCategory = {
+      id: catId, name: cat.name,
+      groups: groupProducts(this.allProductsRaw.filter(p =>
+        this.productBelongsToCategory(Number(p.categoryId) || 0, catId, this.displayCatsCache)))
+    };
+  }
+
+  private processStorefront(settings: any[], allCats: Category[], allProds: any[], allBrands: Brand[]) {
+      {
         this.allBrandsRaw = allBrands || [];
         const catSetting = settings.find(s => s.key === 'visible_dashboard_categories');
         const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
@@ -165,6 +178,7 @@ export class PublicShopComponent implements OnInit {
         const displayCats = visibleCategoryIds.length > 0
           ? allCats.filter(c => visibleCategoryIds.includes((c.id || '').toString()))
           : allCats;
+        this.displayCatsCache = displayCats;
 
         // Keep raw data for storefront-block resolution + category detail.
         this.allProductsRaw = allProds;
@@ -179,11 +193,11 @@ export class PublicShopComponent implements OnInit {
         this.announcementText = settings.find(s => s.key === 'announcement_text')?.value || '';
         this.announcementLink = settings.find(s => s.key === 'announcement_link')?.value || '';
         const navCsv = settings.find(s => s.key === 'nav_categories')?.value || '';
-        const navIds = navCsv ? navCsv.split(',').filter(Boolean).map(Number) : [];
+        const navIds: number[] = navCsv ? navCsv.split(',').filter(Boolean).map(Number) : [];
         this.navCategories = navIds
-          .map(id => allCats.find(c => Number(c.id) === id))
-          .filter(Boolean)
-          .map(c => ({ id: Number(c!.id), name: c!.name }));
+          .map((id: number) => allCats.find(c => Number(c.id) === id))
+          .filter((c): c is Category => !!c)
+          .map(c => ({ id: Number(c.id), name: c.name }));
 
         // Build the homepage from the Storefront Builder layout.
         const layout = parseLayout(settings.find(s => s.key === 'storefront_layout')?.value);
@@ -222,22 +236,8 @@ export class PublicShopComponent implements OnInit {
           .filter(s => s.groups.length > 0);
 
         // If on category detail route, set detail (full listing — no curation/slicing)
-        if (this.selectedCategoryId) {
-          const cat = displayCats.find(c => Number(c.id) === this.selectedCategoryId);
-          if (cat) {
-            const catId = Number(cat.id);
-            this.detailCategory = {
-              id: catId,
-              name: cat.name,
-              groups: groupProducts(allProds.filter(p => this.productBelongsToCategory(Number(p.categoryId) || 0, catId, displayCats)))
-            };
-          }
-        }
-
-        this.isLoading = false;
-      },
-      error: () => { this.isLoading = false; }
-    });
+        this.applyCategoryRoute();
+      }
   }
 
   // ── Storefront block rendering ─────────────────────────────────────────

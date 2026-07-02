@@ -7,6 +7,7 @@ import { CategoryService, Category } from '../../../services/category/category.s
 import { ProductService, BatchProductCreateDto, SizeQtyDto } from '../../../services/product/product.service';
 import { PricingTagService, PricingTag } from '../../../services/pricing-tag/pricing-tag.service';
 import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
+import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 @Component({
   selector: 'app-add-product',
@@ -21,6 +22,7 @@ export class AddProductComponent implements OnInit {
   private productService = inject(ProductService);
   private pricingTagService = inject(PricingTagService);
   private router = inject(Router);
+  private notify = inject(GlobalNotificationService);
 
   suppliers: Supplier[] = [];
   categories: Category[] = [];
@@ -103,7 +105,7 @@ export class AddProductComponent implements OnInit {
 
   onSubmit() {
     if (!this.formData.name || !this.formData.categoryId || !this.formData.supplierId) {
-      alert('Please fill out required fields.');
+      this.notify.notify({ type: 'warning', title: 'Missing fields', message: 'Please fill in product name, category and supplier.', ttlMs: 4000 });
       return;
     }
 
@@ -116,7 +118,7 @@ export class AddProductComponent implements OnInit {
     }
 
     if (this.formData.sizes.length === 0) {
-      alert('Please add quantity for at least one size.');
+      this.notify.notify({ type: 'warning', title: 'No sizes', message: 'Add a quantity for at least one size.', ttlMs: 4000 });
       return;
     }
 
@@ -130,7 +132,7 @@ export class AddProductComponent implements OnInit {
         },
         error: (err) => {
           console.error(err);
-          alert('Image upload failed');
+          this.notify.notify({ type: 'error', title: 'Upload failed', message: 'Could not upload the product image.', ttlMs: 5000 });
           this.isSubmitting = false;
         }
       });
@@ -142,13 +144,13 @@ export class AddProductComponent implements OnInit {
   private saveProductBatch() {
     this.productService.createProductsBatch(this.formData).subscribe({
       next: () => {
-        alert('Products successfully created for all specified sizes.');
+        this.notify.notify({ type: 'success', title: 'Product created', message: 'Products created for all selected sizes.', ttlMs: 3500 });
         const basePath = this.router.url.split('/').slice(0, 3).join('/');
         this.router.navigate([basePath, 'products']);
       },
       error: (err) => {
         console.error(err);
-        alert(err.error?.message || 'Failed to save products');
+        this.notify.notify({ type: 'error', title: 'Save failed', message: err.error?.message || 'Could not save the products.', ttlMs: 5000 });
         this.isSubmitting = false;
       }
     });

@@ -20,7 +20,8 @@ namespace Ecommerce.Api.Controllers
         // config, never anything that could be a secret. Keep in sync with what
         // dashboard-config writes for public consumption.
         private const string CategoryOrderKeyPrefix = "category_order_";
-        private static readonly HashSet<string> PublicSettingKeys = new(StringComparer.OrdinalIgnoreCase)
+        // Public so the storefront aggregate endpoint can apply the same filter.
+        public static readonly HashSet<string> PublicSettingKeys = new(StringComparer.OrdinalIgnoreCase)
         {
             // Branding / general
             "store_name", "store_phone", "primary_color", "logo_url",
@@ -48,7 +49,7 @@ namespace Ecommerce.Api.Controllers
             "contact_address", "contact_phone", "contact_email"
         };
 
-        private static bool IsPublicSettingKey(string key) =>
+        public static bool IsPublicSettingKey(string key) =>
             PublicSettingKeys.Contains(key) || key.StartsWith(CategoryOrderKeyPrefix, StringComparison.OrdinalIgnoreCase);
 
         public SettingsController(ApplicationDbContext context, IFileTextLogger fileLogger)
