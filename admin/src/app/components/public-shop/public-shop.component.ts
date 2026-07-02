@@ -104,6 +104,9 @@ export class PublicShopComponent implements OnInit {
   // Footer / social links (Settings page)
   footerAboutText = '';
   socialLinks: { key: string; url: string; label: string }[] = [];
+  contactAddress = '';
+  contactPhone = '';
+  contactEmail = '';
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -143,6 +146,9 @@ export class PublicShopComponent implements OnInit {
         const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
 
         this.footerAboutText = settings.find(s => s.key === 'footer_about_text')?.value || '';
+        this.contactAddress = settings.find(s => s.key === 'contact_address')?.value || '';
+        this.contactPhone = settings.find(s => s.key === 'contact_phone')?.value || '';
+        this.contactEmail = settings.find(s => s.key === 'contact_email')?.value || '';
         const socialKeys: { key: string; label: string }[] = [
           { key: 'facebook_link', label: 'Facebook' },
           { key: 'instagram_link', label: 'Instagram' },

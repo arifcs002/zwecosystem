@@ -1,0 +1,42 @@
+<div class="cfg-wrap">
+  <div class="cfg-header">
+    <div>
+      <h1 class="cfg-title">📄 Pages &amp; Policies</h1>
+      <p class="cfg-sub">Static content linked from your shop footer.</p>
+    </div>
+    <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading…</div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="card">
+      <p class="card-title">Contact Information</p>
+      <div class="grid2">
+        <div class="fg"><label>Phone</label><input class="inp" [(ngModel)]="contactPhone" placeholder="01XXXXXXXXX"></div>
+        <div class="fg"><label>Email</label><input class="inp" [(ngModel)]="contactEmail" placeholder="hello@store.com"></div>
+      </div>
+      <div class="fg"><label>Address</label><input class="inp" [(ngModel)]="contactAddress" placeholder="Rampura, Dhaka, Bangladesh"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">About Us</p>
+      <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageAbout" placeholder="Tell customers about your store…"></textarea></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Privacy Policy</p>
+      <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pagePrivacy" placeholder="How you handle customer data…"></textarea></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Refund Policy</p>
+      <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageRefund" placeholder="Your return/refund terms…"></textarea></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Terms &amp; Conditions</p>
+      <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageTerms" placeholder="Store terms of use…"></textarea></div>
+    </div>
+  </ng-container>
+</div>

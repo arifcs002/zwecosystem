@@ -48,6 +48,7 @@ export const routes: Routes = [
       { path: 'ecommerce/navigation', loadComponent: () => import('./components/admin/ecommerce/navigation/ecommerce-navigation.component').then(m => m.EcommerceNavigationComponent) },
       { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
+      { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -84,6 +85,7 @@ export const routes: Routes = [
       { path: 'ecommerce/navigation', loadComponent: () => import('./components/admin/ecommerce/navigation/ecommerce-navigation.component').then(m => m.EcommerceNavigationComponent) },
       { path: 'ecommerce/products', loadComponent: () => import('./components/admin/ecommerce/product-display/ecommerce-product-display.component').then(m => m.EcommerceProductDisplayComponent) },
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
+      { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
@@ -105,6 +107,10 @@ export const routes: Routes = [
   {
     path: ':companySlug/checkout',
     loadComponent: () => import('./components/public-shop/checkout/checkout.component').then(m => m.CheckoutComponent)
+  },
+  {
+    path: ':companySlug/page/:key',
+    loadComponent: () => import('./components/public-shop/policy-page/policy-page.component').then(m => m.PolicyPageComponent)
   },
 
   // --- DEFAULT REDIRECT ---

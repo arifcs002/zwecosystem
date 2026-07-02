@@ -274,21 +274,60 @@
 
   <!-- ══ FOOTER ══ -->
   <footer *ngIf="!isLoading && isValidStore === true" class="bg-gray-900 text-gray-400 mt-auto">
-    <div class="max-w-screen-xl mx-auto px-6 py-10">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-2.5">
-          <img *ngIf="companyLogo" [src]="companyLogo" class="h-7 w-7 rounded-lg object-contain" alt="">
-          <span class="font-bold text-white text-sm">{{ companyName }}</span>
+    <div class="max-w-screen-xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+
+        <!-- Brand + about + social -->
+        <div>
+          <div class="flex items-center gap-2.5 mb-4">
+            <img *ngIf="companyLogo" [src]="companyLogo" class="h-8 w-8 rounded-lg object-contain" alt="">
+            <span class="font-bold text-white text-base">{{ companyName }}</span>
+          </div>
+          <p *ngIf="footerAboutText" class="text-xs text-gray-500 leading-relaxed mb-4">{{ footerAboutText }}</p>
+          <div *ngIf="socialLinks.length > 0" class="flex items-center gap-2.5">
+            <a *ngFor="let s of socialLinks" [href]="s.url" target="_blank" rel="noopener noreferrer" [title]="s.label"
+              class="w-8 h-8 rounded-full bg-white/10 hover:bg-indigo-600 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white transition">
+              {{ s.label.charAt(0) }}
+            </a>
+          </div>
         </div>
-        <div *ngIf="socialLinks.length > 0" class="flex items-center gap-3">
-          <a *ngFor="let s of socialLinks" [href]="s.url" target="_blank" rel="noopener noreferrer" [title]="s.label"
-            class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white transition">
-            {{ s.label.charAt(0) }}
-          </a>
+
+        <!-- Information / policies -->
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-4">Information</h4>
+          <ul class="space-y-2.5 text-xs">
+            <li><a [routerLink]="['/', companySlug, 'page', 'about']" class="hover:text-white transition">About Us</a></li>
+            <li><a [routerLink]="['/', companySlug, 'page', 'privacy']" class="hover:text-white transition">Privacy Policy</a></li>
+            <li><a [routerLink]="['/', companySlug, 'page', 'refund']" class="hover:text-white transition">Refund Policy</a></li>
+            <li><a [routerLink]="['/', companySlug, 'page', 'terms']" class="hover:text-white transition">Terms &amp; Conditions</a></li>
+            <li><a [routerLink]="['/', companySlug, 'page', 'contact']" class="hover:text-white transition">Contact Us</a></li>
+          </ul>
+        </div>
+
+        <!-- Shop by -->
+        <div *ngIf="navCategories.length || categoryTree.length">
+          <h4 class="text-white font-semibold text-sm mb-4">Shop By</h4>
+          <ul class="space-y-2.5 text-xs">
+            <li *ngFor="let c of (navCategories.length ? navCategories : categoryTree)">
+              <a (click)="navigateToCategory(c.id)" class="hover:text-white transition cursor-pointer">{{ c.name }}</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Contact -->
+        <div *ngIf="contactAddress || contactPhone || contactEmail">
+          <h4 class="text-white font-semibold text-sm mb-4">Get in Touch</h4>
+          <ul class="space-y-2.5 text-xs">
+            <li *ngIf="contactAddress" class="flex items-start gap-2"><span>📍</span><span>{{ contactAddress }}</span></li>
+            <li *ngIf="contactPhone" class="flex items-center gap-2"><span>📞</span><span>{{ contactPhone }}</span></li>
+            <li *ngIf="contactEmail" class="flex items-center gap-2"><span>✉️</span><span>{{ contactEmail }}</span></li>
+          </ul>
         </div>
       </div>
-      <p *ngIf="footerAboutText" class="text-xs text-gray-500 mt-5 max-w-2xl">{{ footerAboutText }}</p>
-      <p class="text-xs text-gray-600 mt-4">© {{ currentYear }} {{ companyName }}. All rights reserved.</p>
+
+      <div class="border-t border-white/10 mt-10 pt-6 text-xs text-gray-600">
+        © {{ currentYear }} {{ companyName }}. All rights reserved.
+      </div>
     </div>
   </footer>
 
