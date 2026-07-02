@@ -1,0 +1,39 @@
+:host { display: block; color: #e5e7eb; }
+.page-container { max-width: 900px; margin: 0 auto; }
+.page-title { font-size: 24px; font-weight: 800; color: #fff; margin: 0; }
+.page-subtitle { color: #9ca3af; font-size: 13px; margin: 4px 0 0; }
+
+.shared-card, .line-card { background: #161532; border: 1px solid #2a2850; border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+.shared-card { border-color: #4c1d95; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.form-group label { font-size: 12px; font-weight: 600; color: #cbd5e1; }
+.req { color: #f87171; }
+.hint { color: #6b7280; font-weight: 400; font-size: 11px; }
+.form-input, .size-inp {
+  background: #1c1b3a; border: 1px solid #2f2d55; color: #e5e7eb; border-radius: 8px;
+  padding: 9px 11px; font-size: 13px; width: 100%; box-sizing: border-box;
+}
+.form-input:focus, .size-inp:focus { outline: none; border-color: #7c3aed; }
+
+.line-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.line-no { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #c4b5fd; }
+.line-del { background: #22203f; border: 0; color: #9ca3af; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
+.line-del:hover { background: #7f1d1d; color: #fff; }
+
+.img-row { display: flex; align-items: center; gap: 10px; }
+.img-prev { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #2f2d55; }
+
+.size-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.size-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.size-lbl { font-size: 11px; font-weight: 700; color: #8b8aa7; }
+.size-inp { width: 60px; text-align: center; }
+
+.add-line { width: 100%; background: #161532; border: 1px dashed #4c1d95; color: #c4b5fd; padding: 13px;
+  border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 16px; }
+.add-line:hover { background: #1c1b3a; }
+
+.submit-row { display: flex; justify-content: flex-end; }
+.btn-primary { background: linear-gradient(135deg,#7c3aed,#6366f1); color: #fff; border: 0; padding: 12px 28px;
+  border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.btn-primary:disabled { opacity: .6; cursor: default; }

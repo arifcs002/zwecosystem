@@ -1,150 +1,98 @@
-<div class="page-container max-w-4xl mx-auto">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">👟 Add Shoe Inventory</h1>
-      <p class="page-subtitle">Add new shoe styles and stock levels</p>
+<div class="page-container">
+  <div class="page-header mb-6">
+    <h1 class="page-title">➕ Add Products</h1>
+    <p class="page-subtitle">Pick a supplier &amp; category once, then add as many products as you like — saved together.</p>
+  </div>
+
+  <!-- Shared: supplier + category -->
+  <div class="shared-card">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="form-group">
+        <label>Supplier <span class="req">*</span></label>
+        <select [(ngModel)]="supplierId" name="supplierId" class="form-input">
+          <option [ngValue]="undefined">— Select supplier —</option>
+          <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category <span class="req">*</span> <span class="hint">(pick the deepest category — products save there)</span></label>
+        <select [(ngModel)]="categoryId" name="categoryId" (ngModelChange)="onCategoryChange()" class="form-input">
+          <option [ngValue]="undefined">— Select category —</option>
+          <option *ngFor="let c of categoryOptions" [ngValue]="c.cat.id">{{ '— '.repeat(c.depth) }}{{ c.cat.name }}</option>
+        </select>
+      </div>
+    </div>
+    <p *ngIf="categoryId && availableSizes.length === 0" class="hint mt-2">This category has no sizes — each product is a single stock item.</p>
+    <p *ngIf="availableSizes.length" class="hint mt-2">Sizes for this category: {{ availableSizes.join(', ') }}</p>
+  </div>
+
+  <!-- Product lines -->
+  <div class="line-card" *ngFor="let line of lines; let i = index">
+    <div class="line-head">
+      <span class="line-no">Product {{ i + 1 }}</span>
+      <button *ngIf="lines.length > 1" class="line-del" (click)="removeLine(i)" title="Remove">✕</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="form-group md:col-span-2">
+        <label>Product Name <span class="req">*</span></label>
+        <input [(ngModel)]="line.name" [name]="'name'+i" class="form-input" placeholder="e.g. Cotton T-Shirt">
+      </div>
+      <div class="form-group">
+        <label>Image</label>
+        <div class="img-row">
+          <img *ngIf="line.imagePreview" [src]="line.imagePreview" class="img-prev">
+          <input type="file" accept="image/*" (change)="onImageSelected($event, line)">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="form-group">
+        <label>Buy Price (BDT)</label>
+        <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="applyPricingTag(line)" class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Pricing Tag <span class="hint">(auto price)</span></label>
+        <select [(ngModel)]="line.pricingTagId" [name]="'tag'+i" (ngModelChange)="applyPricingTag(line)" class="form-input">
+          <option [ngValue]="null">— Manual —</option>
+          <option *ngFor="let t of pricingTags" [ngValue]="t.id">{{ t.name }} (+{{ t.profitPercent }}%)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sell Price (BDT)</label>
+        <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
+      </div>
+      <div class="form-group">
+        <label>Compare-at <span class="hint">(optional)</span></label>
+        <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was price">
+      </div>
+    </div>
+
+    <!-- Sizes -->
+    <div class="form-group" *ngIf="availableSizes.length">
+      <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
+      <div class="size-grid">
+        <div class="size-cell" *ngFor="let sz of availableSizes">
+          <span class="size-lbl">{{ sz }}</span>
+          <input type="number" min="0" [(ngModel)]="line.sizeQuantities[sz]" [name]="'sz'+i+sz" class="size-inp" placeholder="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
     </div>
   </div>
 
-  <div class="bg-white/5 border border-white/10 rounded-xl p-6 md:p-8 shadow-2xl">
-    <form (ngSubmit)="onSubmit()" class="space-y-6">
-      
-      <!-- Top Row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Supplier</label>
-          <select [(ngModel)]="formData.supplierId" name="supplierId" class="form-input">
-            <option value="">-- Select Supplier --</option>
-            <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Category</label>
-          <select [(ngModel)]="formData.categoryId" (change)="onCategoryChange()" name="categoryId" class="form-input">
-            <option value="">-- Select Category --</option>
-            <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
-          </select>
-        </div>
-      </div>
+  <!-- Add another -->
+  <button class="add-line" (click)="addLine()">+ Add Another Product</button>
 
-      <!-- Name -->
-      <div class="form-group">
-        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Shoe Brand Model / Name</label>
-        <input type="text" [(ngModel)]="formData.name" name="name" placeholder="e.g. Apex Jogger v3" class="form-input">
-      </div>
-
-      <!-- Pricing -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Wholesale Price (BDT)</label>
-          <input type="number" [(ngModel)]="formData.wholesalePrice" name="wholesalePrice" (ngModelChange)="applyPricingTag()" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pricing Tag <span class="text-gray-600 normal-case font-normal">(optional, auto-fills price)</span></label>
-          <select [(ngModel)]="formData.pricingTagId" name="pricingTagId" (ngModelChange)="applyPricingTag()" class="form-input">
-            <option [ngValue]="null">— Manual price —</option>
-            <option *ngFor="let t of pricingTags" [ngValue]="t.id">{{ t.name }} (+{{ t.profitPercent }}%)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Retail Price (BDT)</label>
-          <input type="number" [(ngModel)]="formData.price" name="price" class="form-input">
-        </div>
-      </div>
-
-      <!-- Discount / compare-at price -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="form-group">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            Compare-at Price (BDT) <span class="text-gray-600 normal-case font-normal">(optional)</span>
-          </label>
-          <input type="number" [(ngModel)]="formData.compareAtPrice" name="compareAtPrice" placeholder="Original / was price" class="form-input">
-          <p class="text-[11px] text-gray-500 mt-1">Set higher than retail to show a struck-through price and a <span class="text-emerald-400 font-semibold">Save %</span> badge on the storefront.</p>
-        </div>
-      </div>
-
-      <!-- Description -->
-      <div class="form-group">
-        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</label>
-        <textarea [(ngModel)]="formData.description" name="description" rows="3" placeholder="Model specifications, material details..." class="form-input"></textarea>
-      </div>
-
-      <!-- Bottom Row: Photo & Sizes -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10 pt-6">
-        
-        <!-- Photo Upload -->
-        <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sample Photo</label>
-          <div class="border-2 border-dashed border-white/20 rounded-xl bg-black/20 h-48 flex flex-col items-center justify-center relative overflow-hidden group hover:border-violet-500 transition">
-            
-            <ng-container *ngIf="!imagePreview">
-              <i class="fas fa-camera text-3xl text-gray-600 mb-2 group-hover:text-violet-400 transition"></i>
-              <span class="text-sm text-gray-500 font-medium group-hover:text-violet-400 transition">Upload Image</span>
-            </ng-container>
-
-            <img *ngIf="imagePreview" [src]="imagePreview" class="absolute inset-0 w-full h-full object-cover">
-
-            <input type="file" (change)="onImageSelected($event)" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-          </div>
-          <div class="flex justify-center space-x-2 mt-4">
-            <button type="button" class="btn-secondary py-1.5 px-4 text-xs">Gallery</button>
-            <button type="button" class="btn-primary py-1.5 px-4 text-xs">Camera</button>
-          </div>
-        </div>
-
-        <!-- Sizes Config -->
-        <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sizes & Quantities</label>
-          <div class="border border-white/10 rounded-xl bg-black/20 p-4 min-h-[12rem] flex flex-col justify-center">
-            
-            <div *ngIf="!selectedCategoryObj" class="text-sm text-gray-500 text-center">
-              Select a category to configure sizes.
-            </div>
-
-            <div *ngIf="selectedCategoryObj && availableSizes.length === 0" class="text-sm text-gray-500 text-center">
-              This category has no predefined sizes.<br>Cannot map variations.
-            </div>
-
-            <div *ngIf="selectedCategoryObj && availableSizes.length > 0">
-              <p class="text-xs text-gray-500 mb-3">Enter quantity for each size (leave 0 to skip)</p>
-              <div class="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                <div *ngFor="let size of availableSizes"
-                  class="flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all"
-                  [ngClass]="sizeQuantities[size] > 0 ? 'border-violet-500/60 bg-violet-900/20' : 'border-white/8 bg-white/[0.02]'">
-                  <span class="text-xs font-bold text-gray-400 uppercase tracking-wide">Size</span>
-                  <span class="text-lg font-extrabold"
-                    [ngClass]="sizeQuantities[size] > 0 ? 'text-violet-300' : 'text-gray-300'">{{ size }}</span>
-                  <div class="flex items-center gap-1 mt-1">
-                    <button type="button"
-                      (click)="sizeQuantities[size] = sizeQuantities[size] > 0 ? sizeQuantities[size] - 1 : 0"
-                      class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex items-center justify-center font-bold text-base leading-none">−</button>
-                    <input type="number" [(ngModel)]="sizeQuantities[size]" [name]="'qty_'+size" min="0"
-                      class="w-12 h-7 text-center bg-black/30 border border-white/10 rounded-lg text-white text-sm font-bold focus:outline-none focus:border-violet-500">
-                    <button type="button"
-                      (click)="sizeQuantities[size] = sizeQuantities[size] + 1"
-                      class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex items-center justify-center font-bold text-base leading-none">+</button>
-                  </div>
-                </div>
-              </div>
-              <p class="text-xs text-gray-500 mt-3 text-right">
-                Total: <span class="font-bold text-violet-400">{{ totalQty }} pcs</span>
-                across {{ selectedSizeCount }} sizes
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="pt-6 border-t border-white/10 flex justify-end space-x-3">
-        <button type="button" class="btn-secondary">Cancel</button>
-        <button type="submit" [disabled]="isSubmitting" class="btn-primary flex items-center gap-2">
-          <i *ngIf="isSubmitting" class="fas fa-spinner fa-spin"></i>
-          Save Inventory
-        </button>
-      </div>
-
-    </form>
+  <!-- Submit -->
+  <div class="submit-row">
+    <button class="btn-primary submit-btn" (click)="onSubmit()" [disabled]="isSubmitting">
+      {{ isSubmitting ? 'Saving…' : 'Save ' + lines.length + ' Product' + (lines.length > 1 ? 's' : '') }}
+    </button>
   </div>
 </div>

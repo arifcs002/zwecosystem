@@ -40,33 +40,33 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let cat of filteredCategories">
+        <tr *ngFor="let row of treeRows">
           <td>
-            <div class="flex items-center gap-2">
-              <span *ngIf="cat.parentId" class="text-gray-600 text-xs">↳</span>
-              <span class="font-semibold text-gray-200">{{ cat.name }}</span>
+            <div class="flex items-center gap-1.5" [style.padding-left.px]="row.depth * 22">
+              <span *ngIf="row.depth > 0" class="text-gray-600 text-xs">↳</span>
+              <span class="font-semibold" [ngClass]="row.depth === 0 ? 'text-gray-100' : 'text-gray-300'">{{ row.cat.name }}</span>
             </div>
           </td>
           <td>
-            <span *ngIf="parentName(cat)" class="text-xs px-2 py-0.5 rounded-full bg-sky-900/30 border border-sky-600/30 text-sky-300">
-              {{ parentName(cat) }}
+            <span *ngIf="fullPath(row.cat.parentId)" class="text-xs px-2 py-0.5 rounded-full bg-sky-900/30 border border-sky-600/30 text-sky-300">
+              {{ fullPath(row.cat.parentId) }}
             </span>
-            <span *ngIf="!parentName(cat)" class="text-gray-600 text-xs">—</span>
+            <span *ngIf="!fullPath(row.cat.parentId)" class="text-gray-600 text-xs">— (root)</span>
           </td>
-          <td class="text-gray-400 max-w-[200px] truncate">{{ cat.description || '—' }}</td>
+          <td class="text-gray-400 max-w-[200px] truncate">{{ row.cat.description || '—' }}</td>
           <td>
             <div class="flex flex-wrap gap-1">
-              <span *ngFor="let s of parseSizes(cat.sizes)"
+              <span *ngFor="let s of parseSizes(row.cat.sizes)"
                 class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-900/30 border border-violet-700/30 text-violet-300">
                 {{ s }}
               </span>
-              <span *ngIf="!cat.sizes" class="text-gray-600 text-xs">—</span>
+              <span *ngIf="!row.cat.sizes" class="text-gray-600 text-xs">—</span>
             </div>
           </td>
-          <td class="text-gray-500 text-xs font-mono">{{ cat.slug }}</td>
+          <td class="text-gray-500 text-xs font-mono">{{ row.cat.slug }}</td>
           <td class="text-right">
-            <button (click)="openEdit(cat)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-4">Edit</button>
-            <button (click)="confirmDelete(cat)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+            <button (click)="openEdit(row.cat)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-4">Edit</button>
+            <button (click)="confirmDelete(row.cat)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
           </td>
         </tr>
       </tbody>
@@ -98,10 +98,10 @@
 
       <!-- Parent Category -->
       <div class="form-group">
-        <label>Parent Category <span class="text-gray-500 text-[10px] font-normal">(leave blank for main category)</span></label>
+        <label>Parent Category <span class="text-gray-500 text-[10px] font-normal">(leave blank for a root category — unlimited nesting)</span></label>
         <select [(ngModel)]="currentCategory.parentId" name="catParent" class="form-input">
-          <option [ngValue]="null">— None (Main Category) —</option>
-          <option *ngFor="let p of rootCategories" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">— None (Root Category) —</option>
+          <option *ngFor="let p of parentOptions" [ngValue]="p.cat.id">{{ '— '.repeat(p.depth) }}{{ p.cat.name }}</option>
         </select>
       </div>
 

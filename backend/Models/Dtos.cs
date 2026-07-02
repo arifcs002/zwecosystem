@@ -75,6 +75,13 @@ namespace Ecommerce.Api.Models
         string? ImageUrl, List<SizeQtyDto> Sizes, int? PricingTagId = null,
         decimal? CompareAtPrice = null);
 
+    // Bulk add: one supplier + category chosen once, many products in one submit.
+    public record BulkProductLineDto(
+        string Name, decimal Price, decimal WholesalePrice, string? Description,
+        string? ImageUrl, int? PricingTagId, decimal? CompareAtPrice, List<SizeQtyDto> Sizes);
+    public record BulkProductsCreateDto(
+        int? CategoryId, int? SupplierId, List<BulkProductLineDto> Products);
+
     // ── Pricing Tags ────────────────────────────────────────
     public record PricingTagUpsertDto(
         string Name, decimal ProfitPercent, decimal? DiscountPercent,

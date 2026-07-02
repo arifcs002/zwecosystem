@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { buildIndentedList, FlatCategory, categoryPath } from '../../../utils/category-tree.util';
 
 @Component({
   selector: 'app-category-management',
@@ -49,12 +50,29 @@ export class CategoryManagementComponent implements OnInit {
     });
   }
 
+  // Tree-ordered, indented list for display. When searching, fall back to a flat
+  // filtered list (depth 0) so matches aren't hidden by collapsed ancestors.
+  treeRows: FlatCategory[] = [];
+
   applyFilter() {
     const q = this.searchQuery.toLowerCase().trim();
-    this.filteredCategories = q
-      ? this.categories.filter(c => c.name.toLowerCase().includes(q) || (c.description ?? '').toLowerCase().includes(q))
-      : [...this.categories];
+    if (q) {
+      this.filteredCategories = this.categories.filter(c =>
+        c.name.toLowerCase().includes(q) || (c.description ?? '').toLowerCase().includes(q));
+      this.treeRows = this.filteredCategories.map(cat => ({ cat, depth: 0 }));
+    } else {
+      this.filteredCategories = [...this.categories];
+      this.treeRows = buildIndentedList(this.categories);
+    }
   }
+
+  // Parent options: every category except the one being edited and its descendants
+  // (prevents cycles), shown indented so any nesting depth is pickable.
+  get parentOptions(): FlatCategory[] {
+    return buildIndentedList(this.categories, this.isEditMode ? this.currentCategory.id : null);
+  }
+
+  fullPath(id: number | null | undefined): string { return categoryPath(this.categories, id); }
 
   openNew() {
     this.currentCategory = this.getEmpty();

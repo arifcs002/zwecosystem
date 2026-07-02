@@ -2,17 +2,32 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
 import { CategoryService, Category } from '../../../services/category/category.service';
-import { ProductService, BatchProductCreateDto, SizeQtyDto } from '../../../services/product/product.service';
+import { ProductService, BulkProductLineDto } from '../../../services/product/product.service';
 import { PricingTagService, PricingTag } from '../../../services/pricing-tag/pricing-tag.service';
-import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { buildIndentedList, FlatCategory } from '../../../utils/category-tree.util';
+
+// One product entry in the bulk form.
+interface ProductLine {
+  name: string;
+  wholesalePrice: number;
+  price: number;
+  compareAtPrice: number | null;
+  pricingTagId: number | null;
+  description: string;
+  sizeQuantities: { [size: string]: number };
+  imageFile: File | null;
+  imagePreview: string | ArrayBuffer | null;
+  imageUrl: string;
+}
 
 @Component({
   selector: 'app-add-product',
   standalone: true,
-  imports: [CommonModule, FormsModule, RequiredErrorComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './add-product.component.html',
   styleUrl: './add-product.component.css'
 })
@@ -28,130 +43,120 @@ export class AddProductComponent implements OnInit {
   categories: Category[] = [];
   pricingTags: PricingTag[] = [];
 
-  formData: BatchProductCreateDto = {
-    supplierId: undefined,
-    categoryId: undefined,
-    name: '',
-    price: 0,
-    wholesalePrice: 0,
-    description: '',
-    imageUrl: '',
-    sizes: [],
-    pricingTagId: null,
-    compareAtPrice: null
-  };
+  // Shared for all products in this batch.
+  supplierId: number | undefined;
+  categoryId: number | undefined;
 
-  selectedCategoryObj: Category | null = null;
   availableSizes: string[] = [];
-  sizeQuantities: { [key: string]: number } = {};
+  lines: ProductLine[] = [this.newLine()];
 
-  get totalQty(): number { return this.availableSizes.reduce((s, sz) => s + (this.sizeQuantities[sz] || 0), 0); }
-  get selectedSizeCount(): number { return this.availableSizes.filter(sz => (this.sizeQuantities[sz] || 0) > 0).length; }
-
-  isSubmitting: boolean = false;
-  imageFile: File | null = null;
-  imagePreview: string | ArrayBuffer | null = null;
+  isSubmitting = false;
 
   ngOnInit() {
-    this.loadDropdowns();
-  }
-
-  loadDropdowns() {
-    this.supplierService.getSuppliers().subscribe({
-      next: (data) => this.suppliers = data.sort((a: any, b: any) => a.name.localeCompare(b.name)),
-      error: (err) => console.error(err)
-    });
-
-    this.categoryService.getCategories().subscribe({
-      next: (data) => this.categories = data.sort((a: any, b: any) => a.name.localeCompare(b.name)),
-      error: (err) => console.error(err)
-    });
-
-    this.pricingTagService.getPricingTags().subscribe({
-      next: (data) => this.pricingTags = data.filter(t => t.isActive),
+    forkJoin({
+      suppliers: this.supplierService.getSuppliers(),
+      categories: this.categoryService.getCategories(),
+      tags: this.pricingTagService.getPricingTags()
+    }).subscribe({
+      next: ({ suppliers, categories, tags }) => {
+        this.suppliers = suppliers.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        this.categories = categories;
+        this.pricingTags = tags.filter(t => t.isActive);
+      },
       error: (err) => console.error(err)
     });
   }
 
-  // Auto-calculates sell price from the buy (wholesale) price using the
-  // selected tag's profit % — admin can still edit the price afterward.
-  applyPricingTag() {
-    const tag = this.pricingTags.find(t => t.id === this.formData.pricingTagId);
-    if (!tag || !this.formData.wholesalePrice) return;
-    this.formData.price = Math.round(this.formData.wholesalePrice * (1 + tag.profitPercent / 100));
+  // Indented category options (any nesting depth) — the chosen value is the
+  // deepest/last-selected category, which is where products are saved.
+  get categoryOptions(): FlatCategory[] { return buildIndentedList(this.categories); }
+
+  newLine(): ProductLine {
+    return { name: '', wholesalePrice: 0, price: 0, compareAtPrice: null, pricingTagId: null,
+             description: '', sizeQuantities: {}, imageFile: null, imagePreview: null, imageUrl: '' };
   }
+
+  addLine() { this.lines.push(this.newLine()); }
+  removeLine(i: number) { if (this.lines.length > 1) this.lines.splice(i, 1); }
 
   onCategoryChange() {
-    const id = Number(this.formData.categoryId);
-    this.selectedCategoryObj = this.categories.find(c => Number(c.id) === id) || null;
-    this.sizeQuantities = {};
-    if (this.selectedCategoryObj?.sizes) {
-      this.availableSizes = this.selectedCategoryObj.sizes.split(',').map(s => s.trim()).filter(Boolean);
-      this.availableSizes.forEach(s => this.sizeQuantities[s] = 0);
-    } else {
-      this.availableSizes = [];
-    }
+    const cat = this.categories.find(c => Number(c.id) === Number(this.categoryId)) || null;
+    this.availableSizes = cat?.sizes ? cat.sizes.split(',').map(s => s.trim()).filter(Boolean) : [];
+    // Reset size maps so stale sizes from a previous category don't linger.
+    this.lines.forEach(l => l.sizeQuantities = {});
   }
 
-  onImageSelected(event: any) {
+  applyPricingTag(line: ProductLine) {
+    const tag = this.pricingTags.find(t => t.id === line.pricingTagId);
+    if (!tag || !line.wholesalePrice) return;
+    line.price = Math.round(line.wholesalePrice * (1 + tag.profitPercent / 100));
+  }
+
+  onImageSelected(event: any, line: ProductLine) {
     const file = event.target.files[0];
-    if (file) {
-      this.imageFile = file;
-      const reader = new FileReader();
-      reader.onload = e => this.imagePreview = reader.result;
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    line.imageFile = file;
+    const reader = new FileReader();
+    reader.onload = () => line.imagePreview = reader.result;
+    reader.readAsDataURL(file);
+  }
+
+  lineQty(line: ProductLine): number {
+    return this.availableSizes.reduce((s, sz) => s + (line.sizeQuantities[sz] || 0), 0);
   }
 
   onSubmit() {
-    if (!this.formData.name || !this.formData.categoryId || !this.formData.supplierId) {
-      this.notify.notify({ type: 'warning', title: 'Missing fields', message: 'Please fill in product name, category and supplier.', ttlMs: 4000 });
+    if (!this.categoryId || !this.supplierId) {
+      this.notify.notify({ type: 'warning', title: 'Missing fields', message: 'Select a supplier and category first.', ttlMs: 4000 });
       return;
     }
-
-    // Build sizes array
-    this.formData.sizes = [];
-    for (const size of this.availableSizes) {
-      if (this.sizeQuantities[size] > 0) {
-        this.formData.sizes.push({ size, quantity: this.sizeQuantities[size] });
-      }
-    }
-
-    if (this.formData.sizes.length === 0) {
-      this.notify.notify({ type: 'warning', title: 'No sizes', message: 'Add a quantity for at least one size.', ttlMs: 4000 });
+    const valid = this.lines.filter(l => l.name.trim());
+    if (valid.length === 0) {
+      this.notify.notify({ type: 'warning', title: 'No products', message: 'Add at least one product with a name.', ttlMs: 4000 });
       return;
     }
 
     this.isSubmitting = true;
+    // Upload each line's image (if any) first, then submit the whole batch.
+    const uploads = valid.map(l => l.imageFile
+      ? this.productService.uploadImage(l.imageFile)
+      : of({ imageUrl: '' }));
 
-    if (this.imageFile) {
-      this.productService.uploadImage(this.imageFile).subscribe({
-        next: (res) => {
-          this.formData.imageUrl = res.imageUrl;
-          this.saveProductBatch();
-        },
-        error: (err) => {
-          console.error(err);
-          this.notify.notify({ type: 'error', title: 'Upload failed', message: 'Could not upload the product image.', ttlMs: 5000 });
-          this.isSubmitting = false;
-        }
-      });
-    } else {
-      this.saveProductBatch();
-    }
+    forkJoin(uploads.length ? uploads : [of({ imageUrl: '' })]).subscribe({
+      next: (results) => {
+        valid.forEach((l, idx) => { if (results[idx]?.imageUrl) l.imageUrl = results[idx].imageUrl; });
+        this.submitBulk(valid);
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.notify.notify({ type: 'error', title: 'Upload failed', message: 'Could not upload one of the images.', ttlMs: 5000 });
+      }
+    });
   }
 
-  private saveProductBatch() {
-    this.productService.createProductsBatch(this.formData).subscribe({
-      next: () => {
-        this.notify.notify({ type: 'success', title: 'Product created', message: 'Products created for all selected sizes.', ttlMs: 3500 });
+  private submitBulk(valid: ProductLine[]) {
+    const products: BulkProductLineDto[] = valid.map(l => ({
+      name: l.name.trim(),
+      price: l.price,
+      wholesalePrice: l.wholesalePrice,
+      description: l.description || '',
+      imageUrl: l.imageUrl || '',
+      pricingTagId: l.pricingTagId,
+      compareAtPrice: l.compareAtPrice,
+      sizes: this.availableSizes
+        .filter(sz => (l.sizeQuantities[sz] || 0) > 0)
+        .map(sz => ({ size: sz, quantity: l.sizeQuantities[sz] }))
+    }));
+
+    this.productService.createBulkProducts({ categoryId: this.categoryId, supplierId: this.supplierId, products }).subscribe({
+      next: (res) => {
+        this.notify.notify({ type: 'success', title: 'Products created', message: `${res.count} product entr${res.count === 1 ? 'y' : 'ies'} added.`, ttlMs: 3500 });
         const basePath = this.router.url.split('/').slice(0, 3).join('/');
         this.router.navigate([basePath, 'products']);
       },
       error: (err) => {
-        console.error(err);
-        this.notify.notify({ type: 'error', title: 'Save failed', message: err.error?.message || 'Could not save the products.', ttlMs: 5000 });
         this.isSubmitting = false;
+        this.notify.notify({ type: 'error', title: 'Save failed', message: err.error?.message || 'Could not save the products.', ttlMs: 5000 });
       }
     });
   }

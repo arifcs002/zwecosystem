@@ -145,6 +145,67 @@ namespace Ecommerce.Api.Controllers
             return Ok(created);
         }
 
+        // Bulk add — many distinct products under one supplier + category, created
+        // in a single transaction so either all succeed or none do.
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateBulkProducts([FromBody] BulkProductsCreateDto dto)
+        {
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return BadRequest("Company context is required.");
+            if (dto.Products == null || dto.Products.Count == 0) return BadRequest("Add at least one product.");
+
+            var created = new List<Product>();
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var line in dto.Products)
+                {
+                    if (string.IsNullOrWhiteSpace(line.Name)) continue;
+                    // A product with no sizes is a single stock unit; one with sizes
+                    // becomes one row per size (mirrors the single-product batch flow).
+                    var sizes = (line.Sizes != null && line.Sizes.Count > 0)
+                        ? line.Sizes.Where(s => s.Quantity > 0).ToList()
+                        : new List<SizeQtyDto> { new("", 0) };
+
+                    foreach (var sq in sizes)
+                    {
+                        var hasSize = !string.IsNullOrWhiteSpace(sq.Size);
+                        var name = hasSize ? $"{line.Name} (Size {sq.Size})" : line.Name;
+                        var barcode = GenerateBarcode(companyId.Value);
+                        while (await _context.Products.IgnoreQueryFilters().AnyAsync(p => p.CompanyId == companyId.Value && p.Barcode == barcode))
+                            barcode = GenerateBarcode(companyId.Value);
+                        var sku = hasSize
+                            ? $"{line.Name.Replace(" ", "-").ToUpper()}-{sq.Size.ToUpper()}"
+                            : line.Name.Replace(" ", "-").ToUpper();
+                        var slug = hasSize
+                            ? $"{line.Name.ToLower().Replace(" ", "-").Replace("/", "-")}-{sq.Size.ToLower()}"
+                            : line.Name.ToLower().Replace(" ", "-").Replace("/", "-");
+
+                        var productId = (await _context.Database.SqlQueryRaw<int>(
+                            "SELECT sp_create_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17})",
+                            companyId.Value, name, slug, sku, barcode,
+                            line.Description ?? "", line.Price, line.WholesalePrice, sq.Quantity,
+                            line.ImageUrl ?? "", dto.CategoryId, (int?)null, "PUBLISHED",
+                            sq.Size ?? "", dto.SupplierId, _context.CurrentUserId, line.PricingTagId,
+                            line.CompareAtPrice ?? 0
+                        ).ToListAsync()).FirstOrDefault();
+
+                        var product = await _context.Products.FindAsync(productId);
+                        if (product != null) created.Add(product);
+                    }
+                }
+
+                await tx.CommitAsync();
+                return Ok(new { count = created.Count, products = created });
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _fileLogger.LogError("PRODUCTS", "Bulk create failed", ex);
+                return StatusCode(500, new { message = "Bulk save failed — no products were created." });
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductCreateDto dto)
         {

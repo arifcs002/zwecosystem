@@ -21,6 +21,22 @@ export interface BatchProductCreateDto {
   compareAtPrice?: number | null;
 }
 
+export interface BulkProductLineDto {
+  name: string;
+  price: number;
+  wholesalePrice: number;
+  description?: string;
+  imageUrl?: string;
+  pricingTagId?: number | null;
+  compareAtPrice?: number | null;
+  sizes: SizeQtyDto[];
+}
+export interface BulkProductsCreateDto {
+  categoryId?: number;
+  supplierId?: number;
+  products: BulkProductLineDto[];
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -71,6 +87,11 @@ export class ProductService {
 
   createProductsBatch(dto: BatchProductCreateDto): Observable<Product[]> {
     return this.http.post<Product[]>(`${this.apiUrl}/batch`, dto);
+  }
+
+  // Bulk add — one supplier + category, many products, one transactional submit.
+  createBulkProducts(dto: BulkProductsCreateDto): Observable<{ count: number; products: Product[] }> {
+    return this.http.post<{ count: number; products: Product[] }>(`${this.apiUrl}/bulk`, dto);
   }
 
   updateProduct(id: number, product: any): Observable<Product> {
