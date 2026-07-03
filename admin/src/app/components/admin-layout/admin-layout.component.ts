@@ -30,6 +30,19 @@ export class AdminLayoutComponent {
 
   closeMobileSidebar() { this.mobileSidebarOpen = false; }
 
+  // Single menu control for both breakpoints: below 1024px it slides the
+  // sidebar in/out as an overlay drawer; at desktop widths it collapses the
+  // sidebar to icon-only. One button, one handler — no separate mobile vs
+  // desktop navigation logic to keep in sync.
+  toggleNav() {
+    if (window.innerWidth <= 1024) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+      if (this.mobileSidebarOpen) this.sidebarCollapsed = false;
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+    }
+  }
+
   logout() {
     const user = this.authService.currentUserValue;
     const loginPath = user?.loginContext === 'admin' ? '/admin/login' : `/${user?.loginContext}/login`;

@@ -9,15 +9,12 @@
 
   <!-- Sidebar -->
   <aside class="zw-sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileSidebarOpen" (click)="closeMobileSidebar()">
-    <!-- Brand -->
+    <!-- Brand (the single menu toggle lives in the topbar, left of this logo) -->
     <div class="sidebar-brand">
       <div class="brand-logo">
         <span class="brand-icon">⚡</span>
         <span class="brand-text" *ngIf="!sidebarCollapsed">ZW Ecosystem</span>
       </div>
-      <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed">
-        {{ sidebarCollapsed ? '→' : '←' }}
-      </button>
     </div>
 
     <!-- User Info -->
@@ -179,9 +176,12 @@
     <!-- Topbar -->
     <header class="zw-topbar">
       <div class="topbar-left">
-        <button class="hamburger-btn" (click)="sidebarCollapsed = false; mobileSidebarOpen = true" aria-label="Open menu">☰</button>
+        <button class="hamburger-btn" [class.active]="mobileSidebarOpen || !sidebarCollapsed" (click)="toggleNav()" aria-label="Toggle menu">
+          <span class="ham-bar"></span><span class="ham-bar"></span><span class="ham-bar"></span>
+        </button>
+        <span class="topbar-logo">⚡</span>
         <h2 class="page-breadcrumb">
-          {{ authService.isSuperAdmin() ? '⚡ ZW Ecosystem Admin' : '🏢 Company Workspace' }}
+          {{ authService.isSuperAdmin() ? 'ZW Ecosystem Admin' : 'Company Workspace' }}
         </h2>
       </div>
       <div class="topbar-right">

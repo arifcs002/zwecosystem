@@ -14,9 +14,10 @@
   min-width: 260px;
   background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 100%);
   border-right: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease, min-width 0.3s ease;
+  transition: width 0.28s cubic-bezier(.4,0,.2,1), min-width 0.28s cubic-bezier(.4,0,.2,1);
   overflow: hidden;
   z-index: 100;
 }
@@ -56,23 +57,6 @@
   white-space: nowrap;
 }
 
-.collapse-btn {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
-  border-radius: 6px;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.collapse-btn:hover { background: rgba(139, 92, 246, 0.25); }
 
 /* User Info */
 .sidebar-user {
@@ -127,6 +111,7 @@
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -134,8 +119,8 @@
   color: #9ca3af;
   text-decoration: none;
   border-radius: 8px;
-  margin: 0.1rem 0.5rem;
-  transition: all 0.2s;
+  margin: 0.15rem 0.5rem;
+  transition: background-color 0.2s, color 0.2s, transform 0.15s;
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
@@ -145,12 +130,25 @@
 .nav-item:hover {
   background: rgba(139, 92, 246, 0.12);
   color: #e5e7eb;
+  transform: translateX(2px);
 }
 
 .nav-item.active {
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(59, 130, 246, 0.15));
   color: #a78bfa;
   border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #a78bfa, #60a5fa);
 }
 
 .nav-icon { font-size: 1rem; flex-shrink: 0; }
@@ -211,17 +209,44 @@
   margin: 0;
 }
 
-/* Hamburger: hidden on desktop, shown only when the sidebar goes off-canvas */
+/* Single menu toggle — same button drives both the desktop collapse and the
+   mobile drawer, always to the left of the brand mark, at every breakpoint. */
 .hamburger-btn {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
   border-radius: 8px;
   width: 36px;
   height: 36px;
-  font-size: 1.1rem;
   cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.hamburger-btn:hover {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.ham-bar {
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: #a78bfa;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* Morph into an X while the sidebar/drawer is open — same button, both states */
+.hamburger-btn.active .ham-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hamburger-btn.active .ham-bar:nth-child(2) { opacity: 0; }
+.hamburger-btn.active .ham-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.topbar-logo {
+  font-size: 1.15rem;
   flex-shrink: 0;
 }
 
@@ -283,13 +308,12 @@
     transform: translateX(0);
   }
 
-  /* Collapse toggle is meaningless in an overlay drawer — always full width when open
-     (component also forces sidebarCollapsed=false when the hamburger opens it) */
+  /* Collapse is meaningless in an overlay drawer — always full width when open
+     (toggleNav() also forces sidebarCollapsed=false when it opens the drawer) */
   .zw-sidebar.collapsed {
     width: 260px;
     min-width: 260px;
   }
-  .collapse-btn { display: none; }
 
   .zw-mobile-overlay {
     display: block;
@@ -297,9 +321,10 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 99;
+    animation: fade-in 0.2s ease;
   }
 
-  .hamburger-btn { display: flex; align-items: center; justify-content: center; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
   .zw-content { padding: 0 0.25rem; }
   .zw-topbar { padding: 0 1rem; }
