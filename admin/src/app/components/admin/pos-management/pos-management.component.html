@@ -1,41 +1,109 @@
-<div class="h-full flex flex-col md:flex-row gap-6 p-4">
-  <!-- Left Side: Product Selection & Barcode -->
-  <div class="flex-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
-    <div class="mb-4">
-      <input type="text" placeholder="Scan Barcode or Search Product..." class="w-full p-3 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+<div class="pos-wrap">
+
+  <!-- Header -->
+  <div class="pos-head">
+    <div class="mode-badge" [ngClass]="isBargain ? 'bargain' : 'fixed'">
+      {{ isBargain ? '💬 Manual / Bargaining Mode' : '🔒 Fixed Price Mode' }}
     </div>
-    
-    <div class="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Example Product Card -->
-      <div class="border rounded p-4 text-center hover:shadow-md cursor-pointer transition">
-        <div class="h-24 bg-gray-200 rounded mb-2 flex items-center justify-center text-gray-500">Image</div>
-        <h5 class="font-semibold text-sm">Demo Sneaker</h5>
-        <p class="text-blue-600 font-bold">৳ 2,500</p>
-      </div>
+    <button *ngIf="authService.isCompanyAdmin() || authService.isSuperAdmin()" class="btn-mini" (click)="showSettings = !showSettings">
+      ⚙ Mode Settings
+    </button>
+  </div>
+
+  <div class="settings-panel" *ngIf="showSettings">
+    <p class="panel-hint">Fixed Price: cashiers cannot edit the sale price. Manual/Bargaining: cashiers can set their own sale price per item.</p>
+    <div class="seg">
+      <button [class.on]="mode==='FIXED'" (click)="saveMode('FIXED')" [disabled]="savingSettings">Fixed Price</button>
+      <button [class.on]="mode==='BARGAIN'" (click)="saveMode('BARGAIN')" [disabled]="savingSettings">Manual / Bargaining</button>
     </div>
   </div>
 
-  <!-- Right Side: Cart & Checkout -->
-  <div class="w-full md:w-96 bg-white p-6 rounded-lg shadow-md flex flex-col">
-    <h3 class="text-xl font-bold border-b pb-2 mb-4">Current Cart</h3>
-    
-    <div class="flex-1 overflow-y-auto">
-      <div class="flex justify-between items-center mb-3 border-b pb-2">
-        <div>
-          <h6 class="font-semibold text-sm">Demo Sneaker</h6>
-          <p class="text-xs text-gray-500">1 x ৳ 2,500</p>
+  <div class="pos-body">
+    <!-- Left: scan + cart -->
+    <div class="pos-main">
+      <div class="scan-row">
+        <input class="scan-inp" [(ngModel)]="barcodeInput" (keyup.enter)="onScanSubmit()"
+          placeholder="Scan or type barcode / product ID, then Enter…" [disabled]="isLoading" autofocus>
+        <button class="btn-cam" (click)="openCamera()" title="Scan with camera">📷</button>
+      </div>
+
+      <div class="cart-list">
+        <div class="cart-empty" *ngIf="cart.length === 0">🛒 Cart is empty — scan a product to begin.</div>
+
+        <div class="cart-row" *ngFor="let line of cart">
+          <div class="cr-info">
+            <div class="cr-name">{{ line.product.name }}</div>
+            <div class="cr-sub">{{ line.product.barcode }} · Stock: {{ line.product.stockQuantity }}</div>
+          </div>
+
+          <div class="cr-price">
+            <ng-container *ngIf="!isBargain">৳{{ line.product.price | number:'1.0-0' }}</ng-container>
+            <input *ngIf="isBargain" type="number" class="price-inp" [(ngModel)]="line.price" min="0">
+          </div>
+
+          <div class="cr-qty">
+            <button (click)="changeQty(line, -1)">−</button>
+            <span>{{ line.quantity }}</span>
+            <button (click)="changeQty(line, 1)">+</button>
+          </div>
+
+          <div class="cr-total">৳{{ ((isBargain ? line.price : line.product.price) * line.quantity) | number:'1.0-0' }}</div>
+          <button class="cr-del" (click)="removeLine(line)">✕</button>
         </div>
-        <button class="text-red-500 hover:text-red-700">✖</button>
       </div>
     </div>
-    
-    <div class="border-t pt-4 mt-4 space-y-2">
-      <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span>৳ 2,500</span></div>
-      <div class="flex justify-between"><span class="text-gray-600">Discount</span><span>৳ 0</span></div>
-      <div class="flex justify-between font-bold text-lg text-blue-600"><span>Total</span><span>৳ 2,500</span></div>
-      <button class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition shadow-lg">
-        Pay Now
+
+    <!-- Right: checkout -->
+    <div class="pos-side">
+      <h3 class="side-title">Checkout</h3>
+
+      <div class="fg">
+        <label>Customer Name (optional)</label>
+        <input class="inp" [(ngModel)]="customerName" placeholder="Walk-in Customer">
+      </div>
+      <div class="fg">
+        <label>Customer Phone (optional)</label>
+        <input class="inp" [(ngModel)]="customerPhone">
+      </div>
+      <div class="fg">
+        <label>Payment Method</label>
+        <select class="inp" [(ngModel)]="paymentMethod">
+          <option value="CASH">Cash</option>
+          <option value="BKASH">bKash</option>
+          <option value="NAGAD">Nagad</option>
+          <option value="CARD">Card</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Discount (BDT)</label>
+        <input type="number" class="inp" [(ngModel)]="discount" min="0">
+      </div>
+
+      <div class="totals">
+        <div class="t-row"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
+        <div class="t-row"><span>Discount</span><span>−৳{{ discount || 0 | number:'1.0-0' }}</span></div>
+        <div class="t-row grand"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
+      </div>
+
+      <button class="btn-pay" (click)="checkout()" [disabled]="isCheckingOut || cart.length===0">
+        {{ isCheckingOut ? 'Processing…' : '✅ Complete Sale' }}
       </button>
     </div>
+  </div>
+</div>
+
+<app-camera-scanner (scanned)="onCameraScanned($event)"></app-camera-scanner>
+
+<!-- Receipt -->
+<div class="receipt-back" *ngIf="lastReceipt" (click)="closeReceipt()">
+  <div class="receipt" (click)="$event.stopPropagation()">
+    <h3>{{ lastReceipt.header }}</h3>
+    <p class="r-order">Order: {{ lastReceipt.orderNumber }}</p>
+    <div class="r-row"><span>Subtotal</span><span>৳{{ lastReceipt.subtotal | number:'1.0-0' }}</span></div>
+    <div class="r-row"><span>Discount</span><span>৳{{ lastReceipt.discount | number:'1.0-0' }}</span></div>
+    <div class="r-row grand"><span>Total</span><span>৳{{ lastReceipt.total | number:'1.0-0' }}</span></div>
+    <p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p>
+    <p class="r-footer">{{ lastReceipt.footer }}</p>
+    <button class="btn-mini" (click)="closeReceipt()">Close</button>
   </div>
 </div>

@@ -42,6 +42,13 @@ namespace Ecommerce.Api.Controllers
             int cashierId = 0;
             int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out cashierId);
 
+            // Bargain mode is opt-in per company; anything else (including unset)
+            // is FIXED, so a missing/garbled setting fails safe to no-discretion.
+            var posMode = await _context.CompanySettings
+                .Where(s => s.CompanyId == companyId.Value && s.Key == "pos_mode")
+                .Select(s => s.Value).FirstOrDefaultAsync();
+            bool bargainAllowed = string.Equals(posMode, "BARGAIN", StringComparison.OrdinalIgnoreCase);
+
             decimal subtotal = 0;
             var productIds = new List<int>();
             var quantities  = new List<int>();
@@ -54,10 +61,11 @@ namespace Ecommerce.Api.Controllers
                 if (product.StockQuantity < item.Quantity)
                     return BadRequest(new { message = $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}" });
 
-                subtotal += product.Price * item.Quantity;
+                var unitPrice = (bargainAllowed && item.Price.HasValue && item.Price.Value > 0) ? item.Price.Value : product.Price;
+                subtotal += unitPrice * item.Quantity;
                 productIds.Add(item.ProductId);
                 quantities.Add(item.Quantity);
-                prices.Add(product.Price);
+                prices.Add(unitPrice);
             }
 
             var total = Math.Max(subtotal - dto.Discount, 0);

@@ -89,8 +89,12 @@ namespace Ecommerce.Api.Models
 
     // ── Orders / POS ────────────────────────────────────────
     public record OrderItemDto(int ProductId, int Quantity);
+    // Price is only honored server-side when the company's pos_mode setting is
+    // BARGAIN — in FIXED mode it's ignored and the product's own price is used,
+    // so a tampered client request can't undercut a fixed-price store.
+    public record POSItemDto(int ProductId, int Quantity, decimal? Price);
     public record POSCheckoutDto(
-        List<OrderItemDto> Items, decimal Discount, string PaymentMethod,
+        List<POSItemDto> Items, decimal Discount, string PaymentMethod,
         string? CustomerName, string? CustomerPhone, string? TransactionId);
 
     // Storefront guest checkout — no auth; tenant comes from the X-Tenant-ID header.
