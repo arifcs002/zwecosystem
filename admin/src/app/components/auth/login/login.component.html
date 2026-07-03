@@ -80,6 +80,12 @@
           </button>
         </div>
       </form>
+
+      <p *ngIf="showSwitchAccount" class="text-center mt-5">
+        <button type="button" (click)="switchAccount()" class="text-xs text-gray-500 hover:text-gray-300 transition underline">
+          Switch account / store
+        </button>
+      </p>
     </ng-container>
   </div>
 </div>

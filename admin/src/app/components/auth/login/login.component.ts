@@ -1,16 +1,19 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { AuthService } from '../../../services/auth/auth.service';
 import { ThemeService } from '../../../services/theme/theme.service';
 import { CompanyService } from '../../../services/company/company.service';
 import { RequiredErrorComponent } from '../../../../app/shared/required-error/required-error.component';
 
+const APP_ENTRY_STORAGE_KEY = 'app_login_context';
+
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RequiredErrorComponent],
+  imports: [CommonModule, FormsModule, RequiredErrorComponent, RouterModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
@@ -32,6 +35,15 @@ export class LoginComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private themeService = inject(ThemeService);
   private companyService = inject(CompanyService);
+
+  // Only relevant inside the packaged app (no address bar) — lets a user
+  // return to the Super Admin / Store Code picker to switch accounts.
+  get showSwitchAccount(): boolean { return Capacitor.isNativePlatform(); }
+
+  switchAccount() {
+    localStorage.removeItem(APP_ENTRY_STORAGE_KEY);
+    this.router.navigate(['/']);
+  }
 
   ngOnInit() {
     this.detectContext();

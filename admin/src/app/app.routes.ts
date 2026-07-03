@@ -117,6 +117,12 @@ export const routes: Routes = [
     loadComponent: () => import('./components/public-shop/policy-page/policy-page.component').then(m => m.PolicyPageComponent)
   },
 
-  // --- DEFAULT REDIRECT ---
-  { path: '', redirectTo: '/admin/login', pathMatch: 'full' }
+  // --- DEFAULT ENTRY ---
+  // On the web this just forwards to /admin/login (URL bar carries context as
+  // before). Inside the packaged app (no address bar) it lets the user pick
+  // Super Admin or type their store code, so one APK serves everyone.
+  {
+    path: '',
+    loadComponent: () => import('./components/app-entry/app-entry.component').then(m => m.AppEntryComponent)
+  }
 ];

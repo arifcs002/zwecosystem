@@ -1,10 +1,16 @@
 import { Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Capacitor } from '@capacitor/core';
+import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
 
-// Uses the browser-native BarcodeDetector API (Chrome/Edge desktop + Android,
-// including mobile) — no external library, works fully offline once the page
-// is loaded. Falls back to a manual-entry hint on browsers without support
-// (notably desktop Safari/Firefox).
+// Two independent scanning paths, picked automatically:
+//  - Native app (Capacitor/Android): Google's ML Kit code-scanner module — a
+//    full-screen native camera UI that's reliable across every Android device
+//    and WebView version (unlike browser APIs, which vary wildly on WebView).
+//  - Regular browser: the native BarcodeDetector API where available (Chrome/
+//    Edge desktop + Android). Falls back to a manual-entry message on
+//    browsers without it (desktop Safari/Firefox) — hardware scanners and
+//    typing the code still work via the barcode input field.
 @Component({
   selector: 'app-camera-scanner',
   standalone: true,
@@ -41,9 +47,55 @@ export class CameraScannerComponent implements OnDestroy {
   private stream: MediaStream | null = null;
   private raf: number | null = null;
 
+  private readonly nativeFormats = [
+    BarcodeFormat.Code39, BarcodeFormat.Code128, BarcodeFormat.Ean13,
+    BarcodeFormat.Ean8, BarcodeFormat.UpcA, BarcodeFormat.UpcE
+  ];
+
   async show() {
-    this.open = true;
     this.error = '';
+    if (Capacitor.isNativePlatform()) {
+      await this.scanNative();
+      return;
+    }
+    this.open = true;
+    await this.scanBrowser();
+  }
+
+  // ── Native (Capacitor app) ──────────────────────────────────────────────
+  private async scanNative() {
+    try {
+      const { supported } = await BarcodeScanner.isSupported();
+      if (!supported) {
+        this.error = 'This device does not support barcode scanning. Use manual entry instead.';
+        this.open = true;
+        return;
+      }
+      if (!(await this.ensureNativePermission())) {
+        this.error = 'Camera permission was denied. Enable it in app settings, or use manual entry.';
+        this.open = true;
+        return;
+      }
+      // Opens Google's full-screen native scanner UI — our own modal stays
+      // closed so it doesn't flash behind it.
+      const { barcodes } = await BarcodeScanner.scan({ formats: this.nativeFormats });
+      if (barcodes && barcodes.length > 0) this.scanned.emit(barcodes[0].rawValue);
+    } catch {
+      this.error = 'Could not open the scanner. Use manual entry instead.';
+      this.open = true;
+    }
+  }
+
+  private async ensureNativePermission(): Promise<boolean> {
+    const status = await BarcodeScanner.checkPermissions();
+    if (status.camera === 'granted' || status.camera === 'limited') return true;
+    if (status.camera === 'denied') return false;
+    const req = await BarcodeScanner.requestPermissions();
+    return req.camera === 'granted' || req.camera === 'limited';
+  }
+
+  // ── Browser (regular web) ───────────────────────────────────────────────
+  private async scanBrowser() {
     const BD = (window as any).BarcodeDetector;
     if (!BD) {
       this.error = 'Camera scanning is not supported in this browser. Use manual entry or a hardware scanner instead.';
