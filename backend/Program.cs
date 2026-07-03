@@ -171,8 +171,15 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// ASP.NET Core's default content-type map has no entry for .apk, and static
+// files middleware serves NOTHING for an unmapped extension unless told
+// otherwise — every APK download was silently 404ing because of this.
+var staticFileTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+staticFileTypeProvider.Mappings[".apk"] = "application/vnd.android.package-archive";
+
 app.UseStaticFiles(new StaticFileOptions
 {
+    ContentTypeProvider = staticFileTypeProvider,
     OnPrepareResponse = ctx =>
     {
         // Uploaded files are named with a content hash, so the same URL always
@@ -180,6 +187,12 @@ app.UseStaticFiles(new StaticFileOptions
         if (ctx.File.Name.Length > 0)
         {
             ctx.Context.Response.Headers["Cache-Control"] = "public,max-age=31536000,immutable";
+        }
+        // Explicit attachment disposition so the browser treats it as a file
+        // download (with a sane filename) instead of trying to render it.
+        if (ctx.File.Name.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{ctx.File.Name}\"";
         }
     }
 });
