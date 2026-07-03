@@ -103,6 +103,36 @@
             </div>
           </div>
         </div>
+
+        <!-- Courier / Delivery tracking -->
+        <div class="status-update-section" style="margin-top:16px">
+          <h3 style="color:#38bdf8">🚚 Courier / Tracking</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Courier</label>
+              <input type="text" [(ngModel)]="courierName" class="form-input" placeholder="e.g. Pathao, Steadfast, Sundarban" />
+            </div>
+            <div class="form-group">
+              <label>Tracking Number</label>
+              <input type="text" [(ngModel)]="trackingNumber" class="form-input" placeholder="Consignment / tracking ID" />
+            </div>
+          </div>
+          <button class="btn-secondary" style="margin-top:8px;padding:6px 14px;font-size:13px" (click)="saveCourier()" [disabled]="savingCourier">
+            {{ savingCourier ? 'Saving…' : 'Save Courier Info' }}
+          </button>
+        </div>
+
+        <!-- Status timeline -->
+        <div class="status-update-section" style="margin-top:16px" *ngIf="statusHistory.length">
+          <h3 style="color:#a78bfa">📋 Status Timeline</h3>
+          <div style="border-left:2px solid #3a3a5a;margin-left:8px;padding-left:16px">
+            <div *ngFor="let h of statusHistory" style="position:relative;padding:6px 0">
+              <span style="position:absolute;left:-23px;top:10px;width:10px;height:10px;border-radius:50%;background:#a78bfa"></span>
+              <div style="font-size:13px;color:#e2e8f0;font-weight:600">{{ h.status }}</div>
+              <div style="font-size:11px;color:#94a3b8">{{ h.createdDate | date:'medium' }}<span *ngIf="h.note"> · {{ h.note }}</span></div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeModal()">Close</button>

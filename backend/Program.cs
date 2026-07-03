@@ -27,6 +27,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<ISmsSender, HttpSmsSender>();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCompression(options =>
 {
@@ -403,6 +405,26 @@ using (var scope = app.Services.CreateScope())
             UPDATE companies SET app_code = upper(substr(md5(random()::text || id::text), 1, 6))
             WHERE app_code IS NULL");
         dbContext.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_app_code ON companies(app_code)");
+
+        // Order status timeline — one row per status change so the order detail
+        // can show a full history (who moved it to PROCESSING/SHIPPED/etc, when).
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS order_status_history (
+                id SERIAL PRIMARY KEY,
+                order_id INTEGER NOT NULL,
+                company_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                note TEXT,
+                changed_by INTEGER,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_order_hist_order ON order_status_history(order_id, created_date)");
+
+        // Courier / delivery tracking captured manually on the order (which
+        // courier it was handed to + the tracking number). A full Pathao/
+        // Steadfast API integration can populate these same columns later.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_name TEXT");
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT");
 
         Console.WriteLine("--> Database is ready & seeded.");
     }

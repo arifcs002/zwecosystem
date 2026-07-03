@@ -640,8 +640,43 @@ namespace Ecommerce.Api.Domain
         [Column("order_notes")]
         public string? OrderNotes { get; set; }
 
+        // Manual courier/delivery tracking (nullable — set when the order is
+        // handed to a courier). A courier-API integration can fill these too.
+        [Column("courier_name")]
+        public string? CourierName { get; set; }
+
+        [Column("tracking_number")]
+        public string? TrackingNumber { get; set; }
+
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();
+    }
+
+    // One row per order status change — powers the order timeline.
+    [Table("order_status_history")]
+    public class OrderStatusHistory
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("order_id")]
+        public int OrderId { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [Column("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [Column("note")]
+        public string? Note { get; set; }
+
+        [Column("changed_by")]
+        public int? ChangedBy { get; set; }
+
+        [Column("created_date")]
+        public DateTime CreatedDate { get; set; }
     }
 
     [Table("order_items")]

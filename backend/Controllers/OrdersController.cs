@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -13,11 +14,13 @@ namespace Ecommerce.Api.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IFileTextLogger _fileLogger;
+        private readonly ISmsSender _smsSender;
 
-        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger)
+        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender)
         {
             _context = context;
             _fileLogger = fileLogger;
+            _smsSender = smsSender;
         }
 
         // Storefront guest checkout. Anonymous — the tenant is resolved from the
@@ -106,15 +109,97 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] StatusUpdateDto dto)
         {
-            if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
+            var orderEntity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            if (orderEntity == null) return NotFound();
 
             await _context.Database.ExecuteSqlRawAsync(
                 "CALL sp_update_order_status({0},{1},{2})", id, dto.Status, dto.Notes ?? "");
+
+            // Record the change on the timeline.
+            _context.OrderStatusHistory.Add(new OrderStatusHistory
+            {
+                OrderId     = id,
+                CompanyId   = orderEntity.CompanyId,
+                Status      = dto.Status,
+                Note        = dto.Notes,
+                ChangedBy   = _context.CurrentUserId,
+                CreatedDate = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            // Best-effort SMS to the customer (only if this company configured a
+            // gateway URL in Settings). Never let an SMS failure fail the request.
+            await TryNotifyCustomerAsync(orderEntity, dto.Status);
 
             var order = await _context.Database
                 .SqlQueryRaw<OrderListVm>("SELECT * FROM sp_get_order({0})", id)
                 .ToListAsync();
             return Ok(order.FirstOrDefault());
+        }
+
+        // ── GET /{id}/history — the order's status timeline ────────────────────
+        [HttpGet("{id}/history")]
+        public async Task<IActionResult> GetOrderHistory(int id)
+        {
+            if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
+            var history = await _context.OrderStatusHistory
+                .Where(h => h.OrderId == id)
+                .OrderBy(h => h.CreatedDate)
+                .Select(h => new { h.Status, h.Note, h.CreatedDate, h.ChangedBy })
+                .ToListAsync();
+            return Ok(history);
+        }
+
+        // ── PUT /{id}/courier — set courier name + tracking number ─────────────
+        [HttpPut("{id}/courier")]
+        public async Task<IActionResult> UpdateCourier(int id, [FromBody] CourierUpdateDto dto)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+
+            order.CourierName    = string.IsNullOrWhiteSpace(dto.CourierName) ? null : dto.CourierName.Trim();
+            order.TrackingNumber = string.IsNullOrWhiteSpace(dto.TrackingNumber) ? null : dto.TrackingNumber.Trim();
+            await _context.SaveChangesAsync();
+
+            return Ok(new { order.Id, order.CourierName, order.TrackingNumber });
+        }
+
+        // Sends a status-update SMS if the company set an sms_api_url template in
+        // its settings. Silently skips otherwise. Message text is templated per
+        // status; the storefront name is included when available.
+        private async Task TryNotifyCustomerAsync(Order order, string status)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(order.CustomerPhone)) return;
+
+                var settings = await _context.CompanySettings
+                    .Where(s => s.CompanyId == order.CompanyId)
+                    .ToDictionaryAsync(s => s.Key, s => s.Value);
+
+                var apiUrl = settings.GetValueOrDefault("sms_api_url");
+                if (string.IsNullOrWhiteSpace(apiUrl)) return;
+
+                var shopName = settings.GetValueOrDefault("shop_name")
+                    ?? settings.GetValueOrDefault("store_name") ?? "our store";
+
+                var msg = status.ToUpperInvariant() switch
+                {
+                    "PROCESSING" => $"Your order {order.OrderNumber} at {shopName} is being processed.",
+                    "PACKED"     => $"Your order {order.OrderNumber} at {shopName} has been packed.",
+                    "SHIPPED"    => $"Good news! Your order {order.OrderNumber} from {shopName} has been shipped"
+                                    + (string.IsNullOrWhiteSpace(order.TrackingNumber) ? "." : $" (tracking: {order.TrackingNumber}).") ,
+                    "COMPLETED"  => $"Your order {order.OrderNumber} from {shopName} has been delivered. Thank you!",
+                    "CANCELLED"  => $"Your order {order.OrderNumber} at {shopName} has been cancelled.",
+                    _             => $"Your order {order.OrderNumber} status: {status}."
+                };
+
+                await _smsSender.SendAsync(apiUrl, order.CustomerPhone, msg);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger.LogError("SMS", $"Notify failed for order {order.Id}", ex);
+            }
         }
 
         [HttpPost("{id}/cancel")]

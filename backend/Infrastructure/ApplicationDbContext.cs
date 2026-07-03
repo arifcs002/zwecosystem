@@ -43,6 +43,7 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<UserSession> UserSessions { get; set; }
         public DbSet<PricingTag> PricingTags { get; set; }
         public DbSet<AppVersion> AppVersions { get; set; }
+        public DbSet<OrderStatusHistory> OrderStatusHistory { get; set; }
 
         private void ResolveTenantAndUser()
         {

@@ -105,6 +105,22 @@
       </div>
     </div>
 
+    <!-- SMS notifications -->
+    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">📲 SMS Notifications</h3>
+      <p class="text-xs text-gray-500 mb-4">
+        Paste your SMS gateway URL with <code class="text-violet-300">&#123;to&#125;</code> and
+        <code class="text-violet-300">&#123;msg&#125;</code> placeholders. When set, customers get an SMS
+        as their order moves through Processing → Shipped → Delivered. Leave blank to disable.
+      </p>
+      <div class="form-group">
+        <label>SMS Gateway URL</label>
+        <input type="text" [(ngModel)]="smsApiUrl" name="smsApiUrl" class="form-input"
+          placeholder="http://bulksmsbd.net/api/smsapi?api_key=KEY&type=text&senderid=SID&number={to}&message={msg}">
+      </div>
+      <p class="text-[11px] text-gray-600 mt-2">Works with bulksmsbd, greenweb, MIM SMS and any gateway that accepts number &amp; message as URL params.</p>
+    </div>
+
     <!-- Storefront Sections: category/sub-category visibility + per-category top-10 ordering -->
     <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
       <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Storefront Sections</h3>

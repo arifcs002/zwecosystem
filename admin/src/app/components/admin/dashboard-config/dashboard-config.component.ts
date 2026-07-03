@@ -69,6 +69,7 @@ export class DashboardConfigComponent implements OnInit {
   whatsappLink = '';
   tiktokLink = '';
   linkedinLink = '';
+  smsApiUrl = '';
 
   isLoading = false;
   saving = false;
@@ -139,6 +140,7 @@ export class DashboardConfigComponent implements OnInit {
           if (s.key === 'whatsapp_link') this.whatsappLink = s.value;
           if (s.key === 'tiktok_link') this.tiktokLink = s.value;
           if (s.key === 'linkedin_link') this.linkedinLink = s.value;
+          if (s.key === 'sms_api_url') this.smsApiUrl = s.value;
           if (s.key === 'visible_dashboard_categories') {
             (s.value ? s.value.split(',') : []).forEach(id => { if (id) this.selectedCategoryIds[id] = true; });
           }
@@ -174,6 +176,7 @@ export class DashboardConfigComponent implements OnInit {
       { key: 'whatsapp_link', value: this.whatsappLink, groupName: 'SOCIAL' },
       { key: 'tiktok_link', value: this.tiktokLink, groupName: 'SOCIAL' },
       { key: 'linkedin_link', value: this.linkedinLink, groupName: 'SOCIAL' },
+      { key: 'sms_api_url', value: this.smsApiUrl, groupName: 'SMS' },
       { key: 'visible_dashboard_categories', value: selectedCatIds, groupName: 'DASHBOARD' },
     ];
 

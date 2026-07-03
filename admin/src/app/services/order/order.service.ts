@@ -51,6 +51,14 @@ export class OrderService {
     return this.http.post<any>(`${this.apiUrl}/${id}/cancel`, {});
   }
 
+  getOrderHistory(id: number): Observable<{ status: string; note?: string; createdDate: string; changedBy?: number }[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/history`);
+  }
+
+  updateCourier(id: number, courierName: string, trackingNumber: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${id}/courier`, { courierName, trackingNumber });
+  }
+
   verifyPayment(data: any): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/payments/mfs-verify`, data);
   }

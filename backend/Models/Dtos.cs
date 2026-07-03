@@ -110,6 +110,12 @@ namespace Ecommerce.Api.Models
         public string? Notes  { get; set; }
     }
 
+    public class CourierUpdateDto
+    {
+        public string? CourierName    { get; set; }
+        public string? TrackingNumber { get; set; }
+    }
+
     // ── Inventory ───────────────────────────────────────────
     // Manual stock correction. Positive delta = add, negative = remove.
     public record InventoryAdjustDto(int ProductId, int Delta, string? Reason);

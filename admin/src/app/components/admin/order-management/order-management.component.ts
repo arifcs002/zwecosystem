@@ -26,6 +26,11 @@ export class OrderManagementComponent implements OnInit {
   newStatus = '';
   statusNote = '';
 
+  statusHistory: { status: string; note?: string; createdDate: string }[] = [];
+  courierName = '';
+  trackingNumber = '';
+  savingCourier = false;
+
   statuses = ['ALL', 'CANCELLED', 'COMPLETED', 'PENDING', 'PROCESSING'];
   orderStatuses = ['CANCELLED', 'COMPLETED', 'PACKED', 'PENDING', 'PROCESSING', 'SHIPPED'];
 
@@ -55,11 +60,39 @@ export class OrderManagementComponent implements OnInit {
     this.statusNote = '';
     this.showDetailModal = true;
     this.errorMsg = '';
+    this.courierName = order.courierName || '';
+    this.trackingNumber = order.trackingNumber || '';
+    this.statusHistory = [];
     // The list rows may not carry line items — pull the full order so the
     // detail table (and the invoice print) always has them.
     this.orderService.getOrderById(order.id).subscribe({
-      next: (full) => { if (this.selectedOrder?.id === full.id) this.selectedOrder = { ...this.selectedOrder, ...full }; },
+      next: (full) => {
+        if (this.selectedOrder?.id === full.id) {
+          this.selectedOrder = { ...this.selectedOrder, ...full };
+          this.courierName = full.courierName || this.courierName;
+          this.trackingNumber = full.trackingNumber || this.trackingNumber;
+        }
+      },
       error: () => { /* keep the list row we already have */ }
+    });
+    this.orderService.getOrderHistory(order.id).subscribe({
+      next: (h) => { this.statusHistory = h; },
+      error: () => { this.statusHistory = []; }
+    });
+  }
+
+  saveCourier() {
+    if (!this.selectedOrder) return;
+    this.savingCourier = true;
+    this.orderService.updateCourier(this.selectedOrder.id, this.courierName.trim(), this.trackingNumber.trim()).subscribe({
+      next: (res) => {
+        this.savingCourier = false;
+        this.successMsg = 'Courier info saved!';
+        this.selectedOrder.courierName = res.courierName;
+        this.selectedOrder.trackingNumber = res.trackingNumber;
+        setTimeout(() => this.successMsg = '', 2500);
+      },
+      error: (e) => { this.savingCourier = false; this.errorMsg = e?.error?.message || 'Failed to save courier info.'; }
     });
   }
 
@@ -108,6 +141,7 @@ export class OrderManagementComponent implements OnInit {
         <div style="text-align:right">
           <strong>Status</strong><br><span class="muted">${esc(o.status)}</span><br>
           <strong>Payment</strong><br><span class="muted">${esc(o.paymentMethod)} (${esc(o.paymentStatus)})</span>
+          ${o.courierName ? `<br><strong>Courier</strong><br><span class="muted">${esc(o.courierName)}${o.trackingNumber ? ' · ' + esc(o.trackingNumber) : ''}</span>` : ''}
         </div>
       </div>
       <table>
@@ -130,7 +164,7 @@ export class OrderManagementComponent implements OnInit {
     w.document.close();
   }
 
-  closeModal() { this.showDetailModal = false; this.selectedOrder = null; }
+  closeModal() { this.showDetailModal = false; this.selectedOrder = null; this.statusHistory = []; }
 
   updateStatus() {
     if (!this.newStatus) return;
