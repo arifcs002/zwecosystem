@@ -8,6 +8,7 @@ using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -99,6 +100,11 @@ namespace Ecommerce.Api.Controllers
         {
             try
             {
+                // Brute-force guard: cap failed attempts per IP+email before we
+                // even touch the DB. Successful login clears the counter below.
+                var rateLimited = CheckRateLimit("login", dto.Email ?? "", maxAttempts: 10, windowMinutes: 10);
+                if (rateLimited != null) return rateLimited;
+
                 var user = await _context.Users
                     .IgnoreQueryFilters()
                     .AsNoTracking()
@@ -107,6 +113,7 @@ namespace Ecommerce.Api.Controllers
 
                 if (user == null)
                 {
+                    RegisterFailedAttempt("login", dto.Email ?? "", 10);
                     _fileLogger.LogError("LOGIN", $"User not found: '{dto.Email}'");
                     return Unauthorized(new { message = "Invalid email or password" });
                 }
@@ -126,7 +133,10 @@ namespace Ecommerce.Api.Controllers
                 }
 
                 if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                {
+                    RegisterFailedAttempt("login", dto.Email ?? "", 10);
                     return Unauthorized(new { message = "Invalid email or password" });
+                }
 
                 if (!user.IsActive)
                     return BadRequest(new { message = "User account is suspended" });
@@ -156,6 +166,7 @@ namespace Ecommerce.Api.Controllers
                 });
                 await _context.SaveChangesAsync();
 
+                ClearRateLimit("login", dto.Email ?? "");
                 _fileLogger.LogInfo("LOGIN", $"Login success: '{dto.Email}'");
                 return Ok(new LoginResponse(token, sessionToken, user.Email, $"{user.FirstName} {user.LastName}", user.CompanyId, roles, user.UserType));
             }
@@ -184,6 +195,12 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
+            // Cap OTP generation so this endpoint can't be used to spam a
+            // victim's inbox (or wear down the SMTP relay).
+            var otpRateLimited = CheckRateLimit("forgot", dto.Email ?? "", maxAttempts: 4, windowMinutes: 15);
+            if (otpRateLimited != null) return otpRateLimited;
+            RegisterFailedAttempt("forgot", dto.Email ?? "", 15);
+
             var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null) return BadRequest(new { message = "User with this email does not exist." });
 
@@ -205,17 +222,26 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("reset-password-otp")]
         public async Task<IActionResult> ResetPasswordOtp([FromBody] ResetPasswordOtpDto dto)
         {
+            // Brute-force guard: a 6-digit OTP is only ~900k values, so without
+            // an attempt cap it's guessable inside the 15-min window.
+            var otpRateLimited = CheckRateLimit("resetotp", dto.Email ?? "", maxAttempts: 6, windowMinutes: 15);
+            if (otpRateLimited != null) return otpRateLimited;
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null) return BadRequest(new { message = "User with this email does not exist." });
 
             if (string.IsNullOrEmpty(user.Otp) || user.Otp != dto.Otp ||
                 !user.OtpExpiresAt.HasValue || user.OtpExpiresAt.Value < DateTime.UtcNow)
+            {
+                RegisterFailedAttempt("resetotp", dto.Email ?? "", 15);
                 return BadRequest(new { message = "Invalid or expired OTP verification code." });
+            }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.Otp = null;
             user.OtpExpiresAt = null;
             await _context.SaveChangesAsync();
+            ClearRateLimit("resetotp", dto.Email ?? "");
 
             return Ok(new { message = "Password reset completed successfully." });
         }
@@ -238,6 +264,36 @@ namespace Ecommerce.Api.Controllers
                 return;
             }
         }
+
+        // ── Simple in-memory rate limiting (IMemoryCache) ─────────────────────
+        // Keyed on IP + the identity (email) being acted on. Good enough for a
+        // single-instance deploy; if this ever scales out behind >1 backend,
+        // move the counter to the shared distributed cache (Redis) instead.
+        private string RateKey(string action, string identity)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return $"ratelimit:{action}:{ip}:{identity}".ToLowerInvariant();
+        }
+
+        private IActionResult? CheckRateLimit(string action, string identity, int maxAttempts, int windowMinutes)
+        {
+            var count = _memCache.Get<int?>(RateKey(action, identity)) ?? 0;
+            if (count >= maxAttempts)
+            {
+                _fileLogger.LogError("RATELIMIT", $"{action} blocked for '{identity}' from {HttpContext.Connection.RemoteIpAddress}");
+                return StatusCode(429, new { message = "Too many attempts. Please wait a few minutes and try again." });
+            }
+            return null;
+        }
+
+        private void RegisterFailedAttempt(string action, string identity, int windowMinutes)
+        {
+            var key = RateKey(action, identity);
+            var count = _memCache.Get<int?>(key) ?? 0;
+            _memCache.Set(key, count + 1, TimeSpan.FromMinutes(windowMinutes));
+        }
+
+        private void ClearRateLimit(string action, string identity) => _memCache.Remove(RateKey(action, identity));
 
         private string GenerateJwtToken(User user, List<string> roles)
         {
