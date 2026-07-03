@@ -80,6 +80,13 @@ namespace Ecommerce.Api.Domain
         [Column("subdomain")]
         public string Subdomain { get; set; } = string.Empty;
 
+        // Short code (e.g. "A1B2C3") a company admin types into the mobile
+        // app's "Store Code" field — easier to remember/communicate than the
+        // web subdomain, which the app can't show them since there's no
+        // address bar there.
+        [Column("app_code")]
+        public string? AppCode { get; set; }
+
         [Column("logo_url")]
         public string? LogoUrl { get; set; }
 

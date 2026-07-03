@@ -29,6 +29,7 @@ export interface Company {
   approvalStatus?: string;
   logoUrl?: string;
   bannerUrl?: string;
+  appCode?: string;
 }
 
 @Injectable({
@@ -45,6 +46,12 @@ export class CompanyService {
   // Anonymous-safe lookup for the public storefront — no auth token required.
   getPublicCompany(subdomain: string): Observable<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }> {
     return this.http.get<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }>(`${this.apiUrl}/public/${subdomain}`);
+  }
+
+  // Resolves the mobile app's short "Store Code" to the company (and its
+  // subdomain, which the app then routes to) — anonymous, no auth token.
+  getPublicCompanyByCode(code: string): Observable<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }> {
+    return this.http.get<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }>(`${this.apiUrl}/public/by-code/${code}`);
   }
 
   getCompanyById(id: number): Observable<Company> {

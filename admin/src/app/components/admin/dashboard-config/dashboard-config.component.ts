@@ -10,6 +10,8 @@ import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { ProductGroup, groupProducts, groupForProductId } from '../../../utils/product-group.util';
 import { AppVersionService, AppVersion } from '../../../services/app-version/app-version.service';
 import { resolveImageUrl } from '../../../utils/image-url.util';
+import { CompanyService } from '../../../services/company/company.service';
+import { AuthService } from '../../../services/auth/auth.service';
 
 interface CategoryNode {
   id: number;
@@ -34,8 +36,11 @@ export class DashboardConfigComponent implements OnInit {
   private productService = inject(ProductService);
   private notify = inject(GlobalNotificationService);
   private appVersionService = inject(AppVersionService);
+  private companyService = inject(CompanyService);
+  private authService = inject(AuthService);
 
   latestAppVersion: AppVersion | null = null;
+  companyAppCode = '';
   resolveUrl = resolveImageUrl;
 
   categories: Category[] = [];
@@ -78,6 +83,13 @@ export class DashboardConfigComponent implements OnInit {
       next: (v) => this.latestAppVersion = v,
       error: () => { /* no release published yet */ }
     });
+    const companyId = this.authService.currentUserValue?.companyId;
+    if (companyId) {
+      this.companyService.getCompanyById(companyId).subscribe({
+        next: (c) => this.companyAppCode = c.appCode || '',
+        error: () => { /* non-critical */ }
+      });
+    }
   }
 
   loadData() {

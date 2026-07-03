@@ -34,6 +34,21 @@ namespace Ecommerce.Api.Controllers
             return Ok(company);
         }
 
+        // Mobile app's "Store Code" entry screen — resolves the short app_code
+        // to the subdomain the app then routes to, since a company admin isn't
+        // expected to know/type their web subdomain from inside the app.
+        [HttpGet("public/by-code/{code}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicCompanyByCode(string code)
+        {
+            var company = await _context.Companies
+                .Where(c => c.AppCode == code.ToUpper() && c.IsDeleted == 0)
+                .Select(c => new { c.Id, c.Name, c.LogoUrl, c.Subdomain, c.IsActive })
+                .FirstOrDefaultAsync();
+            if (company == null) return NotFound();
+            return Ok(company);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetCompanies()
         {
@@ -105,6 +120,7 @@ namespace Ecommerce.Api.Controllers
             company.UpdatedDate = DateTime.UtcNow;
             company.IsActive = true;
             if (string.IsNullOrWhiteSpace(company.ApprovalStatus)) company.ApprovalStatus = "Pending";
+            company.AppCode = await GenerateUniqueAppCodeAsync();
 
             _context.Companies.Add(company);
             try
@@ -170,6 +186,23 @@ namespace Ecommerce.Api.Controllers
             var vm = result.FirstOrDefault();
             if (vm == null) return NotFound(new { message = "Company not found." });
             return Ok(vm);
+        }
+
+        // 6-char, human-typeable code (uppercase letters + digits, ambiguous
+        // characters like 0/O and 1/I excluded) for the mobile app's store
+        // picker. Collisions are astronomically unlikely at this scale, but
+        // checked and retried anyway since it's cheap.
+        private async Task<string> GenerateUniqueAppCodeAsync()
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            var rng = Random.Shared;
+            for (var attempt = 0; attempt < 10; attempt++)
+            {
+                var code = new string(Enumerable.Range(0, 6).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
+                if (!await _context.Companies.IgnoreQueryFilters().AnyAsync(c => c.AppCode == code))
+                    return code;
+            }
+            throw new InvalidOperationException("Could not generate a unique app code.");
         }
 
         private static void NormalizePayload(Company c)

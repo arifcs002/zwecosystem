@@ -23,6 +23,10 @@
       <div>
         <h3 class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-1">📱 Mobile App</h3>
         <p class="text-sm text-gray-300">Version {{ latestAppVersion.versionName }}<span *ngIf="latestAppVersion.releaseNotes"> — {{ latestAppVersion.releaseNotes }}</span></p>
+        <p *ngIf="companyAppCode" class="text-sm text-gray-400 mt-2">
+          Your Store Code: <span class="font-mono font-bold text-violet-200 tracking-widest">{{ companyAppCode }}</span>
+          <span class="block text-xs text-gray-500 mt-0.5">Enter this in the app after installing to reach your store's login.</span>
+        </p>
       </div>
       <a [href]="resolveUrl(latestAppVersion.apkUrl)" download class="btn-primary flex items-center gap-2 flex-shrink-0">
         ⬇ Download APK

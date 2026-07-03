@@ -31,7 +31,7 @@ const STORAGE_KEY = 'app_login_context'; // 'admin' | '<companySlug>'
         <div class="entry-divider"><span>or</span></div>
 
         <label class="entry-label">Store Code</label>
-        <input class="entry-input" [(ngModel)]="slug" placeholder="e.g. zairasworld" (keyup.enter)="goStore()" [disabled]="checking">
+        <input class="entry-input" [(ngModel)]="slug" placeholder="e.g. A1B2C3" (keyup.enter)="goStore()" [disabled]="checking">
         <p *ngIf="error" class="entry-error">{{ error }}</p>
         <button class="entry-store-btn" (click)="goStore()" [disabled]="checking || !slug.trim()">
           {{ checking ? 'Checking…' : 'Continue to My Store' }}
@@ -88,18 +88,18 @@ export class AppEntryComponent implements OnInit {
   }
 
   goStore() {
-    const slug = this.slug.trim().toLowerCase();
-    if (!slug) return;
+    const code = this.slug.trim().toUpperCase();
+    if (!code) return;
     this.checking = true;
     this.error = '';
-    this.companyService.getPublicCompany(slug).subscribe({
-      next: () => {
-        localStorage.setItem(STORAGE_KEY, slug);
-        this.router.navigate(['/', slug, 'login']);
+    this.companyService.getPublicCompanyByCode(code).subscribe({
+      next: (company) => {
+        localStorage.setItem(STORAGE_KEY, company.subdomain);
+        this.router.navigate(['/', company.subdomain, 'login']);
       },
       error: () => {
         this.checking = false;
-        this.error = `No store found for "${slug}". Check the code and try again.`;
+        this.error = `No store found for code "${code}". Check the code and try again.`;
       }
     });
   }

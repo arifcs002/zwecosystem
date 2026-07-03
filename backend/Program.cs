@@ -394,6 +394,16 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.ExecuteSqlRaw("ALTER TABLE products ADD COLUMN IF NOT EXISTS unique_code TEXT");
         dbContext.Database.ExecuteSqlRaw("ALTER TABLE companies ADD COLUMN IF NOT EXISTS product_seq INTEGER NOT NULL DEFAULT 0");
 
+        // Short "App Store Code" — lets a company admin log into the shared
+        // mobile app (no address bar, so the subdomain slug isn't reachable
+        // there) without needing to know/type their web subdomain. Backfill
+        // any company created before this column existed.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE companies ADD COLUMN IF NOT EXISTS app_code TEXT");
+        dbContext.Database.ExecuteSqlRaw(@"
+            UPDATE companies SET app_code = upper(substr(md5(random()::text || id::text), 1, 6))
+            WHERE app_code IS NULL");
+        dbContext.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_app_code ON companies(app_code)");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)
