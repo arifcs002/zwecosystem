@@ -105,6 +105,10 @@
         <span class="nav-icon">🛒</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
       </a>
+      <a [routerLink]="basePath + '/customers'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Customers</span>
+      </a>
       <a [routerLink]="basePath + '/delivery'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🚚</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>

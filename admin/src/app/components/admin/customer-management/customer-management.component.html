@@ -1,0 +1,112 @@
+<div class="p-4 sm:p-6">
+  <div class="mb-5">
+    <h1 class="text-xl font-bold text-gray-100">Customers</h1>
+    <p class="text-sm text-gray-500">Guests who ordered from your storefront, grouped by mobile number.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-2 gap-3 mb-4">
+    <div class="rounded-xl bg-white/[0.03] border border-white/10 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Customers</p>
+      <p class="text-2xl font-bold text-sky-400">{{ totalCustomers }}</p>
+    </div>
+    <div class="rounded-xl bg-white/[0.03] border border-white/10 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Lifetime Revenue</p>
+      <p class="text-2xl font-bold text-emerald-400">৳{{ totalRevenue | number:'1.0-0' }}</p>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange()"
+      placeholder="Search by name or phone…" class="form-input text-sm w-full sm:w-80">
+    <span class="text-xs text-gray-500 ml-auto">{{ customers.length }} customers</span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="flex justify-center items-center py-16 text-gray-500 text-sm">
+      <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading…
+    </div>
+
+    <div *ngIf="!isLoading && errorMsg" class="py-10 text-center text-rose-400 text-sm">{{ errorMsg }}</div>
+
+    <div *ngIf="!isLoading && !errorMsg && customers.length === 0" class="py-16 text-center text-gray-500 text-sm">
+      No storefront customers yet.
+    </div>
+
+    <div *ngIf="!isLoading && !errorMsg && customers.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-white/10">
+            <th class="py-3 px-3">Customer</th>
+            <th class="py-3 px-3">Phone</th>
+            <th class="py-3 px-3">Location</th>
+            <th class="py-3 px-3 text-center">Orders</th>
+            <th class="py-3 px-3 text-right">Total Spent</th>
+            <th class="py-3 px-3">Last Order</th>
+            <th class="py-3 px-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of customers" class="border-b border-white/5 hover:bg-white/[0.02]">
+            <td class="py-3 px-3 text-gray-200 font-medium">{{ c.name || '—' }}</td>
+            <td class="py-3 px-3 font-mono text-xs text-gray-300">{{ c.phone }}</td>
+            <td class="py-3 px-3 text-xs text-gray-400">{{ c.lastDistrict || c.lastAddress || '—' }}</td>
+            <td class="py-3 px-3 text-center text-gray-300">{{ c.totalOrders }}</td>
+            <td class="py-3 px-3 text-right font-semibold text-emerald-400">৳{{ c.totalSpent | number:'1.0-0' }}</td>
+            <td class="py-3 px-3 text-xs text-gray-400">{{ c.lastOrderAt | date:'mediumDate' }}</td>
+            <td class="py-3 px-3 text-right">
+              <button (click)="openDetail(c)" class="text-xs text-sky-400 hover:text-sky-300">View →</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Detail drawer -->
+<div *ngIf="selected" class="fixed inset-0 z-50 flex justify-end" (click)="closeDetail()">
+  <div class="absolute inset-0 bg-black/50"></div>
+  <div class="relative w-full max-w-md h-full bg-[#12112a] border-l border-white/10 overflow-y-auto p-6" (click)="$event.stopPropagation()">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-100">{{ selected.name || 'Customer' }}</h2>
+        <p class="font-mono text-sm text-gray-400">{{ selected.phone }}</p>
+      </div>
+      <button (click)="closeDetail()" class="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="rounded-lg bg-white/[0.03] border border-white/10 p-3">
+        <p class="text-xs text-gray-500">Orders</p>
+        <p class="text-lg font-bold text-sky-400">{{ selected.totalOrders }}</p>
+      </div>
+      <div class="rounded-lg bg-white/[0.03] border border-white/10 p-3">
+        <p class="text-xs text-gray-500">Total Spent</p>
+        <p class="text-lg font-bold text-emerald-400">৳{{ selected.totalSpent | number:'1.0-0' }}</p>
+      </div>
+    </div>
+
+    <div *ngIf="detailLoading" class="text-center text-gray-500 text-sm py-8">Loading orders…</div>
+
+    <div *ngIf="!detailLoading">
+      <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Order History</h3>
+      <div class="space-y-2">
+        <div *ngFor="let o of selected.orders" class="rounded-lg bg-white/[0.03] border border-white/10 p-3">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs text-gray-300">{{ o.orderNumber }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold" [ngClass]="statusClass(o.status)">{{ o.status }}</span>
+          </div>
+          <div class="flex items-center justify-between mt-1.5">
+            <span class="text-xs text-gray-500">{{ o.createdDate | date:'medium' }}</span>
+            <span class="text-sm font-semibold text-emerald-400">৳{{ o.total | number:'1.0-0' }}</span>
+          </div>
+          <p *ngIf="o.shippingAddress" class="text-xs text-gray-500 mt-1">📍 {{ o.shippingAddress }}<span *ngIf="o.shippingDistrict">, {{ o.shippingDistrict }}</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
