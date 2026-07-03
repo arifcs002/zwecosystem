@@ -27,6 +27,14 @@ wwwroot/uploads/*
 wwwroot/uploads/apks/*
 !wwwroot/uploads/apks/.gitkeep
 
+# Uploaded binaries live under backend/ too — patterns with a slash are
+# anchored to this file's dir, so the rules above didn't catch these.
+backend/wwwroot/uploads/**/*.apk
+backend/wwwroot/uploads/apps/
+backend/wwwroot/uploads/other/
+backend/wwwroot/uploads/product/
+backend/wwwroot/uploads/logo/
+
 # ================================================
 # SECRETS — NEVER COMMIT THESE
 # ================================================
