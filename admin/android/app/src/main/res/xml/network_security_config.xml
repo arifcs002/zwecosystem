@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The backend is served over plain HTTP (http://194.5.152.74:85, no TLS),
+  and Android blocks cleartext traffic by default for apps targeting SDK 28+.
+  Without this, every API/upload request fails at the network layer with
+  HTTP status 0 ("0 Unknown Error"), which the app then surfaces as its
+  generic fallback ("Invalid credentials" / "No store found"). Permit
+  cleartext to this specific host so the packaged app can reach the API.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">194.5.152.74</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
