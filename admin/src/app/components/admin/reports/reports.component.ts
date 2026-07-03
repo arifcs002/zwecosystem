@@ -102,4 +102,35 @@ export class ReportsComponent implements OnInit {
     this.filterStatus = 'ALL';
     this.applyFilter();
   }
+
+  // Export whatever the current filter shows to a CSV the accountant can open
+  // in Excel/Sheets. Client-side only — uses the already-loaded rows.
+  exportCsv() {
+    if (!this.filteredOrders.length) return;
+    const headers = ['Order #', 'Customer', 'Phone', 'Date', 'Payment', 'Amount', 'Status'];
+    const esc = (v: any) => {
+      const s = (v ?? '').toString().replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const rows = this.filteredOrders.map(o => [
+      o.OrderNumber || o.orderNumber || '',
+      o.CustomerName || o.customerName || '',
+      o.CustomerPhone || o.customerPhone || '',
+      new Date(o.CreatedDate || o.createdDate || 0).toISOString().split('T')[0],
+      o.PaymentMethod || o.paymentMethod || '',
+      Number(o.Total ?? o.total ?? 0),
+      o.Status || o.status || ''
+    ].map(esc).join(','));
+
+    // Prepend a UTF-8 BOM so Excel renders the ৳ / Bangla text correctly.
+    const csv = '﻿' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const label = this.filterDate || 'all';
+    a.download = `orders-report-${label}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 }

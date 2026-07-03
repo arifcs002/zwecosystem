@@ -37,6 +37,10 @@
       <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
     </select>
     <button (click)="clearFilter()" class="btn-secondary text-xs px-3 py-1.5">Clear Filter</button>
+    <button (click)="exportCsv()" [disabled]="!filteredOrders.length"
+      class="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 disabled:opacity-40">
+      ⬇ Export CSV
+    </button>
     <span class="text-xs text-gray-500 ml-auto">
       {{ filteredOrders.length }} orders · ৳{{ filteredRevenue | number:'1.0-0' }} revenue
     </span>
