@@ -16,13 +16,29 @@
 }
 .form-input:focus, .size-inp:focus { outline: none; border-color: #7c3aed; }
 
-.line-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.line-no { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #c4b5fd; }
-.line-del { background: #22203f; border: 0; color: #9ca3af; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
+.line-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.line-no { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #c4b5fd; margin-left: auto; }
+.line-del { background: #22203f; border: 0; color: #9ca3af; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
 .line-del:hover { background: #7f1d1d; color: #fff; }
+
+.existing-toggle { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: #cbd5e1; cursor: pointer; }
 
 .img-row { display: flex; align-items: center; gap: 10px; }
 .img-prev { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #2f2d55; }
+
+.existing-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; margin-top: 8px; }
+.existing-item { display: flex; align-items: center; gap: 10px; background: #1c1b3a; border: 1px solid #2f2d55; border-radius: 8px;
+  padding: 8px 10px; cursor: pointer; text-align: left; width: 100%; }
+.existing-item:hover { border-color: #7c3aed; }
+.existing-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #2f2d55; }
+.existing-thumb.ph { display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.existing-info { display: flex; flex-direction: column; overflow: hidden; }
+.existing-name { font-size: 13px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.existing-sub { font-size: 11px; color: #8b8aa7; }
+.selected-existing { display: flex; align-items: center; gap: 10px; background: #201f45; border: 1px solid #4c1d95; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.selected-existing .existing-info { flex: 1; }
+
+.size-lbl em { font-style: normal; color: #6b7280; font-size: 10px; }
 
 .size-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .size-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }

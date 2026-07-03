@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { ProductService } from '../../../services/product/product.service';
+import { ProductService, Product } from '../../../services/product/product.service';
 import { SettingsService } from '../../../services/settings/settings.service';
 import { code39Svg } from '../../../utils/barcode-code39.util';
 import { toSecretCode, DEFAULT_SECRET_MAP } from '../../../utils/secret-code.util';
+import { groupProducts, ProductGroup } from '../../../utils/product-group.util';
 
 type TagFormat = 'thermal' | 'label' | 'a4';
 
@@ -22,13 +23,15 @@ export class BarcodeManagementComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private sanitizer = inject(DomSanitizer);
 
-  products: any[] = [];
-  filteredProducts: any[] = [];
+  groups: ProductGroup[] = [];
+  filteredGroups: ProductGroup[] = [];
   categories: string[] = [];
   selectedCategory = 'ALL';
   searchQuery = '';
   isLoading = false;
-  selectedProducts = new Set<number>();
+  // Selection + details popup are keyed by "baseName::categoryId" (ProductGroup has no id).
+  selectedGroups = new Set<string>();
+  detailGroup: ProductGroup | null = null;
 
   format: TagFormat = 'label';
   showPrice = true;
@@ -42,7 +45,7 @@ export class BarcodeManagementComponent implements OnInit {
       settings: this.settingsService.getSettings()
     }).subscribe({
       next: ({ products, settings }) => {
-        this.products = products;
+        this.groups = groupProducts(products);
         const cats = [...new Set(products.map((p: any) => p.category?.name).filter(Boolean))] as string[];
         this.categories = ['ALL', ...cats];
         this.companyName = settings.find(s => s.key === 'store_name')?.value || '';
@@ -55,47 +58,58 @@ export class BarcodeManagementComponent implements OnInit {
     });
   }
 
+  groupKey(g: ProductGroup): string { return `${g.baseName}::${g.categoryId}`; }
+
   applyFilter() {
-    let result = [...this.products];
-    if (this.selectedCategory !== 'ALL') result = result.filter(p => p.category?.name === this.selectedCategory);
+    let result = [...this.groups];
+    if (this.selectedCategory !== 'ALL') result = result.filter(g => g.categoryName === this.selectedCategory);
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      result = result.filter(p => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)
-        || p.barcode?.toLowerCase().includes(q) || p.uniqueCode?.toLowerCase().includes(q));
+      result = result.filter(g => g.baseName.toLowerCase().includes(q)
+        || g.variants.some(v => v.sku?.toLowerCase().includes(q) || v.barcode?.toLowerCase().includes(q) || v.uniqueCode?.toLowerCase().includes(q)));
     }
-    this.filteredProducts = result;
+    this.filteredGroups = result;
   }
 
-  toggleSelect(id: number) {
-    if (this.selectedProducts.has(id)) this.selectedProducts.delete(id);
-    else this.selectedProducts.add(id);
+  toggleSelect(g: ProductGroup) {
+    const k = this.groupKey(g);
+    if (this.selectedGroups.has(k)) this.selectedGroups.delete(k);
+    else this.selectedGroups.add(k);
   }
+  isSelected(g: ProductGroup) { return this.selectedGroups.has(this.groupKey(g)); }
   selectAll() {
-    if (this.isAllSelected()) this.selectedProducts.clear();
-    else this.filteredProducts.forEach(p => this.selectedProducts.add(p.id));
+    if (this.isAllSelected()) this.selectedGroups.clear();
+    else this.filteredGroups.forEach(g => this.selectedGroups.add(this.groupKey(g)));
   }
-  isAllSelected() { return this.filteredProducts.length > 0 && this.filteredProducts.every(p => this.selectedProducts.has(p.id)); }
+  isAllSelected() { return this.filteredGroups.length > 0 && this.filteredGroups.every(g => this.isSelected(g)); }
 
-  codeOf(p: any): string { return p.uniqueCode || p.barcode || ''; }
-  secretOf(p: any): string { return toSecretCode(p.price, this.secretMap); }
+  openDetails(g: ProductGroup) { this.detailGroup = g; }
+  closeDetails() { this.detailGroup = null; }
 
-  // Sanitized barcode SVG for the on-page preview.
-  previewBarcode(p: any): SafeHtml {
+  codeOf(p: Product): string { return p.uniqueCode || p.barcode || ''; }
+  secretOf(p: Product): string { return toSecretCode(p.price, this.secretMap); }
+
+  // Sanitized barcode SVG for the on-page preview (representative first variant).
+  previewBarcode(p: Product): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(code39Svg(this.codeOf(p), { height: 40 }));
   }
-  get previewProduct(): any | null {
-    const sel = this.filteredProducts.filter(p => this.selectedProducts.has(p.id));
-    return sel[0] || this.filteredProducts[0] || null;
+  get previewGroup(): ProductGroup | null {
+    const sel = this.filteredGroups.filter(g => this.isSelected(g));
+    return sel[0] || this.filteredGroups[0] || null;
   }
+  get previewVariant(): Product | null { return this.previewGroup?.variants[0] || null; }
 
-  // ── Printing ───────────────────────────────────────────────
-  printSingle(p: any) { this.print([p]); }
+  // ── Printing — always product-wise: printing a group prints one tag per
+  // variant (every size/quantity row) it has, never a single collapsed tag. ──
+  printGroup(g: ProductGroup) { this.print(g.variants); }
+  printVariant(p: Product) { this.print([p]); }
   printSelected() {
-    const toPrint = this.filteredProducts.filter(p => this.selectedProducts.has(p.id));
-    if (toPrint.length) this.print(toPrint);
+    const selected = this.filteredGroups.filter(g => this.isSelected(g));
+    const variants = selected.flatMap(g => g.variants);
+    if (variants.length) this.print(variants);
   }
 
-  private tagHtml(p: any): string {
+  private tagHtml(p: Product): string {
     const parts = [p.category?.name, p.size].filter(Boolean).join(' · ');
     return `
       <div class="tag">
@@ -111,7 +125,7 @@ export class BarcodeManagementComponent implements OnInit {
       </div>`;
   }
 
-  private print(products: any[]) {
+  private print(products: Product[]) {
     const w = window.open('', '_blank');
     if (!w) return;
     const tags = products.map(p => this.tagHtml(p)).join('');

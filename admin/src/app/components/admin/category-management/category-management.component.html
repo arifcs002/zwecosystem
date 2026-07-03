@@ -98,11 +98,10 @@
 
       <!-- Parent Category -->
       <div class="form-group">
-        <label>Parent Category <span class="text-gray-500 text-[10px] font-normal">(leave blank for a root category — unlimited nesting)</span></label>
-        <select [(ngModel)]="currentCategory.parentId" name="catParent" class="form-input">
-          <option [ngValue]="null">— None (Root Category) —</option>
-          <option *ngFor="let p of parentOptions" [ngValue]="p.cat.id">{{ '— '.repeat(p.depth) }}{{ p.cat.name }}</option>
-        </select>
+        <label>Parent Category <span class="text-gray-500 text-[10px] font-normal">(tree view — leave blank for a root category, unlimited nesting)</span></label>
+        <app-category-tree-picker [categories]="categories" [(value)]="currentCategory.parentId"
+          [excludeSubtreeOf]="isEditMode ? (currentCategory.id ?? null) : null" [allowNone]="true">
+        </app-category-tree-picker>
       </div>
 
       <div class="form-group">

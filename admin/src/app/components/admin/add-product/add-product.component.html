@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="page-header mb-6">
     <h1 class="page-title">➕ Add Products</h1>
-    <p class="page-subtitle">Pick a supplier &amp; category once, then add as many products as you like — saved together.</p>
+    <p class="page-subtitle">Pick a supplier &amp; category once, then add new products or restock existing ones — saved together.</p>
   </div>
 
   <!-- Shared: supplier + category -->
@@ -15,11 +15,10 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Category <span class="req">*</span> <span class="hint">(pick the deepest category — products save there)</span></label>
-        <select [(ngModel)]="categoryId" name="categoryId" (ngModelChange)="onCategoryChange()" class="form-input">
-          <option [ngValue]="undefined">— Select category —</option>
-          <option *ngFor="let c of categoryOptions" [ngValue]="c.cat.id">{{ '— '.repeat(c.depth) }}{{ c.cat.name }}</option>
-        </select>
+        <label>Category <span class="req">*</span> <span class="hint">(tree view — pick the deepest category, products save there)</span></label>
+        <app-category-tree-picker [categories]="categories" [(value)]="categoryId" [allowNone]="false"
+          placeholder="Select category" (valueChange)="onCategoryChange()">
+        </app-category-tree-picker>
       </div>
     </div>
     <p *ngIf="categoryId && availableSizes.length === 0" class="hint mt-2">This category has no sizes — each product is a single stock item.</p>
@@ -29,65 +28,122 @@
   <!-- Product lines -->
   <div class="line-card" *ngFor="let line of lines; let i = index">
     <div class="line-head">
-      <span class="line-no">Product {{ i + 1 }}</span>
+      <label class="existing-toggle">
+        <input type="checkbox" [ngModel]="line.isExisting" [name]="'ex'+i" (ngModelChange)="toggleExisting(line)">
+        Existing Product (Restock)
+      </label>
+      <span class="line-no">{{ line.isExisting ? 'Restock' : 'New' }} {{ i + 1 }}</span>
       <button *ngIf="lines.length > 1" class="line-del" (click)="removeLine(i)" title="Remove">✕</button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="form-group md:col-span-2">
-        <label>Product Name <span class="req">*</span></label>
-        <input [(ngModel)]="line.name" [name]="'name'+i" class="form-input" placeholder="e.g. Cotton T-Shirt">
+    <!-- ══ RESTOCK MODE ══ -->
+    <ng-container *ngIf="line.isExisting">
+      <div class="form-group" *ngIf="!categoryId">
+        <p class="hint">Select a category above to see its existing products.</p>
       </div>
-      <div class="form-group">
-        <label>Image</label>
-        <div class="img-row">
-          <img *ngIf="line.imagePreview" [src]="line.imagePreview" class="img-prev">
-          <input type="file" accept="image/*" (change)="onImageSelected($event, line)">
+
+      <div class="form-group" *ngIf="categoryId">
+        <label>Find Product</label>
+        <input class="form-input" [(ngModel)]="line.existingSearch" [name]="'exsearch'+i"
+          placeholder="Search product name…" (ngModelChange)="refreshExistingResults(line)" (focus)="line.existingGroup = null; refreshExistingResults(line)">
+
+        <div class="existing-list" *ngIf="!line.existingGroup">
+          <button *ngFor="let g of line.existingResults; trackBy: trackByGroupKey" type="button" class="existing-item" (click)="selectExistingGroup(line, g)">
+            <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="existing-thumb">
+            <div *ngIf="!g.imageUrl" class="existing-thumb ph">📦</div>
+            <div class="existing-info">
+              <span class="existing-name">{{ g.baseName }}</span>
+              <span class="existing-sub">{{ g.variants.length }} size(s) · total stock {{ g.totalStock }}</span>
+            </div>
+          </button>
+          <p *ngIf="line.existingResults.length === 0" class="hint">No existing products in this category.</p>
         </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="form-group">
-        <label>Buy Price</label>
-        <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="computePrice(line)" class="form-input">
+      <!-- Selected existing product: variant restock grid -->
+      <div class="selected-existing" *ngIf="line.existingGroup as g">
+        <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="existing-thumb">
+        <div *ngIf="!g.imageUrl" class="existing-thumb ph">📦</div>
+        <div class="existing-info">
+          <span class="existing-name">{{ g.baseName }}</span>
+          <span class="existing-sub">{{ g.categoryName }}</span>
+        </div>
+        <button class="line-del" (click)="clearExistingGroup(line)" title="Change product">✕</button>
       </div>
-      <div class="form-group">
-        <label>Profit %</label>
-        <input type="number" [(ngModel)]="line.profitPercent" [name]="'pp'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="e.g. 30">
-      </div>
-      <div class="form-group">
-        <label>+ Profit Amt</label>
-        <input type="number" [(ngModel)]="line.profitAmount" [name]="'pa'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="flat">
-      </div>
-      <div class="form-group">
-        <label>Sell Price</label>
-        <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
-      </div>
-      <div class="form-group">
-        <label>Compare-at <span class="hint">(opt)</span></label>
-        <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was">
-      </div>
-    </div>
-    <div class="secret-row" *ngIf="line.price > 0">
-      Secret code: <strong>{{ secretOf(line.price) }}</strong>
-    </div>
 
-    <!-- Sizes -->
-    <div class="form-group" *ngIf="availableSizes.length">
-      <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
-      <div class="size-grid">
-        <div class="size-cell" *ngFor="let sz of availableSizes">
-          <span class="size-lbl">{{ sz }}</span>
-          <input type="number" min="0" [(ngModel)]="line.sizeQuantities[sz]" [name]="'sz'+i+sz" class="size-inp" placeholder="0">
+      <div class="form-group" *ngIf="line.existingGroup as g">
+        <label>Add Quantity per size <span class="hint">(current stock shown, total adding: {{ restockLineTotal(line) }})</span></label>
+        <div class="size-grid">
+          <div class="size-cell" *ngFor="let v of g.variants">
+            <span class="size-lbl">{{ v.size || 'Qty' }} <em>({{ v.stockQuantity }})</em></span>
+            <input type="number" min="0" [(ngModel)]="line.restockQuantities[v.size || '']" [name]="'rq'+i+v.id" class="size-inp" placeholder="0">
+          </div>
         </div>
       </div>
-    </div>
+      <div class="form-group" *ngIf="line.existingGroup">
+        <label>Buying Cost (optional)</label>
+        <input type="number" [(ngModel)]="line.restockCost" [name]="'rc'+i" class="form-input" placeholder="Unit cost for this restock">
+      </div>
+    </ng-container>
 
-    <div class="form-group">
-      <label>Description</label>
-      <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
-    </div>
+    <!-- ══ NEW PRODUCT MODE ══ -->
+    <ng-container *ngIf="!line.isExisting">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="form-group md:col-span-2">
+          <label>Product Name <span class="req">*</span></label>
+          <input [(ngModel)]="line.name" [name]="'name'+i" class="form-input" placeholder="e.g. Cotton T-Shirt">
+        </div>
+        <div class="form-group">
+          <label>Image</label>
+          <div class="img-row">
+            <img *ngIf="line.imagePreview" [src]="line.imagePreview" class="img-prev">
+            <input type="file" accept="image/*" (change)="onImageSelected($event, line)">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="form-group">
+          <label>Buy Price</label>
+          <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="computePrice(line)" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Profit %</label>
+          <input type="number" [(ngModel)]="line.profitPercent" [name]="'pp'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="e.g. 30">
+        </div>
+        <div class="form-group">
+          <label>+ Profit Amt</label>
+          <input type="number" [(ngModel)]="line.profitAmount" [name]="'pa'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="flat">
+        </div>
+        <div class="form-group">
+          <label>Sell Price</label>
+          <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Compare-at <span class="hint">(opt)</span></label>
+          <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was">
+        </div>
+      </div>
+      <div class="secret-row" *ngIf="line.price > 0">
+        Secret code: <strong>{{ secretOf(line.price) }}</strong>
+      </div>
+
+      <!-- Sizes -->
+      <div class="form-group" *ngIf="availableSizes.length">
+        <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
+        <div class="size-grid">
+          <div class="size-cell" *ngFor="let sz of availableSizes">
+            <span class="size-lbl">{{ sz }}</span>
+            <input type="number" min="0" [(ngModel)]="line.sizeQuantities[sz]" [name]="'sz'+i+sz" class="size-inp" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
+      </div>
+    </ng-container>
   </div>
 
   <!-- Add another -->

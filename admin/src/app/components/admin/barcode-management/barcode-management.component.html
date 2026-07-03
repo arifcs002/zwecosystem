@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="page-header mb-5">
     <h1 class="page-title">🏷️ Barcode &amp; Price Tags</h1>
-    <p class="page-subtitle">Print professional price tags with barcode, secret code &amp; product ID.</p>
+    <p class="page-subtitle">One row per product. Open details for every size/barcode, or print the whole product in one click.</p>
   </div>
 
   <!-- Tag options -->
@@ -15,13 +15,13 @@
       </div>
     </div>
     <label class="chk"><input type="checkbox" [(ngModel)]="showPrice"> Show price</label>
-    <button class="btn-primary ml-auto" (click)="printSelected()" [disabled]="selectedProducts.size===0">
-      🖨 Print Selected ({{ selectedProducts.size }})
+    <button class="btn-primary ml-auto" (click)="printSelected()" [disabled]="selectedGroups.size===0">
+      🖨 Print Selected ({{ selectedGroups.size }})
     </button>
   </div>
 
   <div class="grid lg:grid-cols-3 gap-4">
-    <!-- Product list -->
+    <!-- Product list (grouped — one row per product, all sizes folded in) -->
     <div class="lg:col-span-2">
       <div class="toolbar">
         <input class="inp" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" placeholder="Search name / ID / barcode…">
@@ -35,26 +35,30 @@
         <thead>
           <tr>
             <th style="width:36px"><input type="checkbox" [checked]="isAllSelected()" (change)="selectAll()"></th>
-            <th>Product</th><th>Product ID</th><th class="r">Price</th><th class="r">Print</th>
+            <th>Product</th><th>Sizes / Barcodes</th><th class="r">Total Stock</th><th class="r">Price</th><th class="r">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of filteredProducts" [class.sel]="selectedProducts.has(p.id)">
-            <td><input type="checkbox" [checked]="selectedProducts.has(p.id)" (change)="toggleSelect(p.id)"></td>
-            <td><div class="nm">{{ p.name }}</div><div class="dim">{{ p.category?.name || '—' }}<span *ngIf="p.size"> · {{ p.size }}</span></div></td>
-            <td class="mono">{{ codeOf(p) || '—' }}</td>
-            <td class="r">৳{{ p.price }}</td>
-            <td class="r"><button class="btn-mini" (click)="printSingle(p)">🖨</button></td>
+          <tr *ngFor="let g of filteredGroups" [class.sel]="isSelected(g)">
+            <td><input type="checkbox" [checked]="isSelected(g)" (change)="toggleSelect(g)"></td>
+            <td><div class="nm">{{ g.baseName }}</div><div class="dim">{{ g.categoryName }}</div></td>
+            <td class="mono">{{ g.variants.length }} variant{{ g.variants.length > 1 ? 's' : '' }}</td>
+            <td class="r">{{ g.totalStock }}</td>
+            <td class="r">৳{{ g.price }}</td>
+            <td class="r actions-cell">
+              <button class="btn-mini" (click)="openDetails(g)">Details</button>
+              <button class="btn-mini primary" (click)="printGroup(g)" [title]="'Print all ' + g.variants.length + ' barcode(s)'">🖨 Print</button>
+            </td>
           </tr>
-          <tr *ngIf="filteredProducts.length===0"><td colspan="5" class="muted center">No products.</td></tr>
+          <tr *ngIf="filteredGroups.length===0"><td colspan="6" class="muted center">No products.</td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- Live tag preview -->
     <div>
-      <div class="preview-card" *ngIf="previewProduct as p">
-        <div class="preview-lbl">Tag preview</div>
+      <div class="preview-card" *ngIf="previewVariant as p">
+        <div class="preview-lbl">Tag preview <span class="dim">(first variant)</span></div>
         <div class="tag-preview">
           <div class="tp-company" *ngIf="companyName">{{ companyName }}</div>
           <div class="tp-name">{{ p.name }}</div>
@@ -68,6 +72,34 @@
         </div>
         <p class="muted center" style="margin-top:10px">Secret code = selling price in your configured code.</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Details popup: every size/barcode row for this product -->
+<div class="modal-back" *ngIf="detailGroup as g" (click)="closeDetails()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <h3>{{ g.baseName }}</h3>
+      <button class="btn-mini" (click)="closeDetails()">✕</button>
+    </div>
+    <p class="dim" style="margin-bottom:12px">{{ g.categoryName }} · {{ g.variants.length }} size(s) · total stock {{ g.totalStock }}</p>
+
+    <table class="tbl">
+      <thead><tr><th>Size</th><th>Product ID / Barcode</th><th class="r">Stock</th><th class="r">Price</th><th class="r">Print</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let v of g.variants">
+          <td>{{ v.size || '—' }}</td>
+          <td class="mono">{{ codeOf(v) }}</td>
+          <td class="r">{{ v.stockQuantity }}</td>
+          <td class="r">৳{{ v.price }}</td>
+          <td class="r"><button class="btn-mini" (click)="printVariant(v)" title="Print just this size">🖨</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="modal-actions">
+      <button class="btn-primary" (click)="printGroup(g)">🖨 Print All {{ g.variants.length }} Barcodes</button>
     </div>
   </div>
 </div>

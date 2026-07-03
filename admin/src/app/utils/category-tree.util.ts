@@ -43,6 +43,28 @@ export function descendantIds(categories: Category[], id: number): Set<number> {
   return out;
 }
 
+export interface TreeNode { cat: Category; children: TreeNode[]; }
+
+// A real nested tree (not a flat indented list) — used by the visual tree-view
+// picker so it can expand/collapse branches. Excludes a subtree (self +
+// descendants) when reparenting, same cycle-guard as buildIndentedList.
+export function buildTree(categories: Category[], excludeSubtreeOf?: number | null): TreeNode[] {
+  const excluded = excludeSubtreeOf != null ? descendantIds(categories, excludeSubtreeOf) : new Set<number>();
+  const ids = new Set(categories.map(c => c.id));
+  const byParent = new Map<number | null, Category[]>();
+  for (const c of categories) {
+    if (c.id != null && excluded.has(c.id)) continue;
+    const pid = c.parentId != null && ids.has(c.parentId) ? c.parentId : null;
+    if (!byParent.has(pid)) byParent.set(pid, []);
+    byParent.get(pid)!.push(c);
+  }
+  byParent.forEach(list => list.sort((a, b) => a.name.localeCompare(b.name)));
+
+  const build = (pid: number | null): TreeNode[] =>
+    (byParent.get(pid) || []).map(cat => ({ cat, children: build(cat.id ?? null) }));
+  return build(null);
+}
+
 // Breadcrumb path "Men › Shoes › Sneakers" for a category id.
 export function categoryPath(categories: Category[], id: number | null | undefined): string {
   if (id == null) return '';

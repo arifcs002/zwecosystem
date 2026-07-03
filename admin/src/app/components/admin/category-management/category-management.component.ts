@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { CategoryService, Category } from '../../../services/category/category.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { buildIndentedList, FlatCategory, categoryPath } from '../../../utils/category-tree.util';
+import { CategoryTreePickerComponent } from '../../shared/category-tree-picker/category-tree-picker.component';
 
 @Component({
   selector: 'app-category-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CategoryTreePickerComponent],
   templateUrl: './category-management.component.html',
   styleUrl: './category-management.component.css'
 })

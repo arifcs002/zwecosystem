@@ -56,20 +56,50 @@
   <ng-container *ngIf="tab==='purchase'">
     <div class="panel">
       <h3 class="panel-title">Record a Purchase / Restock</h3>
-      <p class="muted">Adds stock and logs a PURCHASE movement.</p>
-      <div class="form-grid">
+      <p class="muted">Filter by category, find the product, then add received stock.</p>
+
+      <div class="grid2" style="margin-bottom:10px">
         <div class="fg">
-          <label>Product</label>
-          <select class="inp" [(ngModel)]="purchaseProductId">
-            <option [ngValue]="null">— Select product —</option>
-            <option *ngFor="let i of overview?.items" [ngValue]="i.id">{{ i.name }} ({{ i.stockQuantity }} in stock)</option>
+          <label>Category</label>
+          <select class="inp" [(ngModel)]="purchaseCategory" (ngModelChange)="refreshPurchaseResults()">
+            <option *ngFor="let c of purchaseCategories" [value]="c">{{ c }}</option>
           </select>
         </div>
+        <div class="fg">
+          <label>Find Product</label>
+          <input class="inp" [(ngModel)]="purchaseSearch" placeholder="Search product name…"
+            (ngModelChange)="refreshPurchaseResults()" (focus)="purchaseSelected = null; refreshPurchaseResults()">
+        </div>
+      </div>
+
+      <div class="existing-list" *ngIf="!purchaseSelected">
+        <button *ngFor="let i of purchaseResults; trackBy: trackByItemId" type="button" class="existing-item" (click)="selectPurchaseItem(i)">
+          <img *ngIf="i.imageUrl" [src]="i.imageUrl | imgUrl" class="existing-thumb">
+          <div *ngIf="!i.imageUrl" class="existing-thumb ph">📦</div>
+          <div class="existing-info">
+            <span class="existing-name">{{ i.name }}</span>
+            <span class="existing-sub">{{ i.category || '—' }} · {{ i.stockQuantity }} in stock</span>
+          </div>
+        </button>
+        <p *ngIf="purchaseResults.length === 0" class="muted">No products match.</p>
+      </div>
+
+      <div class="selected-existing" *ngIf="purchaseSelected as sel">
+        <img *ngIf="sel.imageUrl" [src]="sel.imageUrl | imgUrl" class="existing-thumb">
+        <div *ngIf="!sel.imageUrl" class="existing-thumb ph">📦</div>
+        <div class="existing-info">
+          <span class="existing-name">{{ sel.name }}</span>
+          <span class="existing-sub">{{ sel.category || '—' }} · currently {{ sel.stockQuantity }} in stock</span>
+        </div>
+        <button class="mini" (click)="clearPurchaseSelection()" title="Change product">✕</button>
+      </div>
+
+      <div class="form-grid" *ngIf="purchaseSelected">
         <div class="fg"><label>Quantity received</label><input type="number" class="inp" [(ngModel)]="purchaseQty"></div>
         <div class="fg"><label>Unit cost (BDT)</label><input type="number" class="inp" [(ngModel)]="purchaseCost" placeholder="optional"></div>
         <div class="fg"><label>Supplier</label><input class="inp" [(ngModel)]="purchaseSupplier" placeholder="optional"></div>
       </div>
-      <button class="btn-primary" (click)="savePurchase()" [disabled]="saving">{{ saving ? 'Saving…' : 'Add Stock' }}</button>
+      <button class="btn-primary" (click)="savePurchase()" [disabled]="saving || !purchaseSelected">{{ saving ? 'Saving…' : 'Add Stock' }}</button>
     </div>
   </ng-container>
 

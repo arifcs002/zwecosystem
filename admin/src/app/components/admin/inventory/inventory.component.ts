@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService, InventoryItem, InventoryOverview, InventoryMovement } from '../../../services/inventory/inventory.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
+import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 type Tab = 'overview' | 'purchase' | 'movements';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImgUrlPipe],
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.css'
 })
@@ -33,11 +34,46 @@ export class InventoryComponent implements OnInit {
   adjustReason = '';
   saving = false;
 
-  // Purchase form
-  purchaseProductId: number | null = null;
+  // Purchase form — category-filtered, searchable existing-product picker
+  // (name + thumbnail) instead of one long flat dropdown.
+  purchaseCategory = 'ALL';
+  purchaseSearch = '';
+  purchaseSelected: InventoryItem | null = null;
   purchaseQty = 0;
   purchaseCost: number | null = null;
   purchaseSupplier = '';
+
+  // Cached picker results — recomputed only on explicit filter changes, not on
+  // every change-detection cycle. A fresh array from a template-bound getter
+  // makes *ngFor replace the DOM nodes on every CD tick, which can swallow a
+  // click that lands between mousedown and mouseup.
+  purchaseResults: InventoryItem[] = [];
+
+  get purchaseCategories(): string[] {
+    const cats = [...new Set((this.overview?.items || []).map(i => i.category).filter(Boolean))] as string[];
+    return ['ALL', ...cats];
+  }
+
+  refreshPurchaseResults() {
+    if (!this.overview) { this.purchaseResults = []; return; }
+    let items = this.overview.items;
+    if (this.purchaseCategory !== 'ALL') items = items.filter(i => i.category === this.purchaseCategory);
+    const q = this.purchaseSearch.toLowerCase().trim();
+    if (q) items = items.filter(i => i.name.toLowerCase().includes(q) || (i.sku || '').toLowerCase().includes(q));
+    this.purchaseResults = items;
+  }
+
+  trackByItemId(_: number, i: InventoryItem): number { return i.id; }
+
+  selectPurchaseItem(item: InventoryItem) {
+    this.purchaseSelected = item;
+    this.purchaseSearch = item.name;
+  }
+  clearPurchaseSelection() {
+    this.purchaseSelected = null;
+    this.purchaseSearch = '';
+    this.refreshPurchaseResults();
+  }
 
   // Movements
   movements: InventoryMovement[] = [];
@@ -56,7 +92,7 @@ export class InventoryComponent implements OnInit {
   loadOverview() {
     this.isLoading = true;
     this.inventory.getOverview().subscribe({
-      next: (o) => { this.overview = o; this.isLoading = false; },
+      next: (o) => { this.overview = o; this.isLoading = false; this.refreshPurchaseResults(); },
       error: () => { this.isLoading = false; }
     });
   }
@@ -115,12 +151,12 @@ export class InventoryComponent implements OnInit {
 
   // ── Purchase ───────────────────────────────────────────────
   savePurchase() {
-    if (!this.purchaseProductId || this.purchaseQty <= 0) {
+    if (!this.purchaseSelected || this.purchaseQty <= 0) {
       this.notify.notify({ type: 'warning', title: 'Missing details', message: 'Pick a product and enter quantity.', ttlMs: 3500 });
       return;
     }
     this.saving = true;
-    this.inventory.purchase(this.purchaseProductId, this.purchaseQty, this.purchaseCost ?? undefined, this.purchaseSupplier).subscribe({
+    this.inventory.purchase(this.purchaseSelected.id, this.purchaseQty, this.purchaseCost ?? undefined, this.purchaseSupplier).subscribe({
       next: (res) => {
         if (this.overview) {
           const it = this.overview.items.find(x => x.id === res.productId);
@@ -128,7 +164,7 @@ export class InventoryComponent implements OnInit {
         }
         this.saving = false;
         this.notify.notify({ type: 'success', title: 'Stock received', message: `New stock: ${res.stockQuantity}`, ttlMs: 3000 });
-        this.purchaseProductId = null; this.purchaseQty = 0; this.purchaseCost = null; this.purchaseSupplier = '';
+        this.clearPurchaseSelection(); this.purchaseQty = 0; this.purchaseCost = null; this.purchaseSupplier = '';
         this.movements = [];
         this.recomputeSummary();
       },
