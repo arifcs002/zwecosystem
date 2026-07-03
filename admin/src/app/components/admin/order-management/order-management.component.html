@@ -55,7 +55,10 @@
     <div class="modal modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Order {{ selectedOrder?.orderNumber }}</h2>
-        <button class="close-btn" (click)="closeModal()">✕</button>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn-secondary" style="padding:6px 12px;font-size:13px" (click)="printInvoice()">🖨 Print Invoice</button>
+          <button class="close-btn" (click)="closeModal()">✕</button>
+        </div>
       </div>
       <div class="modal-body" *ngIf="selectedOrder">
         <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
