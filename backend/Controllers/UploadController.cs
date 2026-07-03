@@ -58,11 +58,11 @@ namespace Ecommerce.Api.Controllers
             }
             catch (UnknownImageFormatException)
             {
-                // Not an image we can decode (e.g. a non-image file uploaded by mistake) — store as-is.
-                using var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                outputBytes = ms.ToArray();
-                reencoded = false;
+                // This endpoint is only ever meant to receive images. If the bytes
+                // can't be decoded as one, reject rather than storing an arbitrary
+                // file — otherwise an .html/.svg with embedded script could be
+                // uploaded and then served same-origin as a stored-XSS payload.
+                return BadRequest(new { message = "Only image files are allowed." });
             }
 
             // Name the file after a hash of its own bytes: identical content always

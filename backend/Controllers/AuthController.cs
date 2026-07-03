@@ -187,7 +187,10 @@ namespace Ecommerce.Api.Controllers
             var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null) return BadRequest(new { message = "User with this email does not exist." });
 
-            var otpCode = new Random().Next(100000, 999999).ToString();
+            // Crypto-secure RNG, not System.Random — an OTP guards password reset,
+            // so it must not be predictable from a seed/timing.
+            var otpCode = System.Security.Cryptography.RandomNumberGenerator
+                .GetInt32(100000, 1000000).ToString();
             var expiresAt = DateTime.UtcNow.AddMinutes(15);
 
             await _context.Database.ExecuteSqlRawAsync(

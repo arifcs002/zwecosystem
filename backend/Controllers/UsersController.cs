@@ -75,16 +75,24 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
             var isSuperAdmin = User.IsInRole("superadmin");
+
+            // Only a super admin or a company admin may create users. (This
+            // endpoint was previously [AllowAnonymous] — an unauthenticated
+            // caller could forge X-Tenant-ID and mint an admin for any tenant.)
+            if (!isSuperAdmin && !User.IsInRole("companyadmin")) return Forbid();
+
             var companyId    = _context.CompanyId;
 
             if (!isSuperAdmin)
             {
                 if (!companyId.HasValue) return Forbid();
                 if (dto.CompanyId != companyId.Value) return Forbid();
+                // A company admin must not be able to escalate anyone to a platform role.
+                if (string.Equals(dto.Role, "superadmin", StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
             }
 
             if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
@@ -106,6 +114,7 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto)
         {
             var isSuperAdmin = User.IsInRole("superadmin");
+            if (!isSuperAdmin && !User.IsInRole("companyadmin")) return Forbid();
             var companyId    = _context.CompanyId;
 
             var targetUser = isSuperAdmin
@@ -131,6 +140,7 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             var isSuperAdmin = User.IsInRole("superadmin");
+            if (!isSuperAdmin && !User.IsInRole("companyadmin")) return Forbid();
             var companyId    = _context.CompanyId;
 
             var targetUser = isSuperAdmin
