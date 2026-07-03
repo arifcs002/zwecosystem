@@ -47,6 +47,7 @@
         <div>
           <label for="username" class="block text-sm font-semibold text-gray-200 mb-2">Username or Email</label>
           <input id="username" name="email" type="text" [(ngModel)]="email" required
+                 autocapitalize="off" autocorrect="off" autocomplete="username" spellcheck="false"
                  class="w-full px-4 py-3 bg-[#eef2f6] border border-transparent rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] transition"
                  placeholder="Enter username">
         </div>

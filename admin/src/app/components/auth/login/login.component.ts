@@ -99,8 +99,12 @@ export class LoginComponent implements OnInit {
 
     this.isLoading = true;
     this.error = '';
+    // Mobile keyboards can auto-capitalize/pad the first field even with
+    // autocapitalize="off" set on some devices — trim defensively since the
+    // email lookup on the backend is an exact, case-sensitive match.
+    const email = this.email.trim();
 
-    this.authService.login(this.email, this.password, this.loginContext).subscribe({
+    this.authService.login(email, this.password, this.loginContext).subscribe({
       next: (response: any) => {
         if (this.loginContext === 'admin') {
           this.router.navigate(['/admin/dashboard']);
