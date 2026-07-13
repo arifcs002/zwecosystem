@@ -154,6 +154,50 @@
 .nav-icon { font-size: 1rem; flex-shrink: 0; }
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
+/* Collapsible nav groups (Catalog / Sales & Finance / Admin & Reports / Ecommerce) */
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin: 0.15rem 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-group-header:hover { background: rgba(139, 92, 246, 0.12); color: #e5e7eb; }
+
+.nav-group-header .nav-label { flex: 1; text-align: left; }
+
+.chevron {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.chevron.expanded { transform: rotate(90deg); }
+
+.nav-group-items {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.nav-group-items.expanded { max-height: 500px; }
+
+/* Icon-only (collapsed) sidebar: always show every item, ignore group state */
+.zw-sidebar.collapsed .nav-group-items { max-height: none; overflow: visible; }
+
 /* Sidebar Footer */
 .sidebar-footer {
   padding: 0.75rem;

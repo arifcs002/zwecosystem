@@ -73,30 +73,6 @@
         <span class="nav-icon">📈</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
       </a>
-      <a [routerLink]="basePath + '/products'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📦</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Product List</span>
-      </a>
-      <a [routerLink]="basePath + '/add-product'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">➕</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
-      </a>
-      <a [routerLink]="basePath + '/categories'" *ngIf="authService.hasRight('PAGE_CATEGORIES')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🗂️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
-      </a>
-      <a [routerLink]="basePath + '/barcodes'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🏷️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Barcode Management</span>
-      </a>
-      <a [routerLink]="basePath + '/suppliers'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🏭</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
-      </a>
-      <a [routerLink]="basePath + '/inventory'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📦</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Inventory</span>
-      </a>
       <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🧾</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
@@ -105,72 +81,138 @@
         <span class="nav-icon">🛒</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
       </a>
-      <a [routerLink]="basePath + '/customers'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">👥</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Customers</span>
-      </a>
-      <a [routerLink]="basePath + '/delivery'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🚚</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>
-      </a>
-      <a [routerLink]="basePath + '/payments'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">💳</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Payments</span>
-      </a>
-      <a [routerLink]="basePath + '/fraud'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🛡️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Fraud Review</span>
-      </a>
-      <a [routerLink]="basePath + '/refunds'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">💸</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Refunds</span>
-      </a>
-      <a [routerLink]="basePath + '/reports'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Reports</span>
-      </a>
-      <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">👤</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
-      </a>
-      <a [routerLink]="basePath + '/pricing'" *ngIf="authService.hasRight('PAGE_PRICING')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">💰</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Pricing</span>
-      </a>
-      <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
-      </a>
 
-      <!-- ===== ECOMMERCE (storefront configuration) ===== -->
-      <ng-container *ngIf="authService.hasRight('PAGE_STORE_CONFIG')">
-        <div class="nav-divider"></div>
-        <div class="nav-section-title" *ngIf="!sidebarCollapsed">🛒 Ecommerce</div>
-        <a [routerLink]="basePath + '/ecommerce/builder'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">🧱</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Storefront Builder</span>
-        </a>
-        <a [routerLink]="basePath + '/ecommerce/navigation'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">🧭</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Header &amp; Navigation</span>
-        </a>
-        <a [routerLink]="basePath + '/ecommerce/products'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">🏷️</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Product Display</span>
-        </a>
-        <a [routerLink]="basePath + '/ecommerce/checkout'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">💳</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Checkout &amp; Payment</span>
-        </a>
-        <a [routerLink]="basePath + '/ecommerce/pages'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">📄</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Pages &amp; Policies</span>
-        </a>
-        <a [routerLink]="basePath + '/ecommerce/product-codes'" routerLinkActive="active" class="nav-item">
-          <span class="nav-icon">🔢</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
-        </a>
-      </ng-container>
+      <!-- ===== CATALOG (collapsible group) ===== -->
+      <div class="nav-group">
+        <button type="button" class="nav-group-header" (click)="toggleGroup('catalog')">
+          <span class="nav-icon">📦</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Catalog</span>
+          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('catalog')">▸</span>
+        </button>
+        <div class="nav-group-items" [class.expanded]="isGroupExpanded('catalog')">
+          <a [routerLink]="basePath + '/products'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Product List</span>
+          </a>
+          <a [routerLink]="basePath + '/add-product'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">➕</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
+          </a>
+          <a [routerLink]="basePath + '/categories'" *ngIf="authService.hasRight('PAGE_CATEGORIES')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
+          </a>
+          <a [routerLink]="basePath + '/barcodes'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Barcode Management</span>
+          </a>
+          <a [routerLink]="basePath + '/price-tag'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Price Tags</span>
+          </a>
+          <a [routerLink]="basePath + '/suppliers'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏭</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
+          </a>
+          <a [routerLink]="basePath + '/inventory'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Inventory</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ===== SALES & FINANCE (collapsible group) ===== -->
+      <div class="nav-group">
+        <button type="button" class="nav-group-header" (click)="toggleGroup('sales')">
+          <span class="nav-icon">💰</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Sales &amp; Finance</span>
+          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('sales')">▸</span>
+        </button>
+        <div class="nav-group-items" [class.expanded]="isGroupExpanded('sales')">
+          <a [routerLink]="basePath + '/customers'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Customers</span>
+          </a>
+          <a [routerLink]="basePath + '/delivery'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🚚</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>
+          </a>
+          <a [routerLink]="basePath + '/payments'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Payments</span>
+          </a>
+          <a [routerLink]="basePath + '/fraud'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🛡️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Fraud Review</span>
+          </a>
+          <a [routerLink]="basePath + '/refunds'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">💸</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Refunds</span>
+          </a>
+          <a [routerLink]="basePath + '/pricing'" *ngIf="authService.hasRight('PAGE_PRICING')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Pricing</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN & REPORTS (collapsible group) ===== -->
+      <div class="nav-group">
+        <button type="button" class="nav-group-header" (click)="toggleGroup('admin')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Admin &amp; Reports</span>
+          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('admin')">▸</span>
+        </button>
+        <div class="nav-group-items" [class.expanded]="isGroupExpanded('admin')">
+          <a [routerLink]="basePath + '/reports'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Reports</span>
+          </a>
+          <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
+          </a>
+          <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ===== ECOMMERCE (storefront configuration, collapsible group) ===== -->
+      <div class="nav-group" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')">
+        <button type="button" class="nav-group-header" (click)="toggleGroup('ecommerce')">
+          <span class="nav-icon">🛒</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Ecommerce</span>
+          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('ecommerce')">▸</span>
+        </button>
+        <div class="nav-group-items" [class.expanded]="isGroupExpanded('ecommerce')">
+          <a [routerLink]="basePath + '/ecommerce/builder'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🧱</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Storefront Builder</span>
+          </a>
+          <a [routerLink]="basePath + '/ecommerce/navigation'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🧭</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Header &amp; Navigation</span>
+          </a>
+          <a [routerLink]="basePath + '/ecommerce/products'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🏷️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Product Display</span>
+          </a>
+          <a [routerLink]="basePath + '/ecommerce/checkout'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Checkout &amp; Payment</span>
+          </a>
+          <a [routerLink]="basePath + '/ecommerce/pages'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📄</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Pages &amp; Policies</span>
+          </a>
+          <a [routerLink]="basePath + '/ecommerce/product-codes'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🔢</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
+          </a>
+        </div>
+      </div>
 
     </nav>
 

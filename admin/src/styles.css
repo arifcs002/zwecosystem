@@ -396,3 +396,55 @@ select.form-input option:disabled {
   transform: translateY(-1px);
 }
 .text-theme-primary { color: var(--primary); }
+
+/* ======= FILTER TABS (shared by Payments, Fraud Review, Refunds, etc.) ======= */
+.tab-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.tab-btn { padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; cursor: pointer; transition: all 0.2s; }
+.tab-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+/* ======= MOBILE (phones, <=768px) ======= */
+@media (max-width: 768px) {
+  .page-container { padding: 1rem; }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+  }
+  .page-header .btn-primary,
+  .page-header .btn-secondary { width: 100%; }
+
+  .page-title { font-size: 1.25rem; }
+  .page-subtitle { font-size: 0.8rem; }
+
+  /* Tables stay horizontally scrollable, but the first column (the row's main
+     identifier — order #, name, etc.) stays pinned so context isn't lost
+     while scrolling through the rest of the columns. */
+  .data-table { min-width: 100%; font-size: 0.8rem; }
+  .data-table th, .data-table td { padding: 0.6rem 0.6rem; }
+  .data-table td:first-child, .data-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #14142b;
+  }
+  .data-table thead tr th:first-child { background: #1b1440; }
+
+  .search-input { max-width: 100%; }
+
+  /* Prevents the WebView from auto-zooming the page when a form field is
+     focused (iOS/Android both trigger this below a 16px input font-size). */
+  .form-input { font-size: 16px; }
+
+  /* Modals become a near-fullscreen sheet instead of a small centered dialog. */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal, .modal-lg {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-body { max-height: none; flex: 1; overflow-y: auto; }
+}
