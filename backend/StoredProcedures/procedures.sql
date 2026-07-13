@@ -925,6 +925,7 @@ CREATE OR REPLACE FUNCTION sp_verify_payment(
     p_verification_type TEXT, p_sender_number TEXT, p_reference_log TEXT
 ) RETURNS INT LANGUAGE plpgsql AS $$
 DECLARE v_id INT;
+DECLARE v_payment_id INT;
 BEGIN
     UPDATE orders SET payment_status = p_status, updated_date = NOW() WHERE id = p_order_id;
 
@@ -943,7 +944,56 @@ BEGIN
         v_id := 1;
     END;
 
-    RETURN COALESCE(v_id, 1);
+    -- Upsert into payments (the table the Payment EF entity maps to) keyed by
+    -- transaction_id, so both manual (mfs-verify) and automated (gateway
+    -- callback) flows are queryable through EF, not just via payment_logs.
+    SELECT id INTO v_payment_id FROM payments WHERE transaction_id = p_transaction_id AND company_id = p_company_id;
+
+    IF v_payment_id IS NULL THEN
+        INSERT INTO payments (
+            company_id, order_id, transaction_id, provider, amount,
+            status, payment_type, sender_number, reference_log,
+            created_date, updated_date, is_deleted)
+        VALUES (
+            p_company_id, p_order_id, p_transaction_id, p_provider, p_amount,
+            p_status, p_verification_type, p_sender_number, p_reference_log,
+            NOW(), NOW(), 0)
+        RETURNING id INTO v_payment_id;
+    ELSE
+        UPDATE payments SET
+            status = p_status,
+            amount = p_amount,
+            reference_log = p_reference_log,
+            updated_date = NOW()
+        WHERE id = v_payment_id;
+    END IF;
+
+    RETURN COALESCE(v_id, v_payment_id, 1);
+END;
+$$;
+
+-- Marks a refund as completed after the admin has manually sent the money
+-- back to the customer outside the system (no automated provider refund
+-- API call). Cascades the linked payment/order payment_status to REFUNDED.
+CREATE OR REPLACE FUNCTION sp_complete_refund(
+    p_refund_id INT, p_processed_by INT
+) RETURNS INT LANGUAGE plpgsql AS $$
+DECLARE v_payment_id INT;
+DECLARE v_order_id INT;
+BEGIN
+    SELECT payment_id, order_id INTO v_payment_id, v_order_id FROM refunds WHERE id = p_refund_id;
+
+    UPDATE refunds SET
+        status = 'COMPLETED',
+        processed_by = p_processed_by,
+        processed_date = NOW(),
+        updated_date = NOW()
+    WHERE id = p_refund_id;
+
+    UPDATE payments SET status = 'REFUNDED', updated_date = NOW() WHERE id = v_payment_id;
+    UPDATE orders SET payment_status = 'REFUNDED', updated_date = NOW() WHERE id = v_order_id;
+
+    RETURN p_refund_id;
 END;
 $$;
 

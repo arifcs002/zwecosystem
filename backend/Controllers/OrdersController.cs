@@ -15,12 +15,14 @@ namespace Ecommerce.Api.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IFileTextLogger _fileLogger;
         private readonly ISmsSender _smsSender;
+        private readonly IFraudAnalyzer _fraudAnalyzer;
 
-        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender)
+        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender, IFraudAnalyzer fraudAnalyzer)
         {
             _context = context;
             _fileLogger = fileLogger;
             _smsSender = smsSender;
+            _fraudAnalyzer = fraudAnalyzer;
         }
 
         // Storefront guest checkout. Anonymous — the tenant is resolved from the
@@ -83,7 +85,45 @@ namespace Ecommerce.Api.Controllers
                 productIds.ToArray(), quantities.ToArray(), prices.ToArray()
             ).ToListAsync()).FirstOrDefault();
 
+            await RunFraudCheckAsync(orderId, companyId.Value, dto.CustomerPhone, total);
+
             return Ok(new { orderId, orderNumber, subtotal, shippingFee, total });
+        }
+
+        // Screens the just-created order for fraud signals (velocity, unusual
+        // amount, etc). Advisory only — never blocks checkout; a BLOCK/REVIEW
+        // decision just surfaces the order via api/fraud/flagged for admin review.
+        private async Task RunFraudCheckAsync(int orderId, int companyId, string? customerPhone, decimal total)
+        {
+            try
+            {
+                var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim()
+                         ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+
+                var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+                if (order == null) return;
+
+                order.CustomerIp = ip;
+                await _context.SaveChangesAsync();
+
+                var analysis = await _fraudAnalyzer.AnalyzeAsync(order, ip);
+
+                _context.FraudChecks.Add(new FraudCheck
+                {
+                    CompanyId = companyId,
+                    OrderId = orderId,
+                    IpAddress = ip,
+                    RiskScore = analysis.RiskScore,
+                    Flags = string.Join(",", analysis.Flags),
+                    Decision = analysis.Decision,
+                    CheckedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger.LogError("FRAUD", $"Fraud check failed for order {orderId}", ex);
+            }
         }
 
         [HttpGet]

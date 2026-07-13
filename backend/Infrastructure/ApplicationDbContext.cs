@@ -37,6 +37,8 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<FraudCheck> FraudChecks { get; set; }
+        public DbSet<Refund> Refunds { get; set; }
         public DbSet<CompanySetting> CompanySettings { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
@@ -161,6 +163,8 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<Product>().HasQueryFilter(p => p.IsDeleted == 0 && (!CompanyId.HasValue || p.CompanyId == CompanyId));
             modelBuilder.Entity<Order>().HasQueryFilter(o => o.IsDeleted == 0 && (!CompanyId.HasValue || o.CompanyId == CompanyId));
             modelBuilder.Entity<Payment>().HasQueryFilter(p => p.IsDeleted == 0 && (!CompanyId.HasValue || p.CompanyId == CompanyId));
+            modelBuilder.Entity<FraudCheck>().HasQueryFilter(f => f.IsDeleted == 0 && (!CompanyId.HasValue || f.CompanyId == CompanyId));
+            modelBuilder.Entity<Refund>().HasQueryFilter(r => r.IsDeleted == 0 && (!CompanyId.HasValue || r.CompanyId == CompanyId));
             modelBuilder.Entity<CompanySetting>().HasQueryFilter(cs => cs.IsDeleted == 0 && (!CompanyId.HasValue || cs.CompanyId == CompanyId));
             modelBuilder.Entity<AuditLog>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
             modelBuilder.Entity<Supplier>().HasQueryFilter(s => s.IsDeleted == 0 && (!CompanyId.HasValue || s.CompanyId == CompanyId));

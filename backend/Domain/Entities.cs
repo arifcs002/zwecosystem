@@ -648,6 +648,10 @@ namespace Ecommerce.Api.Domain
         [Column("tracking_number")]
         public string? TrackingNumber { get; set; }
 
+        // Captured at order-creation time for fraud screening (velocity checks).
+        [Column("customer_ip")]
+        public string? CustomerIp { get; set; }
+
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();
     }
@@ -735,13 +739,13 @@ namespace Ecommerce.Api.Domain
 
         [Required]
         [Column("provider")]
-        public string Provider { get; set; } = string.Empty; // 'BKASH', 'NAGAD', 'ROCKET', 'CASH'
+        public string Provider { get; set; } = string.Empty; // 'BKASH', 'NAGAD', 'ROCKET', 'BANGLAQR', 'CASH'
 
         [Column("amount")]
         public decimal Amount { get; set; }
 
         [Column("status")]
-        public string Status { get; set; } = "PENDING"; // 'PENDING', 'SUCCESS', 'FAILED'
+        public string Status { get; set; } = "PENDING"; // 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'
 
         [Column("payment_type")]
         public string PaymentType { get; set; } = "AUTOMATED"; // 'AUTOMATED', 'MANUAL'
@@ -751,6 +755,87 @@ namespace Ecommerce.Api.Domain
 
         [Column("reference_log")]
         public string? ReferenceLog { get; set; }
+    }
+
+    [Table("fraud_checks")]
+    public class FraudCheck : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [ForeignKey(nameof(CompanyId))]
+        [JsonIgnore]
+        public Company? Company { get; set; }
+
+        [Column("order_id")]
+        public int OrderId { get; set; }
+
+        [ForeignKey(nameof(OrderId))]
+        [JsonIgnore]
+        public Order? Order { get; set; }
+
+        [Column("ip_address")]
+        public string? IpAddress { get; set; }
+
+        [Column("risk_score")]
+        public int RiskScore { get; set; }
+
+        [Column("flags")]
+        public string? Flags { get; set; }
+
+        [Column("decision")]
+        public string Decision { get; set; } = "REVIEW"; // 'PASS', 'REVIEW', 'BLOCK'
+
+        [Column("checked_date")]
+        public DateTime CheckedDate { get; set; }
+    }
+
+    [Table("refunds")]
+    public class Refund : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [ForeignKey(nameof(CompanyId))]
+        [JsonIgnore]
+        public Company? Company { get; set; }
+
+        [Column("payment_id")]
+        public int PaymentId { get; set; }
+
+        [ForeignKey(nameof(PaymentId))]
+        [JsonIgnore]
+        public Payment? Payment { get; set; }
+
+        [Column("order_id")]
+        public int OrderId { get; set; }
+
+        [ForeignKey(nameof(OrderId))]
+        [JsonIgnore]
+        public Order? Order { get; set; }
+
+        [Column("amount")]
+        public decimal Amount { get; set; }
+
+        [Column("reason")]
+        public string? Reason { get; set; }
+
+        [Column("status")]
+        public string Status { get; set; } = "REQUESTED"; // 'REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED'
+
+        [Column("processed_by")]
+        public int? ProcessedBy { get; set; }
+
+        [Column("processed_date")]
+        public DateTime? ProcessedDate { get; set; }
     }
 
     [Table("company_settings")]

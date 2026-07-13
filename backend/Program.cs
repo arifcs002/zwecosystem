@@ -29,6 +29,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ISmsSender, HttpSmsSender>();
+builder.Services.AddScoped<IFraudAnalyzer, FraudAnalyzer>();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.BkashProvider>();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.NagadProvider>();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.BanglaQrProvider>();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentGatewayService, Ecommerce.Api.Infrastructure.PaymentGateway.PaymentGatewayDispatcher>();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCompression(options =>
 {
@@ -425,6 +430,54 @@ using (var scope = app.Services.CreateScope())
         // Steadfast API integration can populate these same columns later.
         dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_name TEXT");
         dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number TEXT");
+
+        // Fraud screening — captures the requesting IP on the order and stores
+        // a risk score/decision per order. Decisions are advisory only (never
+        // auto-blocks); admins review flagged orders via api/fraud/flagged.
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ip TEXT");
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS fraud_checks (
+                id SERIAL PRIMARY KEY,
+                company_id INTEGER NOT NULL,
+                order_id INTEGER NOT NULL REFERENCES orders(id),
+                ip_address TEXT,
+                risk_score INTEGER NOT NULL DEFAULT 0,
+                flags TEXT,
+                decision TEXT NOT NULL DEFAULT 'REVIEW',
+                checked_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by INTEGER,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_by INTEGER,
+                updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                deleted_by INTEGER,
+                deleted_date TIMESTAMPTZ,
+                is_deleted INTEGER NOT NULL DEFAULT 0
+            )");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_fraud_checks_order ON fraud_checks(order_id)");
+
+        // Manual refunds — admin-driven request/approve/reject/complete workflow.
+        // "Completed" means the admin has sent the money back outside the system
+        // (no automated provider-side refund API call is made).
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS refunds (
+                id SERIAL PRIMARY KEY,
+                company_id INTEGER NOT NULL,
+                payment_id INTEGER NOT NULL REFERENCES payments(id),
+                order_id INTEGER NOT NULL REFERENCES orders(id),
+                amount DECIMAL NOT NULL,
+                reason TEXT,
+                status TEXT NOT NULL DEFAULT 'REQUESTED',
+                processed_by INTEGER,
+                processed_date TIMESTAMPTZ,
+                created_by INTEGER,
+                created_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_by INTEGER,
+                updated_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                deleted_by INTEGER,
+                deleted_date TIMESTAMPTZ,
+                is_deleted INTEGER NOT NULL DEFAULT 0
+            )");
+        dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_refunds_order ON refunds(order_id)");
 
         Console.WriteLine("--> Database is ready & seeded.");
     }

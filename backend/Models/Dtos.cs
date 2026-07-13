@@ -127,6 +127,15 @@ namespace Ecommerce.Api.Models
         int OrderId, string TransactionId, string Provider,
         decimal Amount, string SenderNumber, string? ReferenceLog);
 
+    public record PaymentInitiateDto(int OrderId, string Provider, decimal Amount);
+
+    // ── Fraud ────────────────────────────────────────────────
+    public record FraudResolveDto(string Decision); // 'PASS', 'REVIEW', 'BLOCK'
+
+    // ── Refunds ──────────────────────────────────────────────
+    public record RefundCreateDto(int PaymentId, int OrderId, decimal Amount, string? Reason);
+    public record RefundRejectDto(string? Reason);
+
     // ── Settings / Company ──────────────────────────────────
     public record CompanyUpdateDto(
         string Name, string? LogoUrl, string? BannerUrl,

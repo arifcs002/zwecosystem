@@ -1,0 +1,61 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">🛡️ Fraud Review</h1>
+      <p class="page-subtitle">Orders flagged by automatic risk screening — review and resolve manually</p>
+    </div>
+  </div>
+
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+
+  <div class="tab-row">
+    <button [class.active]="filterDecision === 'ALL'" (click)="filterDecision='ALL'; applyFilter()" class="tab-btn">All</button>
+    <button [class.active]="filterDecision === 'BLOCK'" (click)="filterDecision='BLOCK'; applyFilter()" class="tab-btn">🚫 Block</button>
+    <button [class.active]="filterDecision === 'REVIEW'" (click)="filterDecision='REVIEW'; applyFilter()" class="tab-btn">⚠️ Review</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="🔍 Search order, customer, phone..." class="search-input" />
+  </div>
+
+  <div class="table-card">
+    <div class="loading" *ngIf="isLoading">Loading flagged orders...</div>
+    <table class="data-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Amount</th>
+          <th>IP Address</th>
+          <th>Risk Score</th>
+          <th>Flags</th>
+          <th>Decision</th>
+          <th>Checked</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of filteredFlagged">
+          <td><strong>{{ f.orderNumber }}</strong></td>
+          <td>{{ f.customerName || 'Guest' }}<br><small>{{ f.customerPhone }}</small></td>
+          <td><strong>৳{{ f.orderTotal | number:'1.0-0' }}</strong></td>
+          <td><small>{{ f.ipAddress || '—' }}</small></td>
+          <td><strong>{{ f.riskScore }}</strong>/100</td>
+          <td>
+            <span class="flag-chip" *ngFor="let flag of getFlagList(f.flags)">{{ flag }}</span>
+          </td>
+          <td><span [class]="getDecisionClass(f.decision)">{{ f.decision }}</span></td>
+          <td>{{ f.checkedDate | date:'dd MMM, HH:mm' }}</td>
+          <td class="actions-cell">
+            <button class="btn-primary btn-sm" (click)="resolve(f, 'PASS')">✔ Approve</button>
+            <button class="btn-danger btn-sm" (click)="resolve(f, 'BLOCK')" *ngIf="f.decision !== 'BLOCK'">🚫 Block</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredFlagged.length === 0">
+          <td colspan="9" class="empty-row">No flagged orders. 🎉</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,12 @@
+.tab-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.tab-btn { padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; cursor: pointer; transition: all 0.2s; }
+.tab-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.status-requested { color: #f59e0b; font-weight: 600; }
+.status-approved { color: #3b82f6; font-weight: 600; }
+.status-completed { color: #10b981; font-weight: 600; }
+.status-rejected { color: #ef4444; font-weight: 600; }
+.btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+.btn-danger { background: #ef4444; color: #fff; border: none; border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer; }
+.btn-danger:hover { background: #dc2626; }
+.done-badge { color: #10b981; font-weight: 600; }
+.actions-cell { display: flex; gap: 0.4rem; }
