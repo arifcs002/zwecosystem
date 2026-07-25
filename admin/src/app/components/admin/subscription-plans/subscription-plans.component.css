@@ -1,0 +1,28 @@
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.plan-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-name { font-size: 1.1rem; font-weight: 700; color: #e5e7eb; margin-bottom: 0.4rem; }
+.plan-price { font-size: 1.5rem; font-weight: 800; color: #a78bfa; margin-bottom: 1rem; }
+.plan-cycle { font-size: 0.8rem; font-weight: 500; color: #9ca3af; }
+
+.plan-features { list-style: none; margin: 0 0 1.25rem; padding: 0; flex: 1; }
+.plan-features li { font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem; }
+.plan-features .check { color: #10b981; margin-right: 0.3rem; }
+.no-features { font-style: italic; }
+
+.plan-actions { display: flex; gap: 0.5rem; }
+.btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+.btn-danger { background: #ef4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.btn-danger:hover { background: #dc2626; }

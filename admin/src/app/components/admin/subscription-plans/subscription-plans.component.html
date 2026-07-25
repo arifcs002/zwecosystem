@@ -1,0 +1,66 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">💎 Subscription Plans</h1>
+      <p class="page-subtitle">Manage the pricing tiers companies can subscribe to</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">+ Add Plan</button>
+  </div>
+
+  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  <div class="alert-error" *ngIf="errorMsg && !showEditModal">❌ {{ errorMsg }}</div>
+
+  <div class="loading" *ngIf="isLoading">Loading plans...</div>
+
+  <div class="plan-grid" *ngIf="!isLoading">
+    <div class="plan-card" *ngFor="let plan of plans">
+      <div class="plan-name">{{ plan.name }}</div>
+      <div class="plan-price">৳{{ plan.price | number:'1.0-0' }} <span class="plan-cycle">/ {{ plan.billingCycle }}</span></div>
+      <ul class="plan-features">
+        <li *ngFor="let f of featuresOf(plan)"><span class="check">✔</span> {{ f.key }}: <strong>{{ f.value }}</strong></li>
+        <li *ngIf="featuresOf(plan).length === 0" class="no-features">No features configured</li>
+      </ul>
+      <div class="plan-actions">
+        <button class="btn-secondary btn-sm" (click)="openEdit(plan)">Edit</button>
+        <button class="btn-danger btn-sm" (click)="remove(plan)">Delete</button>
+      </div>
+    </div>
+    <div class="empty-row" *ngIf="plans.length === 0">No subscription plans yet.</div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingPlan ? 'Edit Plan' : 'Add Plan' }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        <div class="form-group">
+          <label>Plan Name *</label>
+          <input type="text" [(ngModel)]="form.name" class="form-input" placeholder="e.g. Business Plan" />
+        </div>
+        <div class="form-group">
+          <label>Price (৳)</label>
+          <input type="number" [(ngModel)]="form.price" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Billing Cycle</label>
+          <select [(ngModel)]="form.billingCycle" class="form-input">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Features (one per line, key=value)</label>
+          <textarea [(ngModel)]="form.featureList" class="form-input" rows="6" placeholder="max_products=500&#10;pos_enabled=true&#10;ecommerce_enabled=true"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn-primary" (click)="save()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

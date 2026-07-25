@@ -1,0 +1,7 @@
+<div class="merged-tab-row">
+  <button [class.active]="activeTab === 'barcodes'" (click)="activeTab = 'barcodes'" class="tab-btn">🏷️ Barcode Labels</button>
+  <button [class.active]="activeTab === 'tags'" (click)="activeTab = 'tags'" class="tab-btn">🖨️ Price Tags (with copies)</button>
+</div>
+
+<app-barcode-management *ngIf="activeTab === 'barcodes'"></app-barcode-management>
+<app-price-tag *ngIf="activeTab === 'tags'"></app-price-tag>
