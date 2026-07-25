@@ -13,9 +13,15 @@
 // avoid WebView mixed-content blocks against a http-only backend — flipping
 // this to https requires provisioning a wildcard TLS cert on the server AND
 // updating capacitor.config.ts's androidScheme together, not in isolation.
+//
+// :85 (not the default :80): port 80 on the server is already occupied by
+// something else outside this project's docker-compose — claiming it
+// crashed the whole admin-dashboard container. Until that's freed up (or
+// a host-level reverse proxy is set up to forward 80 -> 85), every URL
+// needs the explicit :85.
 export const environment = {
   production: true,
-  apiUrl: 'http://auleco.com/api',
-  siteUrl: 'http://auleco.com',
-  rootDomain: 'auleco.com'
+  apiUrl: 'http://auleco.com:85/api',
+  siteUrl: 'http://auleco.com:85',
+  rootDomain: 'auleco.com:85'
 };
