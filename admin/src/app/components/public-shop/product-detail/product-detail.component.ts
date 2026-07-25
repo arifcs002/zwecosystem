@@ -9,6 +9,7 @@ import { CartService } from '../../../services/cart/cart.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { CartWidgetComponent } from '../cart-widget/cart-widget.component';
 import { ProductGroup, groupForProductId, toShopProduct, discountPercent } from '../../../utils/product-group.util';
+import { TenantService } from '../../../services/tenant/tenant.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -22,6 +23,7 @@ export class ProductDetailComponent implements OnInit {
   private companyService = inject(CompanyService);
   private productService = inject(ProductService);
   private settingsService = inject(SettingsService);
+  private tenant = inject(TenantService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -45,7 +47,7 @@ export class ProductDetailComponent implements OnInit {
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
-      this.companySlug = params.get('companySlug') || '';
+      this.companySlug = this.tenant.getSlug(this.route);
       const productId = Number(params.get('id'));
 
       // Resolve the company FIRST so tenant_company_id is in localStorage before
@@ -125,8 +127,8 @@ export class ProductDetailComponent implements OnInit {
     if (!this.selectedVariant || this.selectedVariant.stockQuantity <= 0) return;
     this.addToCart();
     this.cartService.isCartOpen = false;
-    this.router.navigate(['/', this.companySlug, 'checkout']);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug, 'checkout'));
   }
 
-  goBack() { this.router.navigate(['/', this.companySlug]); }
+  goBack() { this.router.navigate(this.tenant.routeSegments(this.companySlug)); }
 }

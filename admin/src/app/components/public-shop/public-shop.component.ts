@@ -16,6 +16,7 @@ import { BrandCarouselComponent } from './blocks/brand-carousel/brand-carousel.c
 import { TestimonialsComponent } from './blocks/testimonials/testimonials.component';
 import { Brand } from '../../services/brand/brand.service';
 import { StorefrontService, StorefrontData } from '../../services/storefront/storefront.service';
+import { TenantService } from '../../services/tenant/tenant.service';
 
 export interface CategorySection {
   id: number;
@@ -53,6 +54,7 @@ export class PublicShopComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private storefrontService = inject(StorefrontService);
+  tenant = inject(TenantService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -108,7 +110,7 @@ export class PublicShopComponent implements OnInit {
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
-      this.companySlug = params.get('companySlug') || '';
+      this.companySlug = this.tenant.getSlug(this.route);
       const catId = params.get('categoryId');
       this.selectedCategoryId = catId ? Number(catId) : null;
 
@@ -277,7 +279,7 @@ export class PublicShopComponent implements OnInit {
   blockViewAll(block: StorefrontBlock) {
     if (block.viewAllLink) {
       const parts = block.viewAllLink.replace(/^\/+/, '').split('/').filter(Boolean);
-      this.router.navigate(['/', this.companySlug, ...parts]);
+      this.router.navigate(this.tenant.routeSegments(this.companySlug, ...parts));
     } else if (block.source === 'category' && block.categoryId != null) {
       this.navigateToCategory(Number(block.categoryId));
     }
@@ -338,7 +340,7 @@ export class PublicShopComponent implements OnInit {
 
   navigateToCategory(catId: number) {
     this.selectedCategoryId = catId;
-    this.router.navigate(['/', this.companySlug, 'category', catId]);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug, 'category', catId));
   }
 
   seeMore(catId: number) {
@@ -348,14 +350,14 @@ export class PublicShopComponent implements OnInit {
   goHome() {
     this.selectedCategoryId = null;
     this.detailCategory = null;
-    this.router.navigate(['/', this.companySlug]);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug));
   }
 
   goHomeAndClose() { this.sidebarOpen = false; this.goHome(); }
   navAndClose(catId: number) { this.sidebarOpen = false; this.navigateToCategory(catId); }
 
   openProduct(group: ProductGroup) {
-    this.router.navigate(['/', this.companySlug, 'product', group.variants[0].id]);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug, 'product', group.variants[0].id));
   }
 
   stockLabel(stock: number): string {

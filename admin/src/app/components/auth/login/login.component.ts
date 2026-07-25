@@ -7,6 +7,7 @@ import { AuthService } from '../../../services/auth/auth.service';
 import { ThemeService } from '../../../services/theme/theme.service';
 import { CompanyService } from '../../../services/company/company.service';
 import { RequiredErrorComponent } from '../../../../app/shared/required-error/required-error.component';
+import { TenantService } from '../../../services/tenant/tenant.service';
 
 const APP_ENTRY_STORAGE_KEY = 'app_login_context';
 
@@ -24,8 +25,8 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   showPassword = false;
 
-  companyName = 'ZW ECOSYSTEM';
-  logoUrl = ''; // If 'ZW', show custom ZW logo, if empty show default, else show image
+  companyName = 'AULECO';
+  logoUrl = ''; // Empty shows the default shield icon; otherwise shows the image at this URL
   companyLogoUrl: string = '';
   isCompanySubdomain: boolean = false;
   loginContext: string = 'admin'; // 'admin' or companySlug
@@ -35,10 +36,16 @@ export class LoginComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private themeService = inject(ThemeService);
   private companyService = inject(CompanyService);
+  private tenant = inject(TenantService);
 
   // Only relevant inside the packaged app (no address bar) — lets a user
   // return to the Super Admin / Store Code picker to switch accounts.
   get showSwitchAccount(): boolean { return Capacitor.isNativePlatform(); }
+
+  get isAdmin(): boolean { return this.loginContext === 'admin'; }
+  get accentGrad(): string {
+    return this.isAdmin ? 'linear-gradient(135deg,#7c3aed,#8b5cf6)' : 'linear-gradient(135deg,#e11d48,#f43f5e)';
+  }
 
   switchAccount() {
     localStorage.removeItem(APP_ENTRY_STORAGE_KEY);
@@ -55,40 +62,46 @@ export class LoginComponent implements OnInit {
     if (url.includes('/admin/login')) {
       this.loginContext = 'admin';
       this.isCompanySubdomain = false;
-      this.companyName = 'ZW ECOSYSTEM';
-      this.logoUrl = 'assets/zw-logo.png';
+      this.companyName = 'AULECO';
+      this.logoUrl = 'assets/auleco-mark-light.png';
       this.themeService.applyTheme('deep-royal-amethyst');
-    } else {
-      // Must be /:companySlug/login
-      this.route.paramMap.subscribe(params => {
-        const slug = params.get('companySlug');
-        if (slug) {
-          this.loginContext = slug;
-          if (this.loginContext === 'admin') {
-            this.companyName = 'ZW ECOSYSTEM';
-            this.logoUrl = 'assets/zw-logo.png';
-          } else {
-            this.companyService.getPublicCompany(this.loginContext).subscribe({
-              next: (company) => {
-                this.companyName = company.name;
-                localStorage.setItem('tenant_company_id', company.id.toString());
-                if (company.logoUrl) {
-                  this.logoUrl = company.logoUrl;
-                  this.companyLogoUrl = company.logoUrl;
-                } else {
-                  this.logoUrl = '';
-                }
-              },
-              error: () => {
-                this.companyName = 'Store Not Found';
-                this.loginContext = 'invalid';
-              }
-            });
-          }
-          this.themeService.applyTheme('cyberpunk-teal'); // Fallback or dynamic
-        }
-      });
+      return;
     }
+
+    // Company subdomain (zairasworld.auleco.com/login) — slug comes from the
+    // hostname, no route param. Falls back to the legacy /:companySlug/login
+    // route param for IP access / local dev without subdomain DNS.
+    const hostSlug = this.tenant.getSubdomainFromHost();
+    if (hostSlug) {
+      this.setCompanyContext(hostSlug);
+      return;
+    }
+
+    this.route.paramMap.subscribe(params => {
+      const slug = params.get('companySlug');
+      if (slug) this.setCompanyContext(slug);
+    });
+  }
+
+  private setCompanyContext(slug: string) {
+    this.loginContext = slug;
+    this.companyService.getPublicCompany(slug).subscribe({
+      next: (company) => {
+        this.companyName = company.name;
+        localStorage.setItem('tenant_company_id', company.id.toString());
+        if (company.logoUrl) {
+          this.logoUrl = company.logoUrl;
+          this.companyLogoUrl = company.logoUrl;
+        } else {
+          this.logoUrl = '';
+        }
+      },
+      error: () => {
+        this.companyName = 'Store Not Found';
+        this.loginContext = 'invalid';
+      }
+    });
+    this.themeService.applyTheme('cyberpunk-teal');
   }
 
   onSubmit() {
@@ -109,7 +122,7 @@ export class LoginComponent implements OnInit {
         if (this.loginContext === 'admin') {
           this.router.navigate(['/admin/dashboard']);
         } else {
-          this.router.navigate(['/', this.loginContext, 'workspace', 'dashboard']);
+          this.router.navigate(this.tenant.routeSegments(this.loginContext, 'workspace', 'dashboard'));
         }
       },
       error: (err: any) => {

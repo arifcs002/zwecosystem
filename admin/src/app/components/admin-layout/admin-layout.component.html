@@ -12,8 +12,10 @@
     <!-- Brand (the single menu toggle lives in the topbar, left of this logo) -->
     <div class="sidebar-brand">
       <div class="brand-logo">
-        <span class="brand-icon">⚡</span>
-        <span class="brand-text" *ngIf="!sidebarCollapsed">ZW Ecosystem</span>
+        <div class="brand-icon-badge">
+          <img src="assets/auleco-mark.png" alt="Auleco" class="brand-icon-img">
+        </div>
+        <span class="brand-text" *ngIf="!sidebarCollapsed">Auleco</span>
       </div>
     </div>
 
@@ -54,6 +56,10 @@
           <span class="nav-icon">🎨</span>
           <span class="nav-label" *ngIf="!sidebarCollapsed">Theme & Settings</span>
         </a>
+        <a [routerLink]="'/admin/subscription-plans'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">💎</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Subscription Plans</span>
+        </a>
         <a [routerLink]="'/admin/app-releases'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">📱</span>
           <span class="nav-label" *ngIf="!sidebarCollapsed">Mobile App Releases</span>
@@ -82,11 +88,11 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
       </a>
 
-      <!-- ===== CATALOG (collapsible group) ===== -->
+      <!-- ===== CATALOG & SALES (merged collapsible group) ===== -->
       <div class="nav-group">
         <button type="button" class="nav-group-header" (click)="toggleGroup('catalog')">
           <span class="nav-icon">📦</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Catalog</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">Catalog &amp; Sales</span>
           <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('catalog')">▸</span>
         </button>
         <div class="nav-group-items" [class.expanded]="isGroupExpanded('catalog')">
@@ -102,13 +108,9 @@
             <span class="nav-icon">🗂️</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
           </a>
-          <a [routerLink]="basePath + '/barcodes'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
+          <a [routerLink]="basePath + '/product-labels'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🏷️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Barcode Management</span>
-          </a>
-          <a [routerLink]="basePath + '/price-tag'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🏷️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Price Tags</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Barcodes &amp; Price Tags</span>
           </a>
           <a [routerLink]="basePath + '/suppliers'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🏭</span>
@@ -118,17 +120,6 @@
             <span class="nav-icon">📦</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Inventory</span>
           </a>
-        </div>
-      </div>
-
-      <!-- ===== SALES & FINANCE (collapsible group) ===== -->
-      <div class="nav-group">
-        <button type="button" class="nav-group-header" (click)="toggleGroup('sales')">
-          <span class="nav-icon">💰</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Sales &amp; Finance</span>
-          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('sales')">▸</span>
-        </button>
-        <div class="nav-group-items" [class.expanded]="isGroupExpanded('sales')">
           <a [routerLink]="basePath + '/customers'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">👥</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Customers</span>
@@ -150,7 +141,7 @@
             <span class="nav-label" *ngIf="!sidebarCollapsed">Refunds</span>
           </a>
           <a [routerLink]="basePath + '/pricing'" *ngIf="authService.hasRight('PAGE_PRICING')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🏷️</span>
+            <span class="nav-icon">💰</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Pricing</span>
           </a>
         </div>
@@ -235,7 +226,7 @@
         </button>
         <span class="topbar-logo">⚡</span>
         <h2 class="page-breadcrumb">
-          {{ authService.isSuperAdmin() ? 'ZW Ecosystem Admin' : 'Company Workspace' }}
+          {{ authService.isSuperAdmin() ? 'Auleco Admin' : 'Company Workspace' }}
         </h2>
       </div>
       <div class="topbar-right">

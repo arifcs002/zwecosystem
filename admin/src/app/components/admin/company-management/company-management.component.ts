@@ -21,7 +21,9 @@ export class CompanyManagementComponent implements OnInit {
   loading = false;
   companyToDelete: Company | null = null;
   deleteLoading = false;
-  readonly siteUrl = environment.siteUrl;
+  readonly rootDomain = environment.rootDomain;
+
+  storeUrl(subdomain: string): string { return `http://${subdomain}.${this.rootDomain}`; }
 
   get activeCount() { return this.companies.filter(c => c.isActive).length; }
   get pendingCount() { return this.companies.filter(c => c.approvalStatus === 'Pending').length; }

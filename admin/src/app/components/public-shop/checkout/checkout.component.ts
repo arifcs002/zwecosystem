@@ -7,6 +7,7 @@ import { SettingsService } from '../../../services/settings/settings.service';
 import { CartService } from '../../../services/cart/cart.service';
 import { OrderService } from '../../../services/order/order.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
+import { TenantService } from '../../../services/tenant/tenant.service';
 
 interface PayMethod { value: string; label: string; note?: string; }
 
@@ -23,6 +24,7 @@ export class CheckoutComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private orderService = inject(OrderService);
   private notify = inject(GlobalNotificationService);
+  private tenant = inject(TenantService);
   cart = inject(CartService);
 
   companySlug = '';
@@ -38,7 +40,7 @@ export class CheckoutComponent implements OnInit {
   placedTotal = 0;
 
   ngOnInit() {
-    this.companySlug = this.route.snapshot.paramMap.get('companySlug') || '';
+    this.companySlug = this.tenant.getSlug(this.route);
     this.companyService.getPublicCompany(this.companySlug).subscribe({
       next: (comp) => {
         this.companyName = comp.name;
@@ -80,7 +82,7 @@ export class CheckoutComponent implements OnInit {
   }
   get total() { return this.subtotal + this.shippingFee; }
 
-  backToShop() { this.router.navigate(['/', this.companySlug]); }
+  backToShop() { this.router.navigate(this.tenant.routeSegments(this.companySlug)); }
 
   placeOrder() {
     if (!this.cart.isCheckoutValid()) {

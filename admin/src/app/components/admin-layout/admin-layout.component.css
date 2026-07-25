@@ -48,6 +48,22 @@
   flex-shrink: 0;
 }
 
+.brand-icon-badge {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-icon-img {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
 .brand-text {
   font-size: 1.05rem;
   font-weight: 700;

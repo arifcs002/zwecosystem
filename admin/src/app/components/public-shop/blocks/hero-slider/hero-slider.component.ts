@@ -1,8 +1,9 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ImgUrlPipe } from '../../../../pipes/img-url.pipe';
 import { HeroSlide } from '../../../../models/storefront-layout.model';
+import { TenantService } from '../../../../services/tenant/tenant.service';
 
 @Component({
   selector: 'app-hero-slider',
@@ -15,6 +16,7 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   @Input() slides: HeroSlide[] = [];
   @Input() companySlug = '';
 
+  private tenant = inject(TenantService);
   current = 0;
   private timer: any;
 
@@ -33,6 +35,6 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   linkFor(link?: string): any[] | null {
     if (!link) return null;
     const clean = link.replace(/^\/+/, '');
-    return ['/', this.companySlug, ...clean.split('/').filter(Boolean)];
+    return this.tenant.routeSegments(this.companySlug, ...clean.split('/').filter(Boolean));
   }
 }

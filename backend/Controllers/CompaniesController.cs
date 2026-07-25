@@ -89,7 +89,8 @@ namespace Ecommerce.Api.Controllers
                         deliveryCharge = c.DeliveryCharge,
                         isActive       = c.IsActive,
                         approvalStatus = c.ApprovalStatus,
-                        createdAt      = c.CreatedDate
+                        createdAt      = c.CreatedDate,
+                        appCode        = c.AppCode
                     })
                     .OrderByDescending(c => c.createdAt)
                     .ToListAsync();

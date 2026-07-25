@@ -4,14 +4,15 @@ import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 import { CompanySelectorComponent } from '../shared/company-selector/company-selector.component';
+import { TenantService } from '../../services/tenant/tenant.service';
 
 const NAV_GROUP_STORAGE_KEY = 'zw_nav_expanded_groups';
 
 // Route suffixes (matched against the end of router.url) used to auto-expand
 // whichever group contains the page the user landed on.
 const GROUP_ROUTES: Record<string, string[]> = {
-  catalog: ['/products', '/add-product', '/edit-product', '/categories', '/barcodes', '/price-tag', '/suppliers', '/inventory'],
-  sales: ['/customers', '/delivery', '/payments', '/fraud', '/refunds', '/pricing'],
+  catalog: ['/products', '/add-product', '/edit-product', '/categories', '/product-labels', '/barcodes', '/price-tag', '/suppliers', '/inventory',
+            '/customers', '/delivery', '/payments', '/fraud', '/refunds', '/pricing'],
   admin: ['/reports', '/users', '/config'],
   ecommerce: ['/ecommerce']
 };
@@ -26,6 +27,7 @@ const GROUP_ROUTES: Record<string, string[]> = {
 export class AdminLayoutComponent implements OnInit {
   authService = inject(AuthService);
   router = inject(Router);
+  private tenant = inject(TenantService);
   sidebarCollapsed = false;
   mobileSidebarOpen = false; // off-canvas drawer state, < 1024px only
 
@@ -58,7 +60,7 @@ export class AdminLayoutComponent implements OnInit {
     if (user?.loginContext === 'admin') {
       return '/admin';
     } else if (user?.loginContext) {
-      return `/${user.loginContext}/workspace`;
+      return this.tenant.hasSubdomain() ? '/workspace' : `/${user.loginContext}/workspace`;
     }
     return '/admin';
   }
@@ -79,9 +81,7 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   logout() {
-    const user = this.authService.currentUserValue;
-    const loginPath = user?.loginContext === 'admin' ? '/admin/login' : `/${user?.loginContext}/login`;
     this.authService.logout();
-    this.router.navigate([loginPath]);
+    this.router.navigate(['/']);
   }
 }

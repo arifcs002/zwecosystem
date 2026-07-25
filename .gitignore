@@ -49,3 +49,6 @@ backend/wwwroot/uploads/logo/
 # Keep the example/template files (no real secrets)
 !**/appsettings.example.json
 !.env.example
+
+# Local Claude Code tooling config/state — not part of the app
+.claude/

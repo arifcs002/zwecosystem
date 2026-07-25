@@ -27,6 +27,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // DELETE 404 = resource already gone = desired state; suppress notification.
         if (error.status === 404 && req.method === 'DELETE') return;
 
+        // A failed login attempt itself returns 401 — that's a credentials
+        // error to show inline on the form, not a session expiry. Forcing
+        // the hard redirect below for it reloads the login page instantly,
+        // wiping out the error modal before it can be read.
+        if (error.status === 401 && req.url.includes('/auth/login')) return;
+
         if (error.status === 401) {
           authService.logout();
           const currentPath = window.location.pathname;

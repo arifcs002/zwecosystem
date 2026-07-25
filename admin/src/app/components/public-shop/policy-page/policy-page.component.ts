@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CompanyService } from '../../../services/company/company.service';
 import { SettingsService } from '../../../services/settings/settings.service';
+import { TenantService } from '../../../services/tenant/tenant.service';
 
 const PAGE_TITLES: Record<string, string> = {
   about: 'About Us',
@@ -51,6 +52,7 @@ export class PolicyPageComponent implements OnInit {
   private router = inject(Router);
   private companyService = inject(CompanyService);
   private settingsService = inject(SettingsService);
+  private tenant = inject(TenantService);
 
   companySlug = '';
   companyName = '';
@@ -62,7 +64,7 @@ export class PolicyPageComponent implements OnInit {
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
-      this.companySlug = params.get('companySlug') || '';
+      this.companySlug = this.tenant.getSlug(this.route);
       this.pageKey = (params.get('key') || 'about').toLowerCase();
       this.title = PAGE_TITLES[this.pageKey] || 'Information';
 
@@ -90,5 +92,5 @@ export class PolicyPageComponent implements OnInit {
     });
   }
 
-  backToShop() { this.router.navigate(['/', this.companySlug]); }
+  backToShop() { this.router.navigate(this.tenant.routeSegments(this.companySlug)); }
 }

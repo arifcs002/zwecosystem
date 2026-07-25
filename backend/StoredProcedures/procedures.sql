@@ -64,7 +64,7 @@ RETURNS TABLE(
     "bkashNumber" TEXT, "nagadNumber" TEXT,
     "bankName" TEXT, "bankAccountName" TEXT,
     "deliveryCharge" DECIMAL, "isActive" BOOLEAN,
-    "approvalStatus" TEXT, "createdAt" TIMESTAMPTZ
+    "approvalStatus" TEXT, "createdAt" TIMESTAMPTZ, "appCode" TEXT
 ) LANGUAGE sql STABLE AS $$
     SELECT
         c.id, c.name, c.subdomain, c.logo_url,
@@ -75,7 +75,7 @@ RETURNS TABLE(
         c.bkash_number, c.nagad_number,
         c.bank_name, c.bank_account_name,
         c.delivery_charge, c.is_active,
-        c.approval_status, c.created_date
+        c.approval_status, c.created_date, c.app_code
     FROM companies c
     WHERE c.is_deleted = 0
     ORDER BY c.created_date DESC;

@@ -147,14 +147,14 @@
                 [ngClass]="{'border-rose-500': submitted && !currentCompany.subdomain.trim()}"
                 placeholder="superstorebd"
                 (input)="sanitizeSubdomain($event)">
-              <span class="h-[38px] px-3 bg-violet-900/20 border border-violet-700/30 rounded-r-lg text-[11px] text-violet-400 font-mono flex items-center whitespace-nowrap">.zairasworld.com</span>
+              <span class="h-[38px] px-3 bg-violet-900/20 border border-violet-700/30 rounded-r-lg text-[11px] text-violet-400 font-mono flex items-center whitespace-nowrap">.auleco.com</span>
             </div>
             <p *ngIf="submitted && !currentCompany.subdomain.trim()" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
               Subdomain is required
             </p>
             <p *ngIf="currentCompany.subdomain" class="text-[11px] text-gray-600 mt-1">
-              URL: <span class="text-violet-400 font-mono">{{ currentCompany.subdomain }}.zairasworld.com</span>
+              URL: <span class="text-violet-400 font-mono">{{ currentCompany.subdomain }}.auleco.com</span>
             </p>
           </div>
 

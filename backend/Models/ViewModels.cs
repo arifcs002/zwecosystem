@@ -26,6 +26,7 @@ namespace Ecommerce.Api.Models
         public bool    isActive       { get; set; }
         public string? approvalStatus { get; set; }
         public DateTime createdAt     { get; set; }
+        public string? appCode        { get; set; }
     }
 
     public class CompanyToggleVm
