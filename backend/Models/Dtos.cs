@@ -122,6 +122,9 @@ namespace Ecommerce.Api.Models
     // Restock from a supplier — always adds stock.
     public record InventoryPurchaseDto(int ProductId, int Quantity, decimal? UnitCost, string? Supplier, string? Reason);
 
+    // ── Subscription Plans ──────────────────────────────────
+    public record AssignPlanDto(int SubscriptionPlanId);
+
     // ── Payments ────────────────────────────────────────────
     public record MfsPaymentVerifyDto(
         int OrderId, string TransactionId, string Provider,
