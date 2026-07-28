@@ -15,6 +15,8 @@ import { toSecretCode, DEFAULT_SECRET_MAP } from '../../../utils/secret-code.uti
 import { groupProducts, ProductGroup } from '../../../utils/product-group.util';
 import { CategoryTreePickerComponent } from '../../shared/category-tree-picker/category-tree-picker.component';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
+import { AuthService } from '../../../services/auth/auth.service';
+import { TenantService } from '../../../services/tenant/tenant.service';
 
 // One product entry in the bulk form. Either a brand-new product (isExisting
 // false) or a restock of an already-created product (isExisting true) — the
@@ -64,6 +66,18 @@ export class AddProductComponent implements OnInit {
   private inventoryService = inject(InventoryService);
   private router = inject(Router);
   private notify = inject(GlobalNotificationService);
+  private authService = inject(AuthService);
+  private tenant = inject(TenantService);
+
+  // Same derivation as admin-layout.component.ts's basePath getter — must
+  // stay in sync with it (super admin vs company admin, subdomain vs
+  // legacy /:companySlug path).
+  get basePath(): string {
+    const user = this.authService.currentUserValue;
+    if (user?.loginContext === 'admin') return '/admin';
+    if (user?.loginContext) return this.tenant.hasSubdomain() ? '/workspace' : `/${user.loginContext}/workspace`;
+    return '/admin';
+  }
 
   secretMap = DEFAULT_SECRET_MAP;
 
@@ -257,8 +271,7 @@ onSubmit() {
     if (createdCount) parts.push(`${createdCount} new product entr${createdCount === 1 ? 'y' : 'ies'}`);
     if (restockCount) parts.push(`${restockCount} product${restockCount === 1 ? '' : 's'} restocked`);
     this.notify.notify({ type: 'success', title: 'Saved', message: parts.join(' · '), ttlMs: 3500 });
-    const basePath = this.router.url.split('/').slice(0, 3).join('/');
-    this.router.navigate([basePath, 'products']);
+    this.router.navigate([this.basePath, 'products']);
   }
 
   private submitBulk(valid: ProductLine[], restockCount = 0) {

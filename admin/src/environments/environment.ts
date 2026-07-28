@@ -14,14 +14,14 @@
 // this to https requires provisioning a wildcard TLS cert on the server AND
 // updating capacitor.config.ts's androidScheme together, not in isolation.
 //
-// :85 (not the default :80): port 80 on the server is already occupied by
-// something else outside this project's docker-compose — claiming it
-// crashed the whole admin-dashboard container. Until that's freed up (or
-// a host-level reverse proxy is set up to forward 80 -> 85), every URL
-// needs the explicit :85.
+// No :85 needed: port 80 is occupied by a separate project's nginx
+// (amarshop) outside this docker-compose, but that nginx now proxies
+// auleco.com and *.auleco.com (see /data/apps/amarshop/nginx.conf on the
+// VPS) straight through to this app's container on :85 — so every plain
+// http://auleco.com / http://{slug}.auleco.com URL just works on port 80.
 export const environment = {
   production: true,
-  apiUrl: 'http://auleco.com:85/api',
-  siteUrl: 'http://auleco.com:85',
-  rootDomain: 'auleco.com:85'
+  apiUrl: 'http://auleco.com/api',
+  siteUrl: 'http://auleco.com',
+  rootDomain: 'auleco.com'
 };
