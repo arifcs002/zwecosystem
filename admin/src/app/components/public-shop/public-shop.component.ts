@@ -288,13 +288,13 @@ export class PublicShopComponent implements OnInit {
   bannerLink(block: StorefrontBlock) {
     if (!block.link) return;
     const parts = block.link.replace(/^\/+/, '').split('/').filter(Boolean);
-    this.router.navigate(['/', this.companySlug, ...parts]);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug, ...parts));
   }
 
   announcementClick() {
     if (!this.announcementLink) return;
     const parts = this.announcementLink.replace(/^\/+/, '').split('/').filter(Boolean);
-    this.router.navigate(['/', this.companySlug, ...parts]);
+    this.router.navigate(this.tenant.routeSegments(this.companySlug, ...parts));
   }
 
   // Curated order stores one representative variant id per group — expand each

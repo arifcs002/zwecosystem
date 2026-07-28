@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
+import { TenantService } from '../../services/tenant/tenant.service';
 
 const ROUTE_RIGHTS_MAP: { [key: string]: string } = {
   'dashboard': 'PAGE_SHOP_DASHBOARD',
@@ -27,29 +28,41 @@ const ROUTE_RIGHTS_MAP: { [key: string]: string } = {
   'dashboard-view': 'PAGE_DASHBOARD_VIEW'
 };
 
+// Splits a workspace URL into { slug, subpath } — the "workspace" segment
+// sits at a different position depending on whether we're on a real company
+// subdomain (bare /workspace/...) or the legacy /:companySlug/workspace/...
+// path (IP access / local dev without subdomain DNS). Returns null if the
+// URL isn't a workspace URL at all.
+function parseWorkspaceUrl(url: string, tenant: TenantService): { slug: string; subpath: string } | null {
+  const segments = url.split('?')[0].split('#')[0].split('/').filter(Boolean);
+  if (tenant.hasSubdomain()) {
+    if (segments[0] !== 'workspace') return null;
+    return { slug: tenant.getSubdomainFromHost() || '', subpath: segments.slice(1).join('/') };
+  }
+  if (segments[1] !== 'workspace') return null;
+  return { slug: segments[0], subpath: segments.slice(2).join('/') };
+}
+
 export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const tenant = inject(TenantService);
 
   if (authService.getToken()) {
     const user = authService.currentUserValue;
-    
+    const workspace = parseWorkspaceUrl(state.url, tenant);
+
     // Cross-tenant protection
     if (user) {
       if (state.url.startsWith('/admin') && user.loginContext !== 'admin') {
         router.navigate(['/admin/login']);
         return false;
       }
-      
-      const parts = state.url.split('/');
-      // e.g. /fashion/workspace/dashboard -> parts = ['', 'fashion', 'workspace', 'dashboard']
-      if (parts.length > 2 && parts[2] === 'workspace') {
-        const urlSlug = parts[1];
-        if (user.loginContext !== urlSlug) {
-          // You are logged into 'fashion' but trying to access 'zaira'
-          router.navigate(['/', urlSlug, 'login']);
-          return false;
-        }
+
+      if (workspace && user.loginContext !== workspace.slug) {
+        // You are logged into 'fashion' but trying to access 'zaira'
+        router.navigate(tenant.routeSegments(workspace.slug, 'login'));
+        return false;
       }
     }
 
@@ -57,11 +70,8 @@ export const authGuard: CanActivateFn = (route, state) => {
     let subpath = '';
     if (state.url.startsWith('/admin')) {
       subpath = state.url.substring('/admin'.length).replace(/^\//, '').split('?')[0].split('#')[0];
-    } else {
-      const parts = state.url.split('/');
-      if (parts.length > 2 && parts[2] === 'workspace') {
-        subpath = parts.slice(3).join('/').split('?')[0].split('#')[0];
-      }
+    } else if (workspace) {
+      subpath = workspace.subpath;
     }
 
     // Handle root path defaults
@@ -87,9 +97,8 @@ export const authGuard: CanActivateFn = (route, state) => {
       console.warn(`[AUTH GUARD] Access denied to ${state.url} (Missing Right: ${requiredRight})`);
       if (state.url.startsWith('/admin')) {
         router.navigate(['/admin/dashboard']);
-      } else {
-        const parts = state.url.split('/');
-        router.navigate(['/', parts[1], 'workspace', 'dashboard']);
+      } else if (workspace) {
+        router.navigate(tenant.routeSegments(workspace.slug, 'workspace', 'dashboard'));
       }
       return false;
     }
@@ -108,9 +117,9 @@ export const authGuard: CanActivateFn = (route, state) => {
   if (state.url.startsWith('/admin')) {
     router.navigate(['/admin/login'], { queryParams: { returnUrl: state.url } });
   } else {
-    const parts = state.url.split('/');
-    if (parts.length > 2 && parts[2] === 'workspace') {
-      router.navigate(['/', parts[1], 'login'], { queryParams: { returnUrl: state.url } });
+    const workspace = parseWorkspaceUrl(state.url, tenant);
+    if (workspace) {
+      router.navigate(tenant.routeSegments(workspace.slug, 'login'), { queryParams: { returnUrl: state.url } });
     } else {
       router.navigate(['/admin/login']); // Fallback
     }
