@@ -44,8 +44,8 @@ export class CompanyService {
   }
 
   // Anonymous-safe lookup for the public storefront — no auth token required.
-  getPublicCompany(subdomain: string): Observable<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }> {
-    return this.http.get<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean }>(`${this.apiUrl}/public/${subdomain}`);
+  getPublicCompany(subdomain: string): Observable<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean; appCode?: string }> {
+    return this.http.get<{ id: number; name: string; logoUrl?: string; subdomain: string; isActive: boolean; appCode?: string }>(`${this.apiUrl}/public/${subdomain}`);
   }
 
   // Resolves the mobile app's short "Store Code" to the company (and its

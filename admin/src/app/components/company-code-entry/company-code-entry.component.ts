@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CompanyService } from '../../services/company/company.service';
 import { TenantService } from '../../services/tenant/tenant.service';
 
@@ -65,14 +65,22 @@ import { TenantService } from '../../services/tenant/tenant.service';
     .alt a { color: #6b7280; font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
   `]
 })
-export class CompanyCodeEntryComponent {
+export class CompanyCodeEntryComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private companyService = inject(CompanyService);
   private tenant = inject(TenantService);
 
   code = '';
   checking = false;
   error = '';
+
+  ngOnInit() {
+    // Arriving from a storefront's "Sign In" button — pre-fill the code so
+    // the shopper just has to confirm instead of looking it up again.
+    const code = this.route.snapshot.queryParamMap.get('code');
+    if (code) this.code = code.toUpperCase();
+  }
 
   submit() {
     const code = this.code.trim().toUpperCase();

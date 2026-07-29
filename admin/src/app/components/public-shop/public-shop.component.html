@@ -37,14 +37,17 @@
       <div class="flex items-center gap-1.5 ml-auto">
         <app-cart-widget></app-cart-widget>
         <span class="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></span>
-        <a [routerLink]="tenant.routeSegments(companySlug, 'login')"
+        <button (click)="signIn()"
           class="hidden sm:inline-flex px-3.5 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition rounded-xl hover:bg-indigo-50">
           Sign In
-        </a>
+        </button>
+        <!-- Register hidden on the storefront for now — company registration
+             happens from the main site's home page, not per-store.
         <a routerLink="/company/register"
           class="inline-flex px-3.5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition rounded-xl shadow-sm">
           Register
         </a>
+        -->
       </div><!-- end right controls -->
     </div><!-- end nav inner -->
 

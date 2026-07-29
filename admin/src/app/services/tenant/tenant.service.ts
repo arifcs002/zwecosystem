@@ -69,4 +69,18 @@ export class TenantService {
     const port = window.location.port ? `:${window.location.port}` : '';
     return `${protocol}//${slug}.${root}${port}/${path.replace(/^\/+/, '')}`;
   }
+
+  // Full external URL to the platform's own root domain (the opposite of
+  // externalTenantUrl) — used when a company subdomain needs to hard-navigate
+  // the browser back to the main site (e.g. "Sign In" on the storefront).
+  rootDomainUrl(path: string, queryParams?: Record<string, string>): string {
+    const host = window.location.hostname.toLowerCase();
+    const root = ROOT_DOMAINS.find(r => host === r || host.endsWith('.' + r)) || 'auleco.com';
+    const protocol = window.location.protocol;
+    const port = window.location.port ? `:${window.location.port}` : '';
+    const query = queryParams
+      ? '?' + Object.entries(queryParams).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')
+      : '';
+    return `${protocol}//${root}${port}/${path.replace(/^\/+/, '')}${query}`;
+  }
 }

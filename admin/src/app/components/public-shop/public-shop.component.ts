@@ -60,6 +60,7 @@ export class PublicShopComponent implements OnInit {
   companySlug = '';
   companyName = 'Loading...';
   companyLogo = '';
+  companyAppCode = '';
   isValidStore: boolean | null = null;
   isLoading = false;
 
@@ -126,6 +127,7 @@ export class PublicShopComponent implements OnInit {
         next: (data) => {
           this.companyName = data.company.name;
           this.companyLogo = data.company.logoUrl || '';
+          this.companyAppCode = data.company.appCode || '';
           this.isValidStore = true;
           localStorage.setItem('tenant_company_id', data.company.id.toString());
           this.loadedSlug = this.companySlug;
@@ -354,6 +356,19 @@ export class PublicShopComponent implements OnInit {
   }
 
   goHomeAndClose() { this.sidebarOpen = false; this.goHome(); }
+
+  // "Sign In" always sends the shopper to the main domain's Company Login
+  // (store-code) page, pre-filled with this store's code — rather than
+  // straight to /login on the current host — so the same flow works whether
+  // they're on a real subdomain or the legacy path-based/IP access.
+  signIn() {
+    const queryParams = this.companyAppCode ? { code: this.companyAppCode } : undefined;
+    if (this.tenant.hasSubdomain()) {
+      window.location.href = this.tenant.rootDomainUrl('company/login', queryParams);
+    } else {
+      this.router.navigate(['/company/login'], { queryParams });
+    }
+  }
   navAndClose(catId: number) { this.sidebarOpen = false; this.navigateToCategory(catId); }
 
   openProduct(group: ProductGroup) {

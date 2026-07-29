@@ -49,9 +49,9 @@ namespace Ecommerce.Api.Controllers
                 dto.OwnerFirstName, dto.OwnerLastName, dto.OwnerEmail, dto.OwnerPhone, passwordHash,
                 basicPlan?.Id ?? 0, role?.Id ?? 0
             ).ToListAsync()).FirstOrDefault();
-            await AssignAppCodeAsync(companyId);
+            var appCode = await AssignAppCodeAsync(companyId);
 
-            return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = dto.OwnerEmail, companyId });
+            return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = dto.OwnerEmail, companyId, subdomain, appCode });
         }
 
         [HttpPost("register")]
@@ -250,9 +250,9 @@ namespace Ecommerce.Api.Controllers
         // mobile app's "Store Code" feature and doesn't set one — assign it here
         // instead of touching the stored procedure. Uses the same short,
         // typeable alphabet as CompaniesController's generator.
-        private async Task AssignAppCodeAsync(int companyId)
+        private async Task<string?> AssignAppCodeAsync(int companyId)
         {
-            if (companyId <= 0) return;
+            if (companyId <= 0) return null;
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             var rng = Random.Shared;
             for (var attempt = 0; attempt < 10; attempt++)
@@ -261,8 +261,9 @@ namespace Ecommerce.Api.Controllers
                 var exists = await _context.Companies.IgnoreQueryFilters().AnyAsync(c => c.AppCode == code);
                 if (exists) continue;
                 await _context.Database.ExecuteSqlRawAsync("UPDATE companies SET app_code = {0} WHERE id = {1}", code, companyId);
-                return;
+                return code;
             }
+            return null;
         }
 
         // ── Simple in-memory rate limiting (IMemoryCache) ─────────────────────

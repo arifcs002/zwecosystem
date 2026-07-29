@@ -9,7 +9,7 @@ import { Category } from '../category/category.service';
 import { Brand } from '../brand/brand.service';
 
 export interface StorefrontData {
-  company: { id: number; name: string; logoUrl?: string; subdomain?: string; isActive?: boolean };
+  company: { id: number; name: string; logoUrl?: string; subdomain?: string; isActive?: boolean; appCode?: string };
   settings: CompanySetting[];
   products: Product[];
   categories: Category[];

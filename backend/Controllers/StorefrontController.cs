@@ -27,7 +27,7 @@ namespace Ecommerce.Api.Controllers
         {
             var company = await _context.Companies
                 .Where(c => c.Subdomain == slug.ToLower() && c.IsDeleted == 0)
-                .Select(c => new { c.Id, c.Name, c.LogoUrl, c.Subdomain, c.IsActive })
+                .Select(c => new { c.Id, c.Name, c.LogoUrl, c.Subdomain, c.IsActive, c.AppCode })
                 .FirstOrDefaultAsync();
             if (company == null) return NotFound(new { message = "Store not found." });
 
