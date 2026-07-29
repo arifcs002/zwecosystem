@@ -146,6 +146,39 @@ jobs:
               driver: bridge
           EOF
 
+      - name: 🛡️ Verify persistent volumes are present (data-loss guard)
+        run: |
+          # HIGH PRIORITY SAFEGUARD — do not remove or weaken this check.
+          #
+          # 2026-07: a deploy shipped without the backend's uploads/textlog
+          # volume mounts and silently wiped every uploaded product/company
+          # image on every single deploy, because docker-compose.prod.yml is
+          # regenerated from scratch here on every run — there is no
+          # incremental state, so a missing mount is a guaranteed data loss,
+          # not a rare edge case. This step fails the deploy BEFORE anything
+          # touches the VPS if a required bind mount is ever missing again.
+          set -e
+          fail=0
+
+          backend_block=$(awk '/^  backend:/{flag=1} /^  admin-dashboard:/{flag=0} flag' docker-compose.prod.yml)
+
+          if ! grep -q '/app/wwwroot/uploads' <<< "$backend_block"; then
+            echo "::error::Backend service is missing the wwwroot/uploads volume mount — this deploy would wipe all uploaded images/logos. Aborting."
+            fail=1
+          fi
+
+          if ! grep -q '/data/apps/textlog' <<< "$backend_block"; then
+            echo "::error::Backend service is missing the textlog volume mount — logs would not persist across deploys. Aborting."
+            fail=1
+          fi
+
+          if [ "$fail" -eq 1 ]; then
+            echo "::error::Fix docker-compose.prod.yml generation in this workflow before pushing again. See the comment on this step for context."
+            exit 1
+          fi
+
+          echo "✅ Required persistent volume mounts confirmed present."
+
       - name: 📁 Copy docker-compose to VPS
         uses: appleboy/scp-action@master
         with:
