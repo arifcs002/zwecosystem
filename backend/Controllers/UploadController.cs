@@ -17,19 +17,16 @@ namespace Ecommerce.Api.Controllers
         private const int MaxDimension = 1200; // px — product/logo photos never need to be larger than this on screen
         private static readonly JpegEncoder JpegEncoder = new() { Quality = 82 };
 
-        private readonly IWebHostEnvironment _env;
         private readonly IFileTextLogger _fileLogger;
         private readonly IDistributedCache _cache;
 
-        public UploadController(IWebHostEnvironment env, IFileTextLogger fileLogger, IDistributedCache cache)
+        public UploadController(IFileTextLogger fileLogger, IDistributedCache cache)
         {
-            _env = env;
             _fileLogger = fileLogger;
             _cache = cache;
         }
 
-        // Same key scheme ImagesController reads from — see that controller
-        // for why this is dual-written alongside disk instead of replacing it.
+        // Same key scheme ImagesController reads from.
         internal static string CacheKey(string folder, string fileName) => $"img:{folder}:{fileName}";
 
         [HttpPost]
@@ -40,10 +37,6 @@ namespace Ecommerce.Api.Controllers
             // Whitelist allowed subfolders
             var allowed = new[] { "product", "logo", "other" };
             if (!allowed.Contains(folder)) folder = "other";
-
-            var baseUploads = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
-            var uploadsFolder = Path.Combine(baseUploads, folder);
-            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
             byte[] outputBytes;
             bool reencoded;
@@ -80,17 +73,14 @@ namespace Ecommerce.Api.Controllers
             var ext = reencoded ? ".jpg" : Path.GetExtension(file.FileName);
             if (string.IsNullOrEmpty(ext)) ext = ".bin";
             var uniqueFileName = $"{hash}{ext}";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            if (!System.IO.File.Exists(filePath))
-                await System.IO.File.WriteAllBytesAsync(filePath, outputBytes);
-
-            // Dual-written to Redis (never expires) alongside disk: disk alone
-            // only exists on whichever machine/container handled THIS upload —
-            // local dev and production point at the same database but each has
-            // its own disk, so an image uploaded from one was invisible from
-            // the other. Redis is shared, so ImagesController can serve it
-            // anywhere the file itself isn't present locally.
+            // Redis only, no disk — a standalone Redis on the VPS host (not a
+            // docker container) is the single source of truth, so local dev
+            // and production see the exact same images with nothing to lose
+            // on a redeploy (disk inside a container/image doesn't persist;
+            // this Redis instance isn't managed by docker-compose at all).
+            // Never expires: identical content always resolves to the same
+            // content-hash key, so there's nothing to invalidate.
             await _cache.SetAsync(CacheKey(folder, uniqueFileName), outputBytes, new DistributedCacheEntryOptions());
 
             // Return relative path — Angular resolveImageUrl() prepends siteUrl

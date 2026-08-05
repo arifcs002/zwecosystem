@@ -86,27 +86,12 @@ jobs:
                 timeout: 5s
                 retries: 5
 
-            redis:
-              image: redis:7-alpine
-              container_name: zwecosystem-redis
-              command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-              # Exposed on the public port (password-protected) so local dev
-              # can read/write the SAME cache as production — that's what lets
-              # an image uploaded from either place be visible from the other
-              # (see ImagesController). Never remove --requirepass while this
-              # port mapping exists.
-              ports:
-                - "6379:6379"
-              volumes:
-                - /data/apps/zwecosystem/redis:/data
-              networks:
-                - zwecosystem-network
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-                interval: 10s
-                timeout: 5s
-                retries: 5
+            # Redis is intentionally NOT a service here — it runs standalone on
+            # the VPS host (installed directly, not in docker), specifically so
+            # this workflow can never wipe it on redeploy. Uploaded images live
+            # only in that Redis (see UploadController/ImagesController);
+            # backend reaches it over the host's own address, not a docker
+            # service name — see REDIS_CONNECTION_STRING below.
 
             backend:
               image: ghcr.io/${{ github.repository }}/backend:latest
@@ -116,7 +101,7 @@ jobs:
               environment:
                 - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
                 - JWT_SECRET=${JWT_SECRET}
-                - REDIS_CONNECTION_STRING=redis:6379,password=${REDIS_PASSWORD}
+                - REDIS_CONNECTION_STRING=${REDIS_HOST}:6379,password=${REDIS_PASSWORD}
                 - SmtpSettings__Host=${SMTP_HOST}
                 - SmtpSettings__Port=${SMTP_PORT}
                 - SmtpSettings__EnableSsl=true
@@ -127,11 +112,8 @@ jobs:
                 - ASPNETCORE_ENVIRONMENT=Production
               volumes:
                 - /data/apps/textlog:/data/apps/textlog
-                - /data/apps/zwecosystem/upload:/app/wwwroot/uploads
               depends_on:
                 postgres:
-                  condition: service_healthy
-                redis:
                   condition: service_healthy
               networks:
                 - zwecosystem-network
@@ -167,45 +149,27 @@ jobs:
           # incremental state, so a missing mount is a guaranteed data loss,
           # not a rare edge case. This step fails the deploy BEFORE anything
           # touches the VPS if a required bind mount is ever missing again.
+          #
+          # Images now live only in a standalone Redis on the VPS host (not a
+          # docker service — see UploadController/ImagesController), so the
+          # only thing left to guard here on the compose side is the log mount
+          # and that backend is actually configured to reach that Redis.
           set -e
           fail=0
 
           backend_block=$(awk '/^  backend:/{flag=1} /^  admin-dashboard:/{flag=0} flag' docker-compose.prod.yml)
-          redis_block=$(awk '/^  redis:/{flag=1} /^  backend:/{flag=0} flag' docker-compose.prod.yml)
-
-          if ! grep -q '/app/wwwroot/uploads' <<< "$backend_block"; then
-            echo "::error::Backend service is missing the wwwroot/uploads volume mount — this deploy would wipe all uploaded images/logos. Aborting."
-            fail=1
-          fi
 
           if ! grep -q '/data/apps/textlog' <<< "$backend_block"; then
             echo "::error::Backend service is missing the textlog volume mount — logs would not persist across deploys. Aborting."
             fail=1
           fi
 
-          # Images are dual-written to Redis (shared across containers/machines,
-          # see ImagesController/UploadController) alongside disk — if Redis
-          # loses its own data on every container recreation, that write is
-          # pointless and reintroduces the same class of data loss this guard
-          # exists to prevent.
-          if ! grep -q -- '--appendonly yes' <<< "$redis_block"; then
-            echo "::error::Redis service is missing --appendonly persistence — cached images/dashboard data would be lost on every deploy. Aborting."
+          redis_conn_line=$(grep -m1 'REDIS_CONNECTION_STRING=' <<< "$backend_block")
+          if [ -z "$redis_conn_line" ]; then
+            echo "::error::Backend service is missing REDIS_CONNECTION_STRING — uploaded images have nowhere to go. Aborting."
             fail=1
-          fi
-
-          if ! grep -q '/data/apps/zwecosystem/redis' <<< "$redis_block"; then
-            echo "::error::Redis service is missing its /data volume mount — --appendonly persistence has nowhere durable to write. Aborting."
-            fail=1
-          fi
-
-          # Redis is exposed on the public port 6379 (so local dev can share
-          # the cache) — --requirepass is the only thing standing between
-          # that and an open, unauthenticated cache on the internet. Checked
-          # against the "command:" line specifically (not the whole block —
-          # a stray comment mentioning --requirepass must not satisfy this).
-          redis_command_line=$(grep -m1 '^\s*command:' <<< "$redis_block")
-          if grep -q '"6379:6379"' <<< "$redis_block" && ! grep -q -- '--requirepass' <<< "$redis_command_line"; then
-            echo "::error::Redis port 6379 is exposed WITHOUT --requirepass on its command line — this would leave the cache open to the internet. Aborting."
+          elif [[ "$redis_conn_line" == *'=:6379'* ]]; then
+            echo "::error::REDIS_CONNECTION_STRING has no host (REDIS_HOST secret/env is unset) — Aborting."
             fail=1
           fi
 
@@ -214,7 +178,7 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Required persistent volume mounts confirmed present."
+          echo "✅ Required persistent volume mounts and Redis config confirmed present."
 
       - name: 📁 Copy docker-compose to VPS
         uses: appleboy/scp-action@master
@@ -252,9 +216,10 @@ jobs:
             rm -rf admin backend mobile schema.sql user_messages.txt README.md .git
 
             # Configure firewall: 85 (legacy/APK), 80 (auleco.com over plain HTTP),
-            # 443 (reserved for when a TLS cert is provisioned), 6379 (Redis —
-            # password-protected via --requirepass, so local dev can share the
-            # same image/dashboard cache as production) — 5500/5432 stay blocked.
+            # 443 (reserved for when a TLS cert is provisioned), 6379 (the
+            # standalone host Redis — password-protected, NOT a docker
+            # container, so local dev can share the same image cache as
+            # production) — 5500/5432 stay blocked.
             if command -v ufw >/dev/null 2>&1; then
               echo "Configuring UFW firewall..."
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 85/tcp

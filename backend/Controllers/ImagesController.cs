@@ -4,12 +4,11 @@ using Microsoft.Extensions.Caching.Distributed;
 
 namespace Ecommerce.Api.Controllers
 {
-    // Serves uploaded images from Redis when the physical file isn't on this
-    // machine's disk. UseStaticFiles (Program.cs) runs first and serves
-    // straight from wwwroot/uploads when the file IS present — this
-    // controller only ever gets hit as the fallback for that miss, which is
-    // exactly the case where local dev and production (or two different
-    // backend containers) don't share a disk but do share the same Redis.
+    // Serves every uploaded image straight from Redis — there is no disk copy
+    // (see UploadController). Redis runs standalone on the VPS host, outside
+    // docker-compose entirely, so it isn't wiped by a redeploy the way a
+    // container's disk would be, and both local dev and production read the
+    // exact same instance.
     [ApiController]
     [Route("uploads")]
     [AllowAnonymous]

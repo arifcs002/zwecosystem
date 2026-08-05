@@ -27,22 +27,11 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: zwecosystem-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    ports:
-      - "6379:6379"
-    volumes:
-      - /data/apps/zwecosystem/redis:/data
-    networks:
-      - zwecosystem-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # Redis is NOT run here — it's a standalone service on the VPS host itself
+  # (installed directly, not via docker), specifically so a redeploy/restart
+  # of these containers can never wipe it. Uploaded images live only in that
+  # Redis (see UploadController/ImagesController) — backend connects to it
+  # over the host's address via REDIS_CONNECTION_STRING below.
 
   backend:
     build:
@@ -55,7 +44,7 @@ services:
       # These env vars are picked up by Program.cs (DB_CONNECTION_STRING, JWT_SECRET)
       - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
       - JWT_SECRET=${JWT_SECRET}
-      - REDIS_CONNECTION_STRING=redis:6379,password=${REDIS_PASSWORD}
+      - REDIS_CONNECTION_STRING=${REDIS_HOST}:6379,password=${REDIS_PASSWORD}
       # SMTP (optional)
       - SmtpSettings__Host=${SMTP_HOST:-smtp.gmail.com}
       - SmtpSettings__Port=${SMTP_PORT:-587}
@@ -67,11 +56,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
     volumes:
       - /data/apps/textlog:/data/apps/textlog
-      - /data/apps/zwecosystem/upload:/app/wwwroot/uploads
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - zwecosystem-network
