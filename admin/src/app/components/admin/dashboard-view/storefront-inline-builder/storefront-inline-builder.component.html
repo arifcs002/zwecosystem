@@ -1,0 +1,160 @@
+<div class="min-h-screen bg-[#0a0a0f]">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="flex justify-center items-center min-h-screen text-gray-500 text-sm gap-2">
+    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Loading dashboard configuration…
+  </div>
+
+  <div *ngIf="!isLoading">
+
+    <!-- 1. Top strip -->
+    <div class="bg-violet-950/40 border-b border-violet-800/30 px-4 py-2.5 flex items-center justify-between sticky top-0 z-20">
+      <span class="text-xs text-violet-300 font-semibold flex items-center gap-1.5">🛠️ Configure Dashboard — edit directly below, then Save</span>
+      <button (click)="save()" [disabled]="saving" class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition">
+        {{ saving ? 'Saving…' : '💾 Save Dashboard' }}
+      </button>
+    </div>
+
+    <!-- 2. Storefront header replica (non-editable, for context) -->
+    <div class="bg-[#0d0d1a] border-b border-white/5 px-4 py-3 flex items-center gap-4">
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <img *ngIf="logoUrl" [src]="logoUrl | imgUrl" class="h-8 w-8 rounded-lg object-contain" alt="logo">
+        <div *ngIf="!logoUrl" class="h-8 w-8 rounded-lg bg-violet-700/40 flex items-center justify-center text-violet-300 text-sm font-bold">{{ (storeName || 'S').charAt(0) }}</div>
+        <span class="font-bold text-white text-sm">{{ storeName || 'My Store' }}</span>
+      </div>
+      <div class="flex-1 max-w-md border border-white/10 rounded-lg overflow-hidden flex opacity-60 pointer-events-none">
+        <input type="text" placeholder="Search…" class="flex-1 min-w-0 bg-transparent border-none px-3 py-1.5 text-xs text-gray-400 outline-none">
+        <span class="bg-white/5 px-2.5 py-1.5 text-gray-500 text-xs">🔍</span>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex gap-4 text-[10px] text-gray-500 flex-shrink-0 opacity-60 pointer-events-none">
+        <div class="text-center">📦<div>Track Order</div></div>
+        <div class="text-center">👤<div>Sign In</div></div>
+        <div class="text-center">🛒<div>Cart</div></div>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-6 space-y-8">
+
+      <!-- 3. Nav category bar -->
+      <div class="bg-[#12111a] border border-white/10 rounded-2xl p-4">
+        <p class="text-[11px] font-bold uppercase tracking-widest text-violet-400 mb-3">Navigation Bar</p>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div *ngFor="let cat of navCategories" class="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full pl-3 pr-1.5 py-1">
+            <span class="text-xs font-medium text-gray-200">{{ cat.name }}</span>
+            <button (click)="removeNavCategory(cat.id!)" class="text-rose-400 hover:text-rose-300 w-5 h-5 flex items-center justify-center text-xs">✕</button>
+          </div>
+          <div class="relative">
+            <button (click)="navPickerOpen = !navPickerOpen" class="border border-dashed border-violet-500/50 bg-violet-500/10 text-violet-300 rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-violet-500/20 transition">+ Add Category</button>
+            <div *ngIf="navPickerOpen" class="absolute z-10 mt-1 w-56 max-h-56 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl p-1.5">
+              <button *ngFor="let c of availableForNav" (click)="addNavCategory(c.id!)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-gray-200 hover:bg-white/5 transition">{{ c.name }}</button>
+              <p *ngIf="availableForNav.length === 0" class="text-[11px] text-gray-500 px-2.5 py-1.5">All categories added.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Hero Slider -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-violet-400">🖼️ Hero Slider</p>
+          <button (click)="addSlide()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">+ Add Slide</button>
+        </div>
+        <div class="flex gap-4 overflow-x-auto pb-2">
+          <div *ngFor="let slide of heroSlides; let i = index" class="relative flex-shrink-0 w-80 h-64 rounded-2xl overflow-hidden border-2 border-violet-700/30" [style.background]="slide.image ? 'none' : 'linear-gradient(135deg, rgba(139,92,246,.12), rgba(244,63,94,.08))'">
+            <img *ngIf="slide.image" [src]="slide.image | imgUrl" class="absolute inset-0 w-full h-full object-cover opacity-40">
+            <div class="relative h-full flex flex-col items-center justify-center text-center p-5 gap-2">
+              <label class="text-[10px] text-violet-300 bg-black/40 px-2 py-1 rounded-lg cursor-pointer mb-1">
+                🖼️ {{ slide.image ? 'Change image' : 'Upload image' }}
+                <input type="file" accept="image/*" class="hidden" (change)="uploadSlideImage($event, slide)">
+              </label>
+              <input type="text" [(ngModel)]="slide.title" [name]="'st'+i" placeholder="Slide title" class="w-11/12 bg-white/90 border-0 rounded-lg px-3 py-2 text-sm font-bold text-center text-gray-900">
+              <input type="text" [(ngModel)]="slide.subtitle" [name]="'ss'+i" placeholder="Subtitle" class="w-11/12 bg-white/80 border-0 rounded-lg px-2.5 py-1.5 text-xs text-center text-gray-700">
+              <input type="text" [(ngModel)]="slide.ctaText" [name]="'sc'+i" placeholder="CTA button text" class="w-3/5 bg-violet-600 border-0 rounded-lg px-3 py-1.5 text-xs font-bold text-center text-white">
+            </div>
+            <button (click)="removeSlide(i)" class="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-600/90 text-white text-xs flex items-center justify-center">✕</button>
+          </div>
+          <p *ngIf="heroSlides.length === 0" class="text-sm text-gray-500 py-8">No slides yet — click "+ Add Slide".</p>
+        </div>
+      </div>
+
+      <!-- 5. Featured Categories -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-violet-400">🧭 Featured Categories</p>
+          <div class="relative">
+            <button (click)="categoryIconsPickerOpen = !categoryIconsPickerOpen" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">+ Add Category</button>
+            <div *ngIf="categoryIconsPickerOpen" class="absolute right-0 z-10 mt-1 w-56 max-h-56 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl p-1.5">
+              <button *ngFor="let c of availableForFeatured" (click)="addFeaturedCategory(c.id!)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-gray-200 hover:bg-white/5 transition">{{ c.name }}</button>
+              <p *ngIf="availableForFeatured.length === 0" class="text-[11px] text-gray-500 px-2.5 py-1.5">All categories added.</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+          <div *ngFor="let cat of featuredCategories" class="relative bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-2 text-center">
+            <div class="text-3xl">🏷️</div>
+            <span class="text-xs text-gray-200 font-medium truncate w-full">{{ cat.name }}</span>
+            <button (click)="removeFeaturedCategory(cat.id!)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-900/40 text-rose-400 text-[10px] flex items-center justify-center">✕</button>
+          </div>
+          <p *ngIf="featuredCategories.length === 0" class="col-span-full text-sm text-gray-500 py-6 text-center">No featured categories yet.</p>
+        </div>
+      </div>
+
+      <!-- 6/7. Product Sections (top-selling / curated / category-driven — same UI for all) -->
+      <div *ngFor="let block of productSections">
+        <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <input type="text" [(ngModel)]="block.title" [name]="'title'+block.id" placeholder="Section title" class="text-base font-bold text-white bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 max-w-xs">
+            <select [(ngModel)]="block.source" [name]="'src'+block.id" (ngModelChange)="sectionCategoryChanged(block)" class="text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-violet-300">
+              <option value="category">By Category</option>
+              <option value="curated">Hand-picked</option>
+              <option value="newest">Newest</option>
+              <option value="discounted">On Sale</option>
+            </select>
+            <select *ngIf="block.source === 'category'" [(ngModel)]="block.categoryId" [name]="'cat'+block.id" class="text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-gray-300">
+              <option [ngValue]="null">— Select category —</option>
+              <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <button *ngIf="block.source === 'curated'" (click)="toggleSectionPicker(block)" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">+ Add Product</button>
+            <button (click)="removeSection(block)" class="bg-rose-900/30 hover:bg-rose-900/50 text-rose-300 text-xs font-bold px-3 py-1.5 rounded-lg transition">🗑️ Delete Section</button>
+          </div>
+        </div>
+
+        <!-- Product search picker (curated sections only) -->
+        <div *ngIf="block.source === 'curated' && sectionPickerOpen[block.id]" class="mb-3 bg-white/[0.03] border border-white/10 rounded-xl p-3">
+          <input type="text" [(ngModel)]="sectionPickerSearch[block.id]" placeholder="Search products…" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-200 mb-2">
+          <div class="max-h-48 overflow-y-auto space-y-1">
+            <button *ngFor="let g of availableForSection(block)" (click)="addSectionProduct(block, g)" type="button"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition text-left">
+              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="w-8 h-8 rounded object-cover flex-shrink-0">
+              <span *ngIf="!g.imageUrl" class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-sm flex-shrink-0">📦</span>
+              <span class="text-xs text-gray-200 truncate">{{ g.baseName }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div *ngFor="let g of sectionGroups(block)" class="relative bg-white/[0.03] border border-white/10 rounded-xl p-2.5 flex flex-col gap-1.5">
+            <div class="w-full h-24 rounded-lg bg-black/30 flex items-center justify-center overflow-hidden">
+              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="w-full h-full object-cover">
+              <span *ngIf="!g.imageUrl" class="text-2xl">📦</span>
+            </div>
+            <p class="text-xs font-semibold text-gray-100 line-clamp-2 leading-tight">{{ g.baseName }}</p>
+            <p class="text-sm font-bold text-violet-400">৳{{ g.price | number:'1.0-0' }}</p>
+            <button *ngIf="block.source === 'curated'" (click)="removeSectionProduct(block, g)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-900/40 text-rose-400 text-[10px] flex items-center justify-center">✕</button>
+          </div>
+          <p *ngIf="sectionGroups(block).length === 0" class="col-span-full text-sm text-gray-500 py-6 text-center">
+            {{ block.source === 'category' ? 'Select a category above, or this category has no products yet.' : 'No products yet — click "+ Add Product".' }}
+          </p>
+        </div>
+      </div>
+
+      <button (click)="addSection()" class="w-full border-2 border-dashed border-violet-700/40 text-violet-400 hover:bg-violet-500/5 rounded-2xl py-4 text-sm font-bold transition">
+        + Add Section
+      </button>
+    </div>
+  </div>
+</div>

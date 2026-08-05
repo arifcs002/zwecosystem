@@ -29,8 +29,8 @@
       </div>
     </div>
 
-    <!-- Configure mode: full storefront block builder, embedded -->
-    <app-ecommerce-builder *ngIf="mode === 'configure'"></app-ecommerce-builder>
+    <!-- Configure mode: inline-editable homepage builder -->
+    <app-storefront-inline-builder *ngIf="mode === 'configure'"></app-storefront-inline-builder>
 
     <ng-container *ngIf="mode === 'view'">
 
