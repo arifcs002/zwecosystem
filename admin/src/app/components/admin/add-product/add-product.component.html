@@ -1,7 +1,11 @@
 <div class="page-container">
   <div class="page-header mb-6">
-    <h1 class="page-title">➕ Add Products</h1>
-    <p class="page-subtitle">Pick a supplier &amp; category once, then add new products or restock existing ones — saved together.</p>
+    <h1 class="page-title">{{ isEditMode ? '✏️ Edit Product' : '➕ Add Products' }}</h1>
+    <p class="page-subtitle">
+      {{ isEditMode
+        ? 'Update this product\'s details. Stock quantity is adjusted from Inventory, not here.'
+        : 'Pick a supplier & category once, then add new products or restock existing ones — saved together.' }}
+    </p>
   </div>
 
   <!-- Shared: supplier + category -->
@@ -27,7 +31,7 @@
 
   <!-- Product lines -->
   <div class="line-card" *ngFor="let line of lines; let i = index">
-    <div class="line-head">
+    <div class="line-head" *ngIf="!isEditMode">
       <label class="existing-toggle">
         <input type="checkbox" [ngModel]="line.isExisting" [name]="'ex'+i" (ngModelChange)="toggleExisting(line)">
         Existing Product (Restock)
@@ -128,8 +132,8 @@
         Secret code: <strong>{{ secretOf(line.price) }}</strong>
       </div>
 
-      <!-- Sizes -->
-      <div class="form-group" *ngIf="availableSizes.length">
+      <!-- Sizes (add-new only — stock on an existing product is adjusted via Inventory) -->
+      <div class="form-group" *ngIf="availableSizes.length && !isEditMode">
         <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
         <div class="size-grid">
           <div class="size-cell" *ngFor="let sz of availableSizes">
@@ -147,12 +151,12 @@
   </div>
 
   <!-- Add another -->
-  <button class="add-line" (click)="addLine()">+ Add Another Product</button>
+  <button *ngIf="!isEditMode" class="add-line" (click)="addLine()">+ Add Another Product</button>
 
   <!-- Submit -->
   <div class="submit-row">
     <button class="btn-primary submit-btn" (click)="onSubmit()" [disabled]="isSubmitting">
-      {{ isSubmitting ? 'Saving…' : 'Save ' + lines.length + ' Product' + (lines.length > 1 ? 's' : '') }}
+      {{ isSubmitting ? 'Saving…' : (isEditMode ? 'Update Product' : 'Save ' + lines.length + ' Product' + (lines.length > 1 ? 's' : '')) }}
     </button>
   </div>
 </div>

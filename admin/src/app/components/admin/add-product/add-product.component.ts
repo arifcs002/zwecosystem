@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, Observable } from 'rxjs';
 import { SupplierService, Supplier } from '../../../services/supplier/supplier.service';
 import { CategoryService, Category } from '../../../services/category/category.service';
@@ -13,6 +13,7 @@ import { InventoryService } from '../../../services/inventory/inventory.service'
 import { buildIndentedList, FlatCategory } from '../../../utils/category-tree.util';
 import { toSecretCode, DEFAULT_SECRET_MAP } from '../../../utils/secret-code.util';
 import { groupProducts, ProductGroup } from '../../../utils/product-group.util';
+import { resolveImageUrl } from '../../../utils/image-url.util';
 import { CategoryTreePickerComponent } from '../../shared/category-tree-picker/category-tree-picker.component';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -65,9 +66,19 @@ export class AddProductComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private inventoryService = inject(InventoryService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private notify = inject(GlobalNotificationService);
   private authService = inject(AuthService);
   private tenant = inject(TenantService);
+
+  // Set when this component is loaded via edit-product/:id instead of
+  // add-product — same form, but a single line pre-filled from the existing
+  // product, and Save calls updateProduct() instead of the bulk-create flow.
+  // Stock quantity isn't editable here (that's Inventory's job); it's kept
+  // as-is and sent back unchanged.
+  isEditMode = false;
+  private editProductId: number | null = null;
+  private editStockQuantity = 0;
 
   // Same derivation as admin-layout.component.ts's basePath getter — must
   // stay in sync with it (super admin vs company admin, subdomain vs
@@ -96,6 +107,12 @@ export class AddProductComponent implements OnInit {
   isSubmitting = false;
 
   ngOnInit() {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      this.isEditMode = true;
+      this.editProductId = Number(idParam);
+    }
+
     forkJoin({
       suppliers: this.supplierService.getSuppliers(),
       categories: this.categoryService.getCategories(),
@@ -110,8 +127,35 @@ export class AddProductComponent implements OnInit {
         this.allProducts = products;
         const map = settings.find(s => s.key === 'secret_price_map')?.value;
         if (map && map.length >= 10) this.secretMap = map;
+
+        if (this.editProductId) this.loadProductToEdit(this.editProductId);
       },
       error: (err) => console.error(err)
+    });
+  }
+
+  private loadProductToEdit(id: number) {
+    this.productService.getProduct(id).subscribe({
+      next: (p) => {
+        this.categoryId = p.categoryId ?? undefined;
+        this.supplierId = p.supplierId ?? undefined;
+        this.editStockQuantity = p.stockQuantity;
+
+        const line = this.newLine();
+        line.name = p.name;
+        line.wholesalePrice = p.wholesalePrice;
+        line.price = p.price;
+        line.compareAtPrice = p.compareAtPrice ?? null;
+        line.pricingTagId = p.pricingTagId ?? null;
+        line.description = p.description || '';
+        line.imageUrl = p.imageUrl || '';
+        line.imagePreview = p.imageUrl ? resolveImageUrl(p.imageUrl) : null;
+        this.lines = [line];
+      },
+      error: () => {
+        this.notify.notify({ type: 'error', title: 'Not found', message: 'Could not load this product.', ttlMs: 5000 });
+        this.router.navigate([this.basePath, 'products']);
+      }
     });
   }
 
@@ -211,6 +255,8 @@ export class AddProductComponent implements OnInit {
   }
 
 onSubmit() {
+    if (this.isEditMode) { this.submitEdit(); return; }
+
     const newLines = this.lines.filter(l => !l.isExisting && l.name.trim());
     const restockLines = this.lines.filter(l => l.isExisting && l.existingGroup && this.restockLineTotal(l) > 0);
 
@@ -247,6 +293,50 @@ onSubmit() {
           this.suppliers.find(s => s.id === this.supplierId)?.name));
     });
     return calls.length ? forkJoin(calls) : of(null);
+  }
+
+  private submitEdit() {
+    const line = this.lines[0];
+    if (!line.name.trim()) {
+      this.notify.notify({ type: 'warning', title: 'Missing fields', message: 'Product name is required.', ttlMs: 4000 });
+      return;
+    }
+
+    this.isSubmitting = true;
+    const upload$ = line.imageFile ? this.productService.uploadImage(line.imageFile) : of({ imageUrl: line.imageUrl || '' });
+
+    upload$.subscribe({
+      next: (res) => {
+        const payload = {
+          name: line.name.trim(),
+          sku: '',
+          price: line.price,
+          wholesalePrice: line.wholesalePrice,
+          stockQuantity: this.editStockQuantity,
+          description: line.description || '',
+          categoryId: this.categoryId,
+          brandId: null,
+          barcode: null,
+          imageUrl: res.imageUrl || line.imageUrl || '',
+          pricingTagId: line.pricingTagId,
+          compareAtPrice: line.compareAtPrice
+        };
+        this.productService.updateProduct(this.editProductId!, payload).subscribe({
+          next: () => {
+            this.notify.notify({ type: 'success', title: 'Saved', message: 'Product updated.', ttlMs: 3500 });
+            this.router.navigate([this.basePath, 'products']);
+          },
+          error: (err) => {
+            this.isSubmitting = false;
+            this.notify.notify({ type: 'error', title: 'Save failed', message: err.error?.message || 'Could not update the product.', ttlMs: 5000 });
+          }
+        });
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.notify.notify({ type: 'error', title: 'Upload failed', message: 'Could not upload the image.', ttlMs: 5000 });
+      }
+    });
   }
 
   private uploadThenCreate(newLines: ProductLine[], restockCount: number) {
