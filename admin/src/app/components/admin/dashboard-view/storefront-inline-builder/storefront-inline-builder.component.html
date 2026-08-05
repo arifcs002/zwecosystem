@@ -11,21 +11,26 @@
     <!-- 1. Top strip -->
     <div class="bg-violet-950/40 border-b border-violet-800/30 px-4 py-2.5 flex items-center justify-between sticky top-0 z-20">
       <span class="text-xs text-violet-300 font-semibold flex items-center gap-1.5">🛠️ Configure Dashboard — edit directly below, then Save</span>
-      <button (click)="save()" [disabled]="saving" class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition">
-        {{ saving ? 'Saving…' : '💾 Save Dashboard' }}
-      </button>
+      <div class="flex items-center gap-2">
+        <select [(ngModel)]="themeName" name="themeName" class="bg-white/10 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 capitalize">
+          <option *ngFor="let t of themeNames" [value]="t">{{ t }}</option>
+        </select>
+        <button (click)="save()" [disabled]="saving" class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition">
+          {{ saving ? 'Saving…' : '💾 Save Dashboard' }}
+        </button>
+      </div>
     </div>
 
     <!-- 2. Storefront header replica (non-editable, for context) -->
-    <div class="bg-[#0d0d1a] border-b border-white/5 px-4 py-3 flex items-center gap-4">
+    <div class="border-b border-white/5 px-4 py-3 flex items-center gap-4" [style.background]="theme.bg">
       <div class="flex items-center gap-2 flex-shrink-0">
         <img *ngIf="logoUrl" [src]="logoUrl | imgUrl" class="h-8 w-8 rounded-lg object-contain" alt="logo">
-        <div *ngIf="!logoUrl" class="h-8 w-8 rounded-lg bg-violet-700/40 flex items-center justify-center text-violet-300 text-sm font-bold">{{ (storeName || 'S').charAt(0) }}</div>
-        <span class="font-bold text-white text-sm">{{ storeName || 'My Store' }}</span>
+        <div *ngIf="!logoUrl" class="h-8 w-8 rounded-lg flex items-center justify-center text-sm font-bold text-white" [style.background]="theme.accent">{{ (storeName || 'S').charAt(0) }}</div>
+        <span class="font-bold text-sm" [style.color]="theme.accent">{{ storeName || 'My Store' }}</span>
       </div>
-      <div class="flex-1 max-w-md border border-white/10 rounded-lg overflow-hidden flex opacity-60 pointer-events-none">
-        <input type="text" placeholder="Search…" class="flex-1 min-w-0 bg-transparent border-none px-3 py-1.5 text-xs text-gray-400 outline-none">
-        <span class="bg-white/5 px-2.5 py-1.5 text-gray-500 text-xs">🔍</span>
+      <div class="flex-1 max-w-md border border-black/10 rounded-lg overflow-hidden flex opacity-60 pointer-events-none">
+        <input type="text" placeholder="Search…" class="flex-1 min-w-0 bg-transparent border-none px-3 py-1.5 text-xs text-gray-500 outline-none">
+        <span class="bg-black/5 px-2.5 py-1.5 text-gray-500 text-xs">🔍</span>
       </div>
       <div class="flex-1"></div>
       <div class="flex gap-4 text-[10px] text-gray-500 flex-shrink-0 opacity-60 pointer-events-none">
@@ -35,25 +40,22 @@
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 py-6 space-y-8">
-
-      <!-- 3. Nav category bar -->
-      <div class="bg-[#12111a] border border-white/10 rounded-2xl p-4">
-        <p class="text-[11px] font-bold uppercase tracking-widest text-violet-400 mb-3">Navigation Bar</p>
-        <div class="flex items-center gap-2 flex-wrap">
-          <div *ngFor="let cat of navCategories" class="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full pl-3 pr-1.5 py-1">
-            <span class="text-xs font-medium text-gray-200">{{ cat.name }}</span>
-            <button (click)="removeNavCategory(cat.id!)" class="text-rose-400 hover:text-rose-300 w-5 h-5 flex items-center justify-center text-xs">✕</button>
-          </div>
-          <div class="relative">
-            <button (click)="navPickerOpen = !navPickerOpen" class="border border-dashed border-violet-500/50 bg-violet-500/10 text-violet-300 rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-violet-500/20 transition">+ Add Category</button>
-            <div *ngIf="navPickerOpen" class="absolute z-10 mt-1 w-56 max-h-56 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl p-1.5">
-              <button *ngFor="let c of availableForNav" (click)="addNavCategory(c.id!)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-gray-200 hover:bg-white/5 transition">{{ c.name }}</button>
-              <p *ngIf="availableForNav.length === 0" class="text-[11px] text-gray-500 px-2.5 py-1.5">All categories added.</p>
-            </div>
-          </div>
+    <!-- 3. Nav category bar (full-width strip, like the storefront's real navbar) -->
+    <div class="px-4 py-2.5 flex items-center gap-2 flex-wrap" [style.background]="theme.navBg">
+      <div *ngFor="let cat of navCategories" class="flex items-center gap-1.5 bg-white/10 rounded pl-3 pr-1.5 py-1">
+        <span class="text-xs font-medium text-white">{{ cat.name }}</span>
+        <button (click)="removeNavCategory(cat.id!)" class="text-rose-400 hover:text-rose-300 w-5 h-5 flex items-center justify-center text-xs">✕</button>
+      </div>
+      <div class="relative">
+        <button (click)="navPickerOpen = !navPickerOpen" class="border border-dashed border-violet-400/50 bg-violet-400/15 text-violet-200 rounded px-3 py-1.5 text-xs font-semibold hover:bg-violet-400/25 transition">+ Add Category</button>
+        <div *ngIf="navPickerOpen" class="absolute z-10 mt-1 w-56 max-h-56 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-xl shadow-xl p-1.5">
+          <button *ngFor="let c of availableForNav" (click)="addNavCategory(c.id!)" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-gray-200 hover:bg-white/5 transition">{{ c.name }}</button>
+          <p *ngIf="availableForNav.length === 0" class="text-[11px] text-gray-500 px-2.5 py-1.5">All categories added.</p>
         </div>
       </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-6 space-y-8">
 
       <!-- 4. Hero Slider -->
       <div>
@@ -101,7 +103,46 @@
         </div>
       </div>
 
-      <!-- 6/7. Product Sections (top-selling / curated / category-driven — same UI for all) -->
+      <!-- 6. Top Selling Products (fixed, non-deletable, hand-picked) -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-violet-400">Top Selling Products</p>
+          <button (click)="toggleSectionPicker(topSellingBlock)" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">+ Add Product</button>
+        </div>
+
+        <div *ngIf="sectionPickerOpen[topSellingBlock.id]" class="mb-3 bg-white/[0.03] border border-white/10 rounded-xl p-3">
+          <input type="text" [(ngModel)]="sectionPickerSearch[topSellingBlock.id]" name="topSearch" placeholder="Search products…" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-200 mb-2">
+          <div class="max-h-48 overflow-y-auto space-y-1">
+            <button *ngFor="let g of availableForSection(topSellingBlock)" (click)="addSectionProduct(topSellingBlock, g)" type="button"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition text-left">
+              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="w-8 h-8 rounded object-cover flex-shrink-0">
+              <span *ngIf="!g.imageUrl" class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-sm flex-shrink-0">📦</span>
+              <span class="text-xs text-gray-200 truncate">{{ g.baseName }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div *ngFor="let g of sectionGroups(topSellingBlock)" class="relative bg-white/[0.03] border border-white/10 rounded-xl p-3 flex gap-3 items-center">
+            <div class="w-20 h-20 rounded-lg bg-black/30 flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="w-full h-full object-cover">
+              <span *ngIf="!g.imageUrl" class="text-2xl">📦</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-100 line-clamp-2 leading-tight mb-1">{{ g.baseName }}</p>
+              <p class="text-sm font-bold text-violet-400 mb-2">৳{{ g.price | number:'1.0-0' }}</p>
+              <div class="flex gap-1.5">
+                <button class="flex-1 text-[10px] font-semibold text-white rounded px-2 py-1" [style.background]="theme.accent">🛒 Add To Cart</button>
+                <button class="flex-1 text-[10px] font-semibold text-white bg-gray-800 rounded px-2 py-1">Buy now</button>
+              </div>
+            </div>
+            <button (click)="removeSectionProduct(topSellingBlock, g)" class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-900/40 text-rose-400 text-[10px] flex items-center justify-center">✕</button>
+          </div>
+          <p *ngIf="sectionGroups(topSellingBlock).length === 0" class="col-span-full text-sm text-gray-500 py-6 text-center">No products yet — click "+ Add Product".</p>
+        </div>
+      </div>
+
+      <!-- 7. Dynamic Sections (repeatable, category-driven or hand-picked) -->
       <div *ngFor="let block of productSections">
         <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
           <div class="flex items-center gap-2 flex-1 min-w-0">

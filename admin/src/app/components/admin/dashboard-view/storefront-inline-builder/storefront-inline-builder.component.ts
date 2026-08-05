@@ -14,6 +14,22 @@ import {
   newBlockId, defaultLayout
 } from '../../../../models/storefront-layout.model';
 
+// Named preview themes from the design handoff — persisted as the
+// `dashboard_theme` setting and applied live so admins can preview colors
+// while configuring, matching the mock's theme picker behavior.
+export const DASHBOARD_THEMES: Record<string, { bg: string; accent: string; navBg: string }> = {
+  cream:  { bg: '#faf6ef', accent: '#ea580c', navBg: '#2b2118' },
+  black:  { bg: '#000000', accent: '#a78bfa', navBg: '#1c1c1c' },
+  navy:   { bg: '#0b1a3a', accent: '#38bdf8', navBg: '#142a52' },
+  slate:  { bg: '#0f172a', accent: '#2dd4bf', navBg: '#1e293b' },
+  orange: { bg: '#fff7ed', accent: '#ea580c', navBg: '#7c2d12' },
+  white:  { bg: '#ffffff', accent: '#7c3aed', navBg: '#16181d' },
+  forest: { bg: '#0d1f17', accent: '#4ade80', navBg: '#173726' },
+  maroon: { bg: '#1a0b0f', accent: '#fb7185', navBg: '#3f1521' },
+  royal:  { bg: '#f5f3ff', accent: '#7c3aed', navBg: '#312e81' },
+  sunset: { bg: '#fff1e6', accent: '#f97316', navBg: '#7c2d12' }
+};
+
 // Inline-editable homepage builder — same interaction style as the design
 // handoff (edit directly on what looks like the live preview, one Save button
 // persists everything), backed by the SAME data the accordion-style
@@ -46,6 +62,9 @@ export class StorefrontInlineBuilderComponent implements OnInit {
   navCategoryIds: number[] = [];
   storeName = '';
   logoUrl = '';
+  themeName = 'cream';
+  readonly themeNames = Object.keys(DASHBOARD_THEMES);
+  get theme() { return DASHBOARD_THEMES[this.themeName] || DASHBOARD_THEMES['cream']; }
 
   // Nav "+ Add Category" / product-section picker open state + search text.
   navPickerOpen = false;
@@ -70,6 +89,7 @@ export class StorefrontInlineBuilderComponent implements OnInit {
         this.logoUrl = settings.find(s => s.key === 'logo_url')?.value || '';
         const nav = settings.find(s => s.key === 'nav_categories')?.value;
         this.navCategoryIds = nav ? nav.split(',').filter(Boolean).map(Number) : [];
+        this.themeName = settings.find(s => s.key === 'dashboard_theme')?.value || 'cream';
         this.isLoading = false;
       },
       error: () => { this.isLoading = false; }
@@ -141,13 +161,19 @@ export class StorefrontInlineBuilderComponent implements OnInit {
     this.categoryIconsPickerOpen = false;
   }
 
-  // ── Product sections (every product_carousel / product_grid block) ───
-  // The mock's "Top Selling Products" (fixed) and "Dynamic Sections"
-  // (repeatable) are the same underlying concept here — every such block
-  // renders with the same editable section UI; there's nothing structurally
-  // different about a "top selling" block vs any other.
+  // ── Top Selling Products (the one pinned, non-deletable product block) ──
+  get topSellingBlock(): StorefrontBlock {
+    let block = this.layout.blocks.find(b => b.pinned);
+    if (!block) {
+      block = { id: newBlockId(), type: 'product_grid', enabled: true, title: 'Top Selling Products', pinned: true, source: 'curated', productIds: [], columns: 4 };
+      this.layout.blocks.push(block);
+    }
+    return block;
+  }
+
+  // ── Dynamic sections (every OTHER product_carousel / product_grid block) ─
   get productSections(): StorefrontBlock[] {
-    return this.layout.blocks.filter(b => b.type === 'product_carousel' || b.type === 'product_grid');
+    return this.layout.blocks.filter(b => !b.pinned && (b.type === 'product_carousel' || b.type === 'product_grid'));
   }
   addSection() {
     const block: StorefrontBlock = { id: newBlockId(), type: 'product_grid', enabled: true, title: 'New Section', source: 'category', categoryId: null, limit: 12, columns: 4 };
@@ -205,8 +231,11 @@ export class StorefrontInlineBuilderComponent implements OnInit {
   save() {
     this.saving = true;
     const settings: CompanySetting[] = this.allSettings
-      .filter(s => s.key !== 'nav_categories' && s.key !== 'storefront_layout')
-      .concat([{ key: 'nav_categories', value: this.navCategoryIds.join(','), groupName: 'STOREFRONT' }]);
+      .filter(s => s.key !== 'nav_categories' && s.key !== 'storefront_layout' && s.key !== 'dashboard_theme')
+      .concat([
+        { key: 'nav_categories', value: this.navCategoryIds.join(','), groupName: 'STOREFRONT' },
+        { key: 'dashboard_theme', value: this.themeName, groupName: 'STOREFRONT' }
+      ]);
 
     forkJoin({
       nav: this.settingsService.updateSettings(settings),

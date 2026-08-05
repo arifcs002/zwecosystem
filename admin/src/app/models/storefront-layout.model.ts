@@ -44,6 +44,10 @@ export interface StorefrontBlock {
   // Section heading (product_carousel / product_grid / category_icons / brand_carousel / testimonials)
   title?: string;
 
+  // Marks a fixed, non-deletable product section (e.g. "Top Selling
+  // Products") as distinct from the repeatable "Dynamic Sections" list.
+  pinned?: boolean;
+
   // hero_slider
   slides?: HeroSlide[];
 
