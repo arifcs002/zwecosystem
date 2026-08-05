@@ -218,11 +218,15 @@ namespace Ecommerce.Api.Controllers
         {
             if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
 
+            // dto.Size / dto.SupplierId are forwarded as-is (not hardcoded to
+            // ""/null like CreateProduct) — this endpoint is used to edit an
+            // EXISTING product, so leaving them out here would silently wipe
+            // whichever size/supplier that product already had on every save.
             await _context.Database.ExecuteSqlRawAsync(
                 "CALL sp_update_product({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})",
                 id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity,
                 dto.Description ?? "", dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId,
-                "", (int?)null, _context.CurrentUserId, dto.PricingTagId, dto.CompareAtPrice ?? 0);
+                dto.Size ?? "", dto.SupplierId, _context.CurrentUserId, dto.PricingTagId, dto.CompareAtPrice ?? 0);
 
             var product = await _context.Products.FindAsync(id);
             return Ok(product);

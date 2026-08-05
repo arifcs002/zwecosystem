@@ -66,7 +66,7 @@ namespace Ecommerce.Api.Models
         string Name, string SKU, decimal Price, decimal WholesalePrice,
         int StockQuantity, string? Description, int? CategoryId, int? BrandId,
         string? Barcode, string? ImageUrl, int? PricingTagId = null,
-        decimal? CompareAtPrice = null);
+        decimal? CompareAtPrice = null, int? SupplierId = null, string? Size = null);
 
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(

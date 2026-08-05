@@ -79,6 +79,8 @@ export class AddProductComponent implements OnInit {
   isEditMode = false;
   private editProductId: number | null = null;
   private editStockQuantity = 0;
+  private editSku = '';
+  private editSize = '';
 
   // Same derivation as admin-layout.component.ts's basePath getter — must
   // stay in sync with it (super admin vs company admin, subdomain vs
@@ -140,6 +142,8 @@ export class AddProductComponent implements OnInit {
         this.categoryId = p.categoryId ?? undefined;
         this.supplierId = p.supplierId ?? undefined;
         this.editStockQuantity = p.stockQuantity;
+        this.editSku = p.sku;
+        this.editSize = p.size || '';
 
         const line = this.newLine();
         line.name = p.name;
@@ -309,7 +313,7 @@ onSubmit() {
       next: (res) => {
         const payload = {
           name: line.name.trim(),
-          sku: '',
+          sku: this.editSku,
           price: line.price,
           wholesalePrice: line.wholesalePrice,
           stockQuantity: this.editStockQuantity,
@@ -319,7 +323,9 @@ onSubmit() {
           barcode: null,
           imageUrl: res.imageUrl || line.imageUrl || '',
           pricingTagId: line.pricingTagId,
-          compareAtPrice: line.compareAtPrice
+          compareAtPrice: line.compareAtPrice,
+          supplierId: this.supplierId,
+          size: this.editSize
         };
         this.productService.updateProduct(this.editProductId!, payload).subscribe({
           next: () => {
