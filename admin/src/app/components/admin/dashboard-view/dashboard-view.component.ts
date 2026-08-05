@@ -8,11 +8,12 @@ import { ProductService, Product } from '../../../services/product/product.servi
 import { SettingsService } from '../../../services/settings/settings.service';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { ProductGroup, groupProducts, groupForProductId } from '../../../utils/product-group.util';
+import { EcommerceBuilderComponent } from '../ecommerce/builder/ecommerce-builder.component';
 
 @Component({
   selector: 'app-dashboard-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe],
+  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe, EcommerceBuilderComponent],
   templateUrl: './dashboard-view.component.html',
   styleUrl: './dashboard-view.component.css'
 })
@@ -21,6 +22,12 @@ export class DashboardViewComponent implements OnInit {
   private categoryService = inject(CategoryService);
   private productService = inject(ProductService);
   private router = inject(Router);
+
+  // "Store Preview" carries both modes now: View (this component's own
+  // read-only render, unchanged) and Configure (the existing storefront
+  // block-builder, embedded here instead of living on its own separate
+  // page) — same StorefrontLayout/storefront_layout persistence either way.
+  mode: 'view' | 'configure' = 'view';
 
   allProducts: Product[] = [];
   allCategories: Category[] = [];
