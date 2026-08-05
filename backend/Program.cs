@@ -40,9 +40,13 @@ builder.Services.AddResponseCompression(options =>
     options.EnableForHttps = true;
 });
 
-// Distributed cache: Redis when REDIS_CONNECTION_STRING is set, otherwise falls back to
-// an in-memory distributed cache so local dev / single-instance deploys work without Redis.
-var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+// Distributed cache: Redis when REDIS_CONNECTION_STRING is set (production, via
+// the internal docker network), otherwise appsettings' ConnectionStrings:Redis
+// (local dev — points at the same production Redis over its public port, same
+// pattern as ConnectionStrings:DefaultConnection for the database), otherwise
+// falls back to an in-memory distributed cache so this still runs with neither.
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("Redis");
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
     builder.Services.AddStackExchangeRedisCache(options =>

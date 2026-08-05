@@ -30,11 +30,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: zwecosystem-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - /data/apps/zwecosystem/redis:/data
     networks:
       - zwecosystem-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,7 +55,7 @@ services:
       # These env vars are picked up by Program.cs (DB_CONNECTION_STRING, JWT_SECRET)
       - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
       - JWT_SECRET=${JWT_SECRET}
-      - REDIS_CONNECTION_STRING=redis:6379
+      - REDIS_CONNECTION_STRING=redis:6379,password=${REDIS_PASSWORD}
       # SMTP (optional)
       - SmtpSettings__Host=${SMTP_HOST:-smtp.gmail.com}
       - SmtpSettings__Port=${SMTP_PORT:-587}

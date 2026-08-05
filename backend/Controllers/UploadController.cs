@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Ecommerce.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Distributed;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
@@ -18,12 +19,18 @@ namespace Ecommerce.Api.Controllers
 
         private readonly IWebHostEnvironment _env;
         private readonly IFileTextLogger _fileLogger;
+        private readonly IDistributedCache _cache;
 
-        public UploadController(IWebHostEnvironment env, IFileTextLogger fileLogger)
+        public UploadController(IWebHostEnvironment env, IFileTextLogger fileLogger, IDistributedCache cache)
         {
             _env = env;
             _fileLogger = fileLogger;
+            _cache = cache;
         }
+
+        // Same key scheme ImagesController reads from — see that controller
+        // for why this is dual-written alongside disk instead of replacing it.
+        internal static string CacheKey(string folder, string fileName) => $"img:{folder}:{fileName}";
 
         [HttpPost]
         public async Task<IActionResult> UploadFile(IFormFile file, [FromQuery] string folder = "other")
@@ -77,6 +84,14 @@ namespace Ecommerce.Api.Controllers
 
             if (!System.IO.File.Exists(filePath))
                 await System.IO.File.WriteAllBytesAsync(filePath, outputBytes);
+
+            // Dual-written to Redis (never expires) alongside disk: disk alone
+            // only exists on whichever machine/container handled THIS upload —
+            // local dev and production point at the same database but each has
+            // its own disk, so an image uploaded from one was invisible from
+            // the other. Redis is shared, so ImagesController can serve it
+            // anywhere the file itself isn't present locally.
+            await _cache.SetAsync(CacheKey(folder, uniqueFileName), outputBytes, new DistributedCacheEntryOptions());
 
             // Return relative path — Angular resolveImageUrl() prepends siteUrl
             // (port 85 via nginx) so the URL works on any host, not just localhost.
