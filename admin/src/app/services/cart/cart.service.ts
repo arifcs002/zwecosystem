@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
+import { TrackingService } from '../tracking/tracking.service';
 
 export interface ShopProduct {
   id: number;
@@ -21,6 +22,7 @@ const STORAGE_KEY = 'shop_cart_v1';
 // change).
 @Injectable({ providedIn: 'root' })
 export class CartService {
+  private tracking = inject(TrackingService);
   cart: CartItem[] = [];
   isCartOpen = false;
   isCheckoutOpen = false;
@@ -50,6 +52,7 @@ export class CartService {
     else this.cart.push({ product, quantity: Math.min(quantity, product.stock) });
     this.persist();
     this.isCartOpen = true;
+    this.tracking.addToCart({ id: product.id, name: product.name, price: product.price, quantity, category: product.category });
   }
 
   updateQuantity(item: CartItem, delta: number) {
@@ -87,7 +90,8 @@ export class CartService {
       orderNotes: this.customerInfo.notes?.trim() || undefined,
       paymentMethod: this.customerInfo.paymentMethod,
       couponCode: couponCode || undefined,
-      sessionKey: this.sessionKey
+      sessionKey: this.sessionKey,
+      ...this.tracking.signals()
     };
   }
 

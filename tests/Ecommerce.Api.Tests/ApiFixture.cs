@@ -11,6 +11,19 @@ using Ecommerce.Api.Infrastructure;
 
 namespace Ecommerce.Api.Tests;
 
+/// <summary>Recording stand-in for the Meta Conversions API.</summary>
+public class FakeMetaCapi : IMetaCapiClient
+{
+    public List<(string PixelId, string Token, string? TestCode, CapiPurchase Purchase)> Sent { get; } = new();
+    public bool FailNext { get; set; }
+
+    public Task<string?> SendPurchaseAsync(string pixelId, string accessToken, string? testEventCode, CapiPurchase purchase, CancellationToken ct = default)
+    {
+        lock (Sent) Sent.Add((pixelId, accessToken, testEventCode, purchase));
+        if (FailNext) { FailNext = false; return Task.FromResult<string?>("Meta responded 400: bad token"); }
+        return Task.FromResult<string?>(null);
+    }
+}
 /// <summary>Recording stand-in for the Steadfast API: tests set the next outcome and inspect what was sent.</summary>
 public class FakeSteadfast : ISteadfastClient
 {
@@ -45,6 +58,7 @@ public class ApiFixture : IAsyncLifetime
     public static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
     public FakeSteadfast Courier { get; } = new();
+    public FakeMetaCapi Capi { get; } = new();
     public WebApplicationFactory<Program> Factory { get; private set; } = default!;
     public string ConnectionString { get; private set; } = "";
     public Shop A { get; private set; } = default!;
@@ -74,6 +88,8 @@ public class ApiFixture : IAsyncLifetime
             {
                 s.RemoveAll<Ecommerce.Api.Infrastructure.ISteadfastClient>();
                 s.AddSingleton<Ecommerce.Api.Infrastructure.ISteadfastClient>(Courier);
+                s.RemoveAll<Ecommerce.Api.Infrastructure.IMetaCapiClient>();
+                s.AddSingleton<Ecommerce.Api.Infrastructure.IMetaCapiClient>(Capi);
             });
         });
 

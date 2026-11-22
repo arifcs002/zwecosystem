@@ -216,7 +216,10 @@
             <span class="nav-icon">🔢</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
           </a>
-          <a [routerLink]="basePath + '/collections'" routerLinkActive="active" class="nav-item">
+          <a [routerLink]="basePath + '/marketing'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📣</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Marketing &amp; SEO</span>
+          </a>          <a [routerLink]="basePath + '/collections'" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🗂️</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Collections</span>
           </a>          <a [routerLink]="basePath + '/reviews'" routerLinkActive="active" class="nav-item">

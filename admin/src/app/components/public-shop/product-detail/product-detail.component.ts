@@ -7,6 +7,8 @@ import { Product } from '../../../services/product/product.service';
 import { CartService } from '../../../services/cart/cart.service';
 import { WishlistService } from '../../../services/wishlist/wishlist.service';
 import { I18nService } from '../../../i18n/i18n.service';
+import { TrackingService } from '../../../services/tracking/tracking.service';
+import { SeoService } from '../../../services/seo/seo.service';
 import { ReviewService, ProductReviews } from '../../../services/review/review.service';
 import { FormsModule } from '@angular/forms';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
@@ -31,6 +33,8 @@ export class ProductDetailComponent implements OnInit {
   wishlist = inject(WishlistService);
   private reviewService = inject(ReviewService);
   private i18n = inject(I18nService);
+  private tracking = inject(TrackingService);
+  private seo = inject(SeoService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -136,7 +140,12 @@ export class ProductDetailComponent implements OnInit {
           this.reviewService.ensureSummary(data.company.id);
           this.loadReviews();
           this.isLoading = false;
-          document.title = `${this.group.baseName} — ${data.company.name}`;
+          this.seo.set({
+            title: `${this.group.baseName} — ${data.company.name}`,
+            description: this.selectedVariant.description || `Buy ${this.group.baseName} for ৳${this.group.price} at ${data.company.name}. Cash on delivery.`,
+            image: this.group.imageUrl, type: 'product'
+          });
+          this.tracking.viewContent({ id: this.selectedVariant.id, name: this.group.baseName, price: this.group.price, category: this.group.categoryName });
         },
         error: () => { this.notFound = true; this.isLoading = false; }
       });

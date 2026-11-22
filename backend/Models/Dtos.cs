@@ -1,4 +1,4 @@
-namespace Ecommerce.Api.Models
+﻿namespace Ecommerce.Api.Models
 {
     // ── Products ─────────────────────────────────────────────
     public class StockAdjustDto { public int Delta { get; set; } }  // positive = add, negative = minus
@@ -103,7 +103,8 @@ namespace Ecommerce.Api.Models
         string CustomerName, string CustomerPhone,
         string ShippingAddress, string? ShippingDistrict, string? ShippingThana,
         string? OrderNotes, string PaymentMethod,
-        string? CouponCode = null, string? SessionKey = null);
+        string? CouponCode = null, string? SessionKey = null,
+        string? Fbp = null, string? Fbc = null, string? SourceUrl = null);
 
     // ── Coupons / abandoned carts (storefront) ──────────────
     public record CouponUpsertDto(

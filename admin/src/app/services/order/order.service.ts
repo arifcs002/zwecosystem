@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -16,6 +16,9 @@ export interface PublicCheckoutRequest {
   paymentMethod: string;
   couponCode?: string;
   sessionKey?: string;
+  fbp?: string;
+  fbc?: string;
+  sourceUrl?: string;
 }
 
 export interface PublicOrderResult {

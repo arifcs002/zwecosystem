@@ -8,6 +8,7 @@ import { OrderService } from '../../../services/order/order.service';
 import { CouponService } from '../../../services/coupon/coupon.service';
 import { AbandonedCartService } from '../../../services/abandoned-cart/abandoned-cart.service';
 import { AccountService } from '../../../services/account/account.service';
+import { TrackingService } from '../../../services/tracking/tracking.service';
 import { StorefrontData, StorefrontService } from '../../../services/storefront/storefront.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { TenantService } from '../../../services/tenant/tenant.service';
@@ -35,6 +36,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private couponService = inject(CouponService);
   private abandoned = inject(AbandonedCartService);
   account = inject(AccountService);
+  private tracking = inject(TrackingService);
   private notify = inject(GlobalNotificationService);
   private tenant = inject(TenantService);
   cart = inject(CartService);
@@ -74,6 +76,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         localStorage.setItem('tenant_company_id', data.company.id.toString());
         this.applySettings(data);
         this.account.use(data.company.id);
+        if (this.cart.cart.length) this.tracking.initiateCheckout(this.trackItems(), this.subtotal);
         this.prefillFromAccount();
         this.scheduleCapture();
       },
@@ -218,6 +221,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     const phone = this.cart.customerInfo.mobile.trim();
     this.orderService.placePublicOrder(this.cart.buildOrderRequest(this.appliedCoupon)).subscribe({
       next: (res) => {
+        // Report the sale to the shop's Pixel/GA4 (before the cart is cleared). eventID = order number.
+        this.tracking.purchase(res.orderNumber, this.trackItems(), res.total);
         this.placedOrderNumber = res.orderNumber;
         this.placedTotal = res.total;
         this.placedPhone = phone;
@@ -234,6 +239,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.notify.notify({ type: 'error', title: 'Order failed', message: msg, ttlMs: 6000 });
       }
     });
+  }
+
+  private trackItems() {
+    return this.cart.cart.map(i => ({ id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity, category: i.product.category }));
   }
 
   copyOrderNumber() {

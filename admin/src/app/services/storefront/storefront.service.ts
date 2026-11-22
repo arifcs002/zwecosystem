@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { shareReplay, tap } from 'rxjs/operators';
+import { TrackingService } from '../tracking/tracking.service';
 import { environment } from '../../../environments/environment';
 import { CompanySetting } from '../settings/settings.service';
 import { Product } from '../product/product.service';
@@ -19,6 +20,7 @@ export interface StorefrontData {
 @Injectable({ providedIn: 'root' })
 export class StorefrontService {
   private http = inject(HttpClient);
+  private tracking = inject(TrackingService);
   private apiUrl = `${environment.apiUrl}/storefront`;
 
   // Cached per slug (shareReplay) so navigating home ⇄ category ⇄ back — which
@@ -31,7 +33,10 @@ export class StorefrontService {
   getStorefront(slug: string): Observable<StorefrontData> {
     let cached = this.cache.get(slug);
     if (!cached) {
-      cached = this.http.get<StorefrontData>(`${this.apiUrl}/${slug}`).pipe(shareReplay(1));
+      cached = this.http.get<StorefrontData>(`${this.apiUrl}/${slug}`).pipe(
+        // Start the shop's own Pixel / GA4 (if it set them up) as soon as its public settings are known.
+        tap(data => this.tracking.configure(data.settings)),
+        shareReplay(1));
       this.cache.set(slug, cached);
     }
     return cached;

@@ -44,6 +44,9 @@ namespace Ecommerce.Api.Controllers
             "delivery_charge", "free_delivery_above",
             "payment_cod", "payment_bkash", "payment_online", "bkash_number",
 
+            // Marketing / SEO (pixel & analytics IDs are public in page source anyway)
+            "meta_pixel_id", "ga4_measurement_id", "seo_title", "seo_description", "seo_og_image",
+
             // Static pages / policies + contact
             "page_about", "page_privacy", "page_refund", "page_terms",
             "contact_address", "contact_phone", "contact_email"

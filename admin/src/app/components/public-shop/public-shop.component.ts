@@ -9,6 +9,7 @@ import { ImgUrlPipe } from '../../pipes/img-url.pipe';
 import { ShopHeaderComponent } from './shared/shop-header.component';
 import { ShopFooterComponent } from './shared/shop-footer.component';
 import { ImgFallbackDirective } from '../../directives/img-fallback.directive';
+import { SeoService } from '../../services/seo/seo.service';
 import { ProductGroup, groupProducts, groupForProductId, toShopProduct } from '../../utils/product-group.util';
 import { StorefrontBlock, parseLayout } from '../../models/storefront-layout.model';
 import { resolveBlockProducts } from '../../utils/storefront-source.util';
@@ -58,6 +59,7 @@ export class PublicShopComponent implements OnInit {
   private router = inject(Router);
   private storefrontService = inject(StorefrontService);
   tenant = inject(TenantService);
+  private seo = inject(SeoService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -172,6 +174,13 @@ export class PublicShopComponent implements OnInit {
         const visibleCategoryIds = catSetting?.value ? catSetting.value.split(',').filter(Boolean) : [];
 
         this.footerAboutText = settings.find(s => s.key === 'footer_about_text')?.value || '';
+        // Tab title + description + Open Graph tags for the home / category views.
+        const sv = (k: string) => settings.find(s => s.key === k)?.value || '';
+        this.seo.set({
+          title: sv('seo_title') || this.companyName,
+          description: sv('seo_description') || this.footerAboutText || `Shop online at ${this.companyName}. Cash on delivery.`,
+          image: sv('seo_og_image') || this.companyLogo
+        });
         this.contactAddress = settings.find(s => s.key === 'contact_address')?.value || '';
         this.contactPhone = settings.find(s => s.key === 'contact_phone')?.value || '';
         this.contactEmail = settings.find(s => s.key === 'contact_email')?.value || '';

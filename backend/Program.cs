@@ -35,6 +35,7 @@ builder.Services.AddHttpClient(Ecommerce.Api.Infrastructure.SteadfastClient.Http
 });
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ISteadfastClient, Ecommerce.Api.Infrastructure.SteadfastClient>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ICustomerAuth, Ecommerce.Api.Infrastructure.CustomerAuth>();
+builder.Services.AddSingleton<Ecommerce.Api.Infrastructure.IMetaCapiClient, Ecommerce.Api.Infrastructure.MetaCapiClient>();
 builder.Services.AddScoped<ISmsSender, HttpSmsSender>();
 builder.Services.AddScoped<IFraudAnalyzer, FraudAnalyzer>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.BkashProvider>();

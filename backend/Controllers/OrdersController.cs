@@ -18,9 +18,10 @@ namespace Ecommerce.Api.Controllers
         private readonly IFraudAnalyzer _fraudAnalyzer;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
         private readonly ICustomerAuth _customerAuth;
+        private readonly IMetaCapiClient _capi;
 
         public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender, IFraudAnalyzer fraudAnalyzer,
-            Microsoft.Extensions.Caching.Memory.IMemoryCache cache, ICustomerAuth customerAuth)
+            Microsoft.Extensions.Caching.Memory.IMemoryCache cache, ICustomerAuth customerAuth, IMetaCapiClient capi)
         {
             _context = context;
             _fileLogger = fileLogger;
@@ -28,6 +29,7 @@ namespace Ecommerce.Api.Controllers
             _fraudAnalyzer = fraudAnalyzer;
             _cache = cache;
             _customerAuth = customerAuth;
+            _capi = capi;
         }
 
         // ── Storefront: customer-facing order tracking ─────────────────────────────
@@ -68,6 +70,14 @@ namespace Ecommerce.Api.Controllers
                 items, timeline
             });
         }
+
+        // Only plain http(s) URLs and cookie-safe tokens are forwarded to Meta.
+        private static string? SafeUrl(string? u) =>
+            !string.IsNullOrWhiteSpace(u) && u.Length <= 500 && Uri.TryCreate(u, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) ? uri.ToString() : null;
+
+        private static string? SafeToken(string? t) =>
+            !string.IsNullOrWhiteSpace(t) && t.Length <= 200 && System.Text.RegularExpressions.Regex.IsMatch(t, @"^[A-Za-z0-9._\-]+$") ? t : null;
 
         private static System.Text.Json.JsonElement ParseItems(string? json)
         {
@@ -210,6 +220,25 @@ namespace Ecommerce.Api.Controllers
                         .SetProperty(c => c.Status, "RECOVERED")
                         .SetProperty(c => c.RecoveredOrderId, orderId)
                         .SetProperty(c => c.UpdatedDate, DateTime.UtcNow));
+            }
+
+            // Meta Conversions API: a server-side Purchase that pairs with the browser pixel via the shared
+            // event_id (the order number). Fire-and-forget so Meta being slow or down can never affect checkout.
+            var pixelId = settings.GetValueOrDefault("meta_pixel_id");
+            var capiToken = settings.GetValueOrDefault("secret_meta_capi_token");
+            if (MetaCapiClient.IsValidPixelId(pixelId) && !string.IsNullOrWhiteSpace(capiToken))
+            {
+                var items = productIds.Select((pid, i) => (pid, quantities[i], prices[i])).ToList();
+                var purchase = new CapiPurchase(orderNumber, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), SafeUrl(dto.SourceUrl),
+                    dto.CustomerPhone, account?.Email, RateLimit.ClientKey(HttpContext), Request.Headers.UserAgent.ToString(),
+                    SafeToken(dto.Fbp), SafeToken(dto.Fbc), account?.Id.ToString(), total, "BDT", items);
+                var testCode = settings.GetValueOrDefault("meta_test_event_code");
+                var capi = _capi; var log = _fileLogger; var pid2 = pixelId!; var tok = capiToken!.Trim();
+                _ = Task.Run(async () =>
+                {
+                    var err = await capi.SendPurchaseAsync(pid2, tok, testCode, purchase);
+                    if (err != null) log.LogError("CAPI", $"Meta Purchase for {orderNumber} failed: {err}");
+                });
             }
 
             await RunFraudCheckAsync(orderId, companyId.Value, dto.CustomerPhone, total);
