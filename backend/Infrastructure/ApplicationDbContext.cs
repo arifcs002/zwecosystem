@@ -48,6 +48,8 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<OrderStatusHistory> OrderStatusHistory { get; set; }
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<AbandonedCart> AbandonedCarts { get; set; }
+        public DbSet<Expense> Expenses { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         private void ResolveTenantAndUser()
         {
@@ -173,6 +175,8 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<PricingTag>().HasQueryFilter(pt => pt.IsDeleted == 0 && (!CompanyId.HasValue || pt.CompanyId == CompanyId));
             modelBuilder.Entity<Coupon>().HasQueryFilter(c => c.IsDeleted == 0 && (!CompanyId.HasValue || c.CompanyId == CompanyId));
             modelBuilder.Entity<AbandonedCart>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
+            modelBuilder.Entity<Expense>().HasQueryFilter(e => e.IsDeleted == 0 && (!CompanyId.HasValue || e.CompanyId == CompanyId));
+            modelBuilder.Entity<Review>().HasQueryFilter(r => r.IsDeleted == 0 && (!CompanyId.HasValue || r.CompanyId == CompanyId));
             modelBuilder.Entity<Company>().HasQueryFilter(c => c.IsDeleted == 0);
             modelBuilder.Entity<SubscriptionPlan>().HasQueryFilter(sp => sp.IsDeleted == 0);
             modelBuilder.Entity<Role>().HasQueryFilter(r => r.IsDeleted == 0);

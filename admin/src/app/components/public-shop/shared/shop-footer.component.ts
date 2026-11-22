@@ -1,4 +1,5 @@
-import { Component, Input, inject } from '@angular/core';
+﻿import { Component, Input, inject } from '@angular/core';
+import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
@@ -17,7 +18,7 @@ const SOCIAL: { key: string; label: string }[] = [
 @Component({
   selector: 'app-shop-footer',
   standalone: true,
-  imports: [CommonModule, RouterModule, ImgUrlPipe, ImgFallbackDirective],
+  imports: [TranslatePipe, CommonModule, RouterModule, ImgUrlPipe, ImgFallbackDirective],
   template: `
   <footer *ngIf="store" class="bg-gray-900 text-gray-400 mt-auto">
     <div class="max-w-screen-xl mx-auto px-6 py-10">
@@ -34,24 +35,24 @@ const SOCIAL: { key: string; label: string }[] = [
           </div>
         </div>
         <div>
-          <h4 class="text-white font-semibold text-sm mb-3">Customer Care</h4>
+          <h4 class="text-white font-semibold text-sm mb-3">{{ 'Customer Care' | t }}</h4>
           <ul class="space-y-2 text-xs">
-            <li><a [routerLink]="link('track-order')" class="hover:text-white transition">Track Your Order</a></li>
-            <li><a [routerLink]="link('shop')" class="hover:text-white transition">All Products</a></li>
-            <li><a [routerLink]="link('wishlist')" class="hover:text-white transition">My Wishlist</a></li>
-            <li><a [routerLink]="link('page', 'refund')" class="hover:text-white transition">Refund Policy</a></li>
-            <li><a [routerLink]="link('page', 'privacy')" class="hover:text-white transition">Privacy Policy</a></li>
-            <li><a [routerLink]="link('page', 'terms')" class="hover:text-white transition">Terms &amp; Conditions</a></li>
+            <li><a [routerLink]="link('track-order')" class="hover:text-white transition">{{ 'Track Your Order' | t }}</a></li>
+            <li><a [routerLink]="link('shop')" class="hover:text-white transition">{{ 'All Products' | t }}</a></li>
+            <li><a [routerLink]="link('wishlist')" class="hover:text-white transition">{{ 'My Wishlist' | t }}</a></li>
+            <li><a [routerLink]="link('page', 'refund')" class="hover:text-white transition">{{ 'Refund Policy' | t }}</a></li>
+            <li><a [routerLink]="link('page', 'privacy')" class="hover:text-white transition">{{ 'Privacy Policy' | t }}</a></li>
+            <li><a [routerLink]="link('page', 'terms')" class="hover:text-white transition">{{ 'Terms &amp; Conditions' | t }}</a></li>
           </ul>
         </div>
         <div *ngIf="store.categories.length">
-          <h4 class="text-white font-semibold text-sm mb-3">Shop By</h4>
+          <h4 class="text-white font-semibold text-sm mb-3">{{ 'Shop By' | t }}</h4>
           <ul class="space-y-2 text-xs">
             <li *ngFor="let c of topCategories"><a (click)="goCategory(c.id)" class="hover:text-white transition cursor-pointer">{{ c.name }}</a></li>
           </ul>
         </div>
         <div *ngIf="val('contact_address') || val('contact_phone') || val('contact_email')">
-          <h4 class="text-white font-semibold text-sm mb-3">Get in Touch</h4>
+          <h4 class="text-white font-semibold text-sm mb-3">{{ 'Get in Touch' | t }}</h4>
           <ul class="space-y-2 text-xs">
             <li *ngIf="val('contact_address')" class="flex items-start gap-2"><span>📍</span><span>{{ val('contact_address') }}</span></li>
             <li *ngIf="val('contact_phone')" class="flex items-center gap-2"><span>📞</span><a [href]="'tel:' + val('contact_phone')" class="hover:text-white">{{ val('contact_phone') }}</a></li>

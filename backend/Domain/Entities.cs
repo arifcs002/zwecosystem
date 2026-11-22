@@ -656,6 +656,13 @@ namespace Ecommerce.Api.Domain
         [Column("coupon_code")]
         public string? CouponCode { get; set; }
 
+        // Set when the parcel was booked through a courier API (Steadfast).
+        [Column("courier_consignment_id")]
+        public string? CourierConsignmentId { get; set; }
+
+        [Column("courier_status")]
+        public string? CourierStatus { get; set; }
+
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();
     }
@@ -705,6 +712,70 @@ namespace Ecommerce.Api.Domain
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
+    }
+
+    // A money-out entry (rent, ads, salary, packaging…) used by the profit & loss report.
+    [Table("expenses")]
+    public class Expense : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [Required]
+        [Column("category")]
+        public string Category { get; set; } = string.Empty;
+
+        [Column("amount")]
+        public decimal Amount { get; set; }
+
+        [Column("expense_date", TypeName = "date")]
+        public DateTime ExpenseDate { get; set; }
+
+        [Column("payee")]
+        public string? Payee { get; set; }
+
+        [Column("note")]
+        public string? Note { get; set; }
+    }
+
+    // A customer review of a product (shared by all of its size variants).
+    [Table("reviews")]
+    public class Review : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [Column("product_id")]
+        public int ProductId { get; set; }
+
+        [Required]
+        [Column("product_key")]
+        public string ProductKey { get; set; } = string.Empty;
+
+        [Required]
+        [Column("reviewer_name")]
+        public string ReviewerName { get; set; } = string.Empty;
+
+        [Column("rating")]
+        public int Rating { get; set; }
+
+        [Column("comment")]
+        public string? Comment { get; set; }
+
+        [Required]
+        [Column("status")]
+        public string Status { get; set; } = "PENDING"; // PENDING | APPROVED | REJECTED
+
+        [Column("is_verified")]
+        public bool IsVerified { get; set; }
     }
 
     // A storefront cart whose owner left a phone number but never placed the order —

@@ -28,6 +28,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(Ecommerce.Api.Infrastructure.SteadfastClient.HttpClientName, c =>
+{
+    c.BaseAddress = new Uri("https://portal.packzy.com/api/v1/");
+    c.Timeout = TimeSpan.FromSeconds(20);
+});
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ISteadfastClient, Ecommerce.Api.Infrastructure.SteadfastClient>();
 builder.Services.AddScoped<ISmsSender, HttpSmsSender>();
 builder.Services.AddScoped<IFraudAnalyzer, FraudAnalyzer>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.BkashProvider>();

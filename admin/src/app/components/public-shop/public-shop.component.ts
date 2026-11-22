@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
+import { TranslatePipe } from '../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -44,7 +45,7 @@ export interface CategoryTree {
 @Component({
   selector: 'app-public-shop',
   standalone: true,
-  imports: [
+  imports: [TranslatePipe, 
     CommonModule, FormsModule, RouterModule, ImgUrlPipe, ShopHeaderComponent, ShopFooterComponent, ImgFallbackDirective,
     HeroSliderComponent, CategoryIconsComponent, ProductCarouselComponent,
     BrandCarouselComponent, TestimonialsComponent

@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth/auth.guard';
 import { tenantHostGuard } from './guards/tenant/tenant.guard';
 
@@ -33,6 +33,10 @@ const workspaceChildren: Routes = [
   { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
   { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
   { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+  { path: 'expenses', loadComponent: () => import('./components/admin/expenses/expense-management.component').then(m => m.ExpenseManagementComponent) },
+  { path: 'profit', loadComponent: () => import('./components/admin/profit-report/profit-report.component').then(m => m.ProfitReportComponent) },
+  { path: 'reviews', loadComponent: () => import('./components/admin/reviews/review-management.component').then(m => m.ReviewManagementComponent) },
+  { path: 'messages', loadComponent: () => import('./components/admin/messages-courier/messages-courier.component').then(m => m.MessagesCourierComponent) },
   { path: 'coupons', loadComponent: () => import('./components/admin/coupons/coupon-management.component').then(m => m.CouponManagementComponent) },
   { path: 'abandoned-carts', loadComponent: () => import('./components/admin/abandoned-carts/abandoned-carts.component').then(m => m.AbandonedCartsComponent) },
   { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
@@ -153,6 +157,10 @@ export const routes: Routes = [
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
       { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+      { path: 'expenses', loadComponent: () => import('./components/admin/expenses/expense-management.component').then(m => m.ExpenseManagementComponent) },
+      { path: 'profit', loadComponent: () => import('./components/admin/profit-report/profit-report.component').then(m => m.ProfitReportComponent) },
+      { path: 'reviews', loadComponent: () => import('./components/admin/reviews/review-management.component').then(m => m.ReviewManagementComponent) },
+      { path: 'messages', loadComponent: () => import('./components/admin/messages-courier/messages-courier.component').then(m => m.MessagesCourierComponent) },
       { path: 'coupons', loadComponent: () => import('./components/admin/coupons/coupon-management.component').then(m => m.CouponManagementComponent) },
       { path: 'abandoned-carts', loadComponent: () => import('./components/admin/abandoned-carts/abandoned-carts.component').then(m => m.AbandonedCartsComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },

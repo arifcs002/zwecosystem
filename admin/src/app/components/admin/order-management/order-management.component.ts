@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../../services/order/order.service';
+import { CourierService } from '../../../services/courier/courier.service';
+import { SettingsService } from '../../../services/settings/settings.service';
 
 @Component({
   selector: 'app-order-management',
@@ -12,6 +14,12 @@ import { OrderService } from '../../../services/order/order.service';
 })
 export class OrderManagementComponent implements OnInit {
   private orderService = inject(OrderService);
+  private courierService = inject(CourierService);
+  private settingsService = inject(SettingsService);
+
+  courierBusy = false;
+  invoiceHeader = '';
+  invoiceFooter = '';
 
   orders: any[] = [];
   filteredOrders: any[] = [];
@@ -34,7 +42,41 @@ export class OrderManagementComponent implements OnInit {
   statuses = ['ALL', 'CANCELLED', 'COMPLETED', 'PENDING', 'PROCESSING'];
   orderStatuses = ['CANCELLED', 'COMPLETED', 'PACKED', 'PENDING', 'PROCESSING', 'SHIPPED'];
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+    // Invoice header/footer text the owner set in Messages & Courier.
+    this.settingsService.getSettings().subscribe({
+      next: (s) => {
+        this.invoiceHeader = s.find(x => x.key === 'invoice_header_text')?.value || '';
+        this.invoiceFooter = s.find(x => x.key === 'invoice_footer_text')?.value || '';
+      },
+      error: () => { /* invoices fall back to the default text */ }
+    });
+  }
+
+  // ── Steadfast courier ──
+  bookSteadfast() {
+    if (!this.selectedOrder || this.courierBusy) return;
+    this.courierBusy = true; this.errorMsg = '';
+    this.courierService.book(this.selectedOrder.id).subscribe({
+      next: (r) => {
+        this.courierBusy = false;
+        Object.assign(this.selectedOrder, r);
+        this.courierName = r.courierName; this.trackingNumber = r.trackingNumber;
+        this.successMsg = 'Sent to Steadfast ✓'; setTimeout(() => this.successMsg = '', 3000);
+      },
+      error: (e) => { this.courierBusy = false; this.errorMsg = e?.error?.message || 'Could not send to Steadfast.'; }
+    });
+  }
+
+  refreshCourier() {
+    if (!this.selectedOrder || this.courierBusy) return;
+    this.courierBusy = true; this.errorMsg = '';
+    this.courierService.refresh(this.selectedOrder.id).subscribe({
+      next: (r) => { this.courierBusy = false; this.selectedOrder.courierStatus = r.courierStatus; },
+      error: (e) => { this.courierBusy = false; this.errorMsg = e?.error?.message || 'Could not refresh the courier status.'; }
+    });
+  }
 
   load() {
     this.isLoading = true;
@@ -130,6 +172,7 @@ export class OrderManagementComponent implements OnInit {
         @media print { body { padding: 0; } }
       </style></head><body>
       <h1>INVOICE</h1>
+      ${this.invoiceHeader ? `<div class="muted" style="white-space:pre-line">${esc(this.invoiceHeader)}</div>` : ''}
       <div class="muted">Order ${esc(o.orderNumber)} · ${esc(date)}</div>
       <div class="row">
         <div>
@@ -154,7 +197,7 @@ export class OrderManagementComponent implements OnInit {
         <div><span>Shipping</span><span>${money(o.shippingFee)}</span></div>
         <div class="grand"><span>Total</span><span>${money(o.total)}</span></div>
       </div>
-      <p class="muted" style="text-align:center;margin-top:32px">Thank you for your order!</p>
+      <p class="muted" style="text-align:center;margin-top:32px;white-space:pre-line">${esc(this.invoiceFooter || 'Thank you for your order!')}</p>
       <script>window.onload = function(){ window.print(); }<\/script>
       </body></html>`;
 

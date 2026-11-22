@@ -120,6 +120,12 @@ namespace Ecommerce.Api.Models
 
     public record AbandonedCartStatusDto(string Status);
 
+    // ── Expenses / reviews ──────────────────────────────────
+    public record ExpenseUpsertDto(string Category, decimal Amount, DateTime ExpenseDate, string? Payee, string? Note);
+
+    public record ReviewSubmitDto(int ProductId, string ReviewerName, int Rating, string? Comment, string? OrderNumber, string? Phone);
+    public record ReviewStatusDto(string Status);
+
     public class StatusUpdateDto
     {
         public string  Status { get; set; } = string.Empty;

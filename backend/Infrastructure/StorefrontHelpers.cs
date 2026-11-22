@@ -32,6 +32,19 @@ namespace Ecommerce.Api.Infrastructure
         }
     }
 
+    /// <summary>
+    /// Size variants are separate product rows named "Shoe (Size 42)". Reviews belong to the
+    /// shoe, not a size, so they are keyed by "<base name>::<categoryId>" — the SAME string the
+    /// storefront computes in groupKey() (product-group.util.ts / shop-card.component.ts).
+    /// </summary>
+    public static class ProductKey
+    {
+        private static readonly Regex SizeSuffix = new(@"\s*\(Size [^)]+\)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        public static string BaseName(string name) => SizeSuffix.Replace(name ?? "", "").Trim();
+        public static string For(Product p) => $"{BaseName(p.Name)}::{p.CategoryId?.ToString() ?? ""}";
+    }
+
     public static class PhoneUtil
     {
         private static readonly Regex Bd = new(@"^(?:\+?88)?(01[3-9]\d{8})$", RegexOptions.Compiled);

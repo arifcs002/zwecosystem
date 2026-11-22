@@ -279,10 +279,12 @@ CREATE OR REPLACE PROCEDURE sp_upsert_setting(
     p_company_id INT, p_key TEXT, p_value TEXT, p_group TEXT
 ) LANGUAGE plpgsql AS $$
 BEGIN
-    INSERT INTO company_settings(company_id, key, value, group_name, created_date, updated_date)
-    VALUES (p_company_id, p_key, p_value, p_group, NOW(), NOW())
+    -- is_deleted is NOT NULL without a default: omitting it made saving any setting key that
+    -- didn't already exist fail with 23502 (a brand-new shop's first save of a setting).
+    INSERT INTO company_settings(company_id, key, value, group_name, created_date, updated_date, is_deleted)
+    VALUES (p_company_id, p_key, p_value, p_group, NOW(), NOW(), 0)
     ON CONFLICT (company_id, key)
-    DO UPDATE SET value = p_value, group_name = p_group, updated_date = NOW();
+    DO UPDATE SET value = p_value, group_name = p_group, updated_date = NOW(), is_deleted = 0;
 END;
 $$;
 

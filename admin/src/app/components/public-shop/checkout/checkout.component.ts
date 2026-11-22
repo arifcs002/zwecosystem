@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -22,7 +23,7 @@ const BD_MOBILE = /^(?:\+?88)?01[3-9]\d{8}$/;
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent],
   templateUrl: './checkout.component.html'
 })
 export class CheckoutComponent implements OnInit, OnDestroy {

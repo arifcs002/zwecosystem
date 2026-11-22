@@ -62,7 +62,7 @@ namespace Ecommerce.Api.Controllers
                 order.OrderNumber, order.Status, order.PaymentMethod, order.PaymentStatus,
                 createdDate = order.CreatedDate,
                 order.Subtotal, order.Discount, order.ShippingFee, order.Total,
-                order.CouponCode, order.ShippingAddress, order.CourierName, order.TrackingNumber,
+                order.CouponCode, order.ShippingAddress, order.CourierName, order.TrackingNumber, order.CourierStatus,
                 items, timeline
             });
         }
@@ -269,6 +269,7 @@ namespace Ecommerce.Api.Controllers
                 vm.Status, vm.PaymentMethod, vm.PaymentStatus, vm.SaleType, vm.CreatedDate,
                 entity.Subtotal, entity.Discount, entity.Tax, entity.ShippingFee,
                 entity.ShippingAddress, entity.CourierName, entity.TrackingNumber,
+                entity.CourierConsignmentId, entity.CourierStatus,
                 Items = items
             };
         }
@@ -357,6 +358,18 @@ namespace Ecommerce.Api.Controllers
                     "CANCELLED"  => $"Your order {order.OrderNumber} at {shopName} has been cancelled.",
                     _             => $"Your order {order.OrderNumber} status: {status}."
                 };
+
+                // The shop's own wording wins: sms_template_<status> with {order} {shop} {name} {tracking} {total}.
+                var template = settings.GetValueOrDefault("sms_template_" + status.ToLowerInvariant());
+                if (!string.IsNullOrWhiteSpace(template))
+                {
+                    msg = template
+                        .Replace("{order}", order.OrderNumber)
+                        .Replace("{shop}", shopName)
+                        .Replace("{name}", order.CustomerName ?? "")
+                        .Replace("{tracking}", order.TrackingNumber ?? "")
+                        .Replace("{total}", order.Total.ToString("0.##"));
+                }
 
                 await _smsSender.SendAsync(apiUrl, order.CustomerPhone, msg);
             }

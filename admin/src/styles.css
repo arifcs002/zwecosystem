@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -458,3 +458,6 @@ select.form-input option:disabled {
 .shop-root input::placeholder, .shop-root textarea::placeholder { color: #9ca3af; }
 .shop-root option { color: #111827; background: #fff; }
 .shop-root img.img-fallback { object-fit: cover; }
+
+/* Bangla storefront: a Bangla-capable font for everything inside the shop (Outfit has no Bangla glyphs). */
+html.lang-bn .shop-root, html.lang-bn .shop-root * { font-family: 'Hind Siliguri', 'Outfit', system-ui, sans-serif !important; }

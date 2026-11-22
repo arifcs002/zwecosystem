@@ -1,10 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
+import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { StorefrontData, StorefrontService } from '../../../services/storefront/storefront.service';
 import { Product } from '../../../services/product/product.service';
 import { CartService } from '../../../services/cart/cart.service';
 import { WishlistService } from '../../../services/wishlist/wishlist.service';
+import { I18nService } from '../../../i18n/i18n.service';
+import { ReviewService, ProductReviews } from '../../../services/review/review.service';
+import { FormsModule } from '@angular/forms';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 import { ImgFallbackDirective } from '../../../directives/img-fallback.directive';
 import { ProductGroup, groupProducts, groupForProductId, toShopProduct, discountPercent } from '../../../utils/product-group.util';
@@ -16,7 +20,7 @@ import { ShopCardComponent, groupKey } from '../shared/shop-card.component';
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ImgUrlPipe, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgUrlPipe, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
   templateUrl: './product-detail.component.html'
 })
 export class ProductDetailComponent implements OnInit {
@@ -25,6 +29,8 @@ export class ProductDetailComponent implements OnInit {
   private storefront = inject(StorefrontService);
   private tenant = inject(TenantService);
   wishlist = inject(WishlistService);
+  private reviewService = inject(ReviewService);
+  private i18n = inject(I18nService);
   cartService = inject(CartService);
 
   companySlug = '';
@@ -47,6 +53,49 @@ export class ProductDetailComponent implements OnInit {
   enableCall = false;
   callNumber = '';
 
+
+  // ── Reviews ──
+  reviewData: ProductReviews = { average: 0, count: 0, reviews: [] };
+  reviewForm = { name: '', rating: 0, comment: '', orderNumber: '', phone: '' };
+  showVerify = false;
+  reviewBusy = false;
+  reviewMsg = '';
+  reviewError = '';
+  starRange = [1, 2, 3, 4, 5];
+  Math = Math;
+
+  loadReviews() {
+    if (!this.selectedVariant) return;
+    this.reviewService.forProduct(this.selectedVariant.id).subscribe({
+      next: (r) => this.reviewData = r,
+      error: () => this.reviewData = { average: 0, count: 0, reviews: [] }
+    });
+  }
+
+  submitReview() {
+    if (!this.selectedVariant || this.reviewBusy) return;
+    this.reviewError = ''; this.reviewMsg = '';
+    const f = this.reviewForm;
+    if (f.name.trim().length < 2) { this.reviewError = 'Please enter your name.'; return; }
+    if (!f.rating) { this.reviewError = 'Tap the stars to rate this product.'; return; }
+    this.reviewBusy = true;
+    this.reviewService.submit({
+      productId: this.selectedVariant.id, reviewerName: f.name.trim(), rating: f.rating,
+      comment: f.comment.trim() || undefined,
+      orderNumber: this.showVerify ? f.orderNumber.trim() || undefined : undefined,
+      phone: this.showVerify ? f.phone.trim() || undefined : undefined
+    }).subscribe({
+      next: (r) => {
+        this.reviewBusy = false; this.reviewMsg = this.i18n.t(r.message);
+        this.reviewForm = { name: '', rating: 0, comment: '', orderNumber: '', phone: '' };
+        if (r.status === 'APPROVED') this.loadReviews();
+      },
+      error: (e) => {
+        this.reviewBusy = false;
+        this.reviewError = e?.status === 429 ? 'Too many reviews from this device. Please try again later.' : (e?.error?.message || 'Could not submit your review.');
+      }
+    });
+  }
   get discount(): number { return this.group ? discountPercent(this.group) : 0; }
   get wished(): boolean { return !!this.group && this.wishlist.has(groupKey(this.group)); }
   get inStock(): boolean { return !!this.selectedVariant && this.selectedVariant.stockQuantity > 0; }
@@ -84,6 +133,8 @@ export class ProductDetailComponent implements OnInit {
           const sameCat = this.allGroups.filter(g => groupKey(g) !== me && g.categoryId === this.group!.categoryId && g.totalStock > 0);
           const others = this.allGroups.filter(g => groupKey(g) !== me && g.categoryId !== this.group!.categoryId && g.totalStock > 0);
           this.related = [...sameCat, ...others].slice(0, 4);
+          this.reviewService.ensureSummary(data.company.id);
+          this.loadReviews();
           this.isLoading = false;
           document.title = `${this.group.baseName} — ${data.company.name}`;
         },
@@ -105,9 +156,9 @@ export class ProductDetailComponent implements OnInit {
   }
 
   stockLabel(stock: number): string {
-    if (stock <= 0) return 'Out of Stock';
-    if (stock <= this.lowStockThreshold) return `Only ${stock} left`;
-    return 'In Stock';
+    if (stock <= 0) return this.i18n.t('Out of Stock');
+    if (stock <= this.lowStockThreshold) return this.i18n.t('Only {n} left in stock', { n: stock });
+    return this.i18n.t('In Stock');
   }
 
   toggleWish() {

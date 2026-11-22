@@ -4,9 +4,33 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
+using Ecommerce.Api.Infrastructure;
 
 namespace Ecommerce.Api.Tests;
+
+/// <summary>Recording stand-in for the Steadfast API: tests set the next outcome and inspect what was sent.</summary>
+public class FakeSteadfast : ISteadfastClient
+{
+    public bool FailNext { get; set; }
+    public string StatusToReturn { get; set; } = "in_review";
+    public List<(string Key, string Secret, string Invoice, string Phone, string Address, decimal Cod)> Bookings { get; } = new();
+    private int _seq;
+
+    public Task<CourierBooking> CreateOrderAsync(string apiKey, string secretKey, string invoice, string name,
+        string phone, string address, decimal codAmount, string? note, CancellationToken ct = default)
+    {
+        Bookings.Add((apiKey, secretKey, invoice, phone, address, codAmount));
+        if (FailNext) { FailNext = false; return Task.FromResult(new CourierBooking(false, null, null, null, "Invalid API credentials.")); }
+        var n = Interlocked.Increment(ref _seq);
+        return Task.FromResult(new CourierBooking(true, $"CID{n}", $"TRK{n}", "in_review", null));
+    }
+
+    public Task<CourierStatusResult> GetStatusAsync(string apiKey, string secretKey, string consignmentId, CancellationToken ct = default)
+        => Task.FromResult(new CourierStatusResult(true, StatusToReturn, null));
+}
 
 /// <summary>
 /// Boots the real API in-process against a LOCAL TEST database and gives every test two
@@ -20,6 +44,7 @@ public class ApiFixture : IAsyncLifetime
 {
     public static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
+    public FakeSteadfast Courier { get; } = new();
     public WebApplicationFactory<Program> Factory { get; private set; } = default!;
     public string ConnectionString { get; private set; } = "";
     public Shop A { get; private set; } = default!;
@@ -44,6 +69,12 @@ public class ApiFixture : IAsyncLifetime
         {
             b.UseEnvironment("Testing"); // backend/appsettings.Testing.json: in-memory cache, no Redis
             b.UseContentRoot(backend);
+            // Never call the real courier from tests — swap in a recording fake.
+            b.ConfigureServices(s =>
+            {
+                s.RemoveAll<Ecommerce.Api.Infrastructure.ISteadfastClient>();
+                s.AddSingleton<Ecommerce.Api.Infrastructure.ISteadfastClient>(Courier);
+            });
         });
 
         var run = Guid.NewGuid().ToString("N")[..8];

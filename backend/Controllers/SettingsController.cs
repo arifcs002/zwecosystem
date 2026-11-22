@@ -67,8 +67,15 @@ namespace Ecommerce.Api.Controllers
             var settings = await _context.Database
                 .SqlQueryRaw<SettingVm>("SELECT * FROM sp_get_settings({0})", companyId.Value)
                 .ToListAsync();
+            // API keys/secrets (secret_*) are write-only: the UI can show "saved" but the value
+            // never travels back to the browser, so a cashier account can't read the owner's keys.
+            foreach (var s in settings.Where(s => IsSecretKey(s.key) && !string.IsNullOrEmpty(s.value)))
+                s.value = SecretMask;
             return Ok(settings);
         }
+
+        public const string SecretMask = "********";
+        public static bool IsSecretKey(string key) => key.StartsWith("secret_", StringComparison.OrdinalIgnoreCase);
 
         [HttpGet("public")]
         [AllowAnonymous]
@@ -89,8 +96,14 @@ namespace Ecommerce.Api.Controllers
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
 
+            var mayWriteSecrets = User.IsInRole("companyadmin") || User.IsInRole("superadmin") || User.IsInRole("super_admin");
             foreach (var s in settingsList)
             {
+                if (IsSecretKey(s.Key))
+                {
+                    if (!mayWriteSecrets) return Forbid();   // only the owner may change API keys
+                    if (s.Value == SecretMask) continue;      // "unchanged" — the UI echoes the mask back
+                }
                 await _context.Database.ExecuteSqlRawAsync(
                     "CALL sp_upsert_setting({0},{1},{2},{3})",
                     companyId.Value, s.Key, s.Value ?? "", s.GroupName ?? "GENERAL");

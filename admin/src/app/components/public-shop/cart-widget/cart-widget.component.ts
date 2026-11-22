@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+﻿import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,7 +13,7 @@ import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 @Component({
   selector: 'app-cart-widget',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
+  imports: [TranslatePipe, CommonModule, FormsModule, ImgUrlPipe],
   templateUrl: './cart-widget.component.html'
 })
 export class CartWidgetComponent implements OnInit {

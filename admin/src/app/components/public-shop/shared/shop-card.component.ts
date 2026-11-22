@@ -1,4 +1,5 @@
-import { Component, Input, inject } from '@angular/core';
+﻿import { Component, Input, inject } from '@angular/core';
+import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
@@ -7,6 +8,7 @@ import { ProductGroup, discountPercent, toShopProduct } from '../../../utils/pro
 import { CartService } from '../../../services/cart/cart.service';
 import { WishlistService } from '../../../services/wishlist/wishlist.service';
 import { TenantService } from '../../../services/tenant/tenant.service';
+import { ReviewService } from '../../../services/review/review.service';
 
 export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.categoryId ?? ''}`; }
 
@@ -16,7 +18,7 @@ export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.c
 @Component({
   selector: 'app-shop-card',
   standalone: true,
-  imports: [CommonModule, ImgUrlPipe, ImgFallbackDirective],
+  imports: [TranslatePipe, CommonModule, ImgUrlPipe, ImgFallbackDirective],
   template: `
   <div (click)="open()" class="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer h-full">
     <div class="relative aspect-square bg-gray-50 overflow-hidden">
@@ -24,9 +26,9 @@ export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.c
            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
       <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
         <span *ngIf="discount > 0" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-sm">-{{ discount }}%</span>
-        <span *ngIf="isNew" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm">New</span>
-        <span *ngIf="soldOut" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900/85 text-white shadow-sm">Sold out</span>
-        <span *ngIf="!soldOut && lowStock" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-sm">Only {{ group.totalStock }} left</span>
+        <span *ngIf="isNew" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm">{{ 'New' | t }}</span>
+        <span *ngIf="soldOut" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900/85 text-white shadow-sm">{{ 'Sold out' | t }}</span>
+        <span *ngIf="!soldOut && lowStock" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-sm">{{ 'Only {n} left' | t:{ n: group.totalStock } }}</span>
       </div>
       <button type="button" (click)="toggleWish($event)" [attr.aria-label]="wished ? 'Remove from wishlist' : 'Add to wishlist'" [attr.aria-pressed]="wished"
               class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center hover:scale-110 transition"
@@ -35,10 +37,11 @@ export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.c
           <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>
         </svg>
       </button>
-      <span *ngIf="group.variants.length > 1" class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-gray-700 shadow-sm">{{ group.variants.length }} sizes</span>
+      <span *ngIf="group.variants.length > 1" class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-gray-700 shadow-sm">{{ '{n} sizes' | t:{ n: group.variants.length } }}</span>
     </div>
     <div class="p-3 flex-1 flex flex-col">
       <p class="text-[10px] text-indigo-500 font-semibold truncate uppercase tracking-wide">{{ group.categoryName }}</p>
+      <p *ngIf="rating as r" class="text-[11px] text-amber-500 font-semibold mt-0.5" [attr.aria-label]="r.average + ' out of 5 stars, ' + r.count + ' reviews'">★ {{ r.average }} <span class="text-gray-400 font-normal">({{ r.count }})</span></p>
       <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mt-0.5 flex-1">{{ group.baseName }}</h3>
       <div class="flex items-end justify-between mt-2 gap-2">
         <div class="leading-tight">
@@ -48,7 +51,7 @@ export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.c
         <button type="button" (click)="primary($event)" [disabled]="soldOut"
                 class="h-9 px-3 rounded-xl text-xs font-semibold transition flex-shrink-0 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 [ngClass]="soldOut ? '' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'">
-          {{ soldOut ? 'Sold out' : (group.variants.length > 1 ? 'Options' : 'Add') }}
+          {{ soldOut ? ('Sold out' | t) : (group.variants.length > 1 ? ('Options' | t) : ('Add' | t)) }}
         </button>
       </div>
     </div>
@@ -59,6 +62,7 @@ export class ShopCardComponent {
   private cart = inject(CartService);
   private wishlist = inject(WishlistService);
   private tenant = inject(TenantService);
+  private reviews = inject(ReviewService);
 
   @Input({ required: true }) group!: ProductGroup;
   @Input() slug = '';
@@ -68,6 +72,7 @@ export class ShopCardComponent {
   readonly placeholder = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f3f4f6"/><g fill="none" stroke="#c4c8d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="38" width="60" height="44" rx="6"/><circle cx="48" cy="54" r="5"/><path d="M34 78l18-16 12 10 10-8 12 14"/></g></svg>');
 
+  get rating() { return this.reviews.summaryFor(groupKey(this.group)); }
   get discount() { return discountPercent(this.group); }
   get soldOut() { return this.group.totalStock <= 0; }
   get lowStock() { return this.group.totalStock > 0 && this.group.totalStock <= this.lowStockThreshold; }
