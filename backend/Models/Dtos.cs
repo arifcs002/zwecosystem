@@ -120,6 +120,15 @@ namespace Ecommerce.Api.Models
 
     public record AbandonedCartStatusDto(string Status);
 
+    // ── Storefront accounts / groups / collections ──────────
+    public record AccountRegisterDto(string Name, string Phone, string Password, string? Email);
+    public record AccountLoginDto(string Phone, string Password);
+    public record AccountUpdateDto(string Name, string? Email, string? Address, string? District, string? Thana);
+    public record AccountPasswordDto(string CurrentPassword, string NewPassword);
+    public record GroupUpsertDto(string Name, string? Description, decimal DiscountPercent);
+    public record AccountGroupDto(int? GroupId);
+    public record CollectionUpsertDto(string Name, string? Description, bool IsActive, int SortOrder, List<string>? ProductKeys);
+
     // ── Expenses / reviews ──────────────────────────────────
     public record ExpenseUpsertDto(string Category, decimal Amount, DateTime ExpenseDate, string? Payee, string? Note);
 

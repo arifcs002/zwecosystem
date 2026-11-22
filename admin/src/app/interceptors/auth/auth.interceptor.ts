@@ -1,4 +1,4 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+﻿import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { tap } from 'rxjs';
 import { AuthService } from '../../services/auth/auth.service';
@@ -18,12 +18,24 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (tenantId) {
     headers = headers.set('X-Tenant-ID', tenantId);
   }
+  // Storefront shopper session: sent only to the account endpoints and public checkout (never staff APIs).
+  const isShopperCall = req.url.includes('/account/') || req.url.endsWith('/account') || req.url.includes('/orders/public');
+  if (isShopperCall && tenantId) {
+    try {
+      const shopperToken = localStorage.getItem('shop_cust_token:' + tenantId);
+      if (shopperToken) headers = headers.set('X-Customer-Token', shopperToken);
+    } catch { /* storage blocked */ }
+  }
 
   const clonedReq = req.clone({ headers });
   
   return next(clonedReq).pipe(
     tap({
       error: (error) => {
+        // Shopper account calls report their own errors inline (wrong password, not logged in...);
+        // a 401 there is NOT a staff session expiry and must never log staff out or redirect.
+        if (req.url.includes('/account/') || req.url.endsWith('/account')) return;
+
         // DELETE 404 = resource already gone = desired state; suppress notification.
         if (error.status === 404 && req.method === 'DELETE') return;
 

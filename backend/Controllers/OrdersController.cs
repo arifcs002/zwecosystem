@@ -17,15 +17,17 @@ namespace Ecommerce.Api.Controllers
         private readonly ISmsSender _smsSender;
         private readonly IFraudAnalyzer _fraudAnalyzer;
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+        private readonly ICustomerAuth _customerAuth;
 
         public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender, IFraudAnalyzer fraudAnalyzer,
-            Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+            Microsoft.Extensions.Caching.Memory.IMemoryCache cache, ICustomerAuth customerAuth)
         {
             _context = context;
             _fileLogger = fileLogger;
             _smsSender = smsSender;
             _fraudAnalyzer = fraudAnalyzer;
             _cache = cache;
+            _customerAuth = customerAuth;
         }
 
         // ── Storefront: customer-facing order tracking ─────────────────────────────
@@ -62,7 +64,7 @@ namespace Ecommerce.Api.Controllers
                 order.OrderNumber, order.Status, order.PaymentMethod, order.PaymentStatus,
                 createdDate = order.CreatedDate,
                 order.Subtotal, order.Discount, order.ShippingFee, order.Total,
-                order.CouponCode, order.ShippingAddress, order.CourierName, order.TrackingNumber, order.CourierStatus,
+                order.CouponCode, order.DiscountLabel, order.ShippingAddress, order.CourierName, order.TrackingNumber, order.CourierStatus,
                 items, timeline
             });
         }
@@ -119,23 +121,45 @@ namespace Ecommerce.Api.Controllers
                 && freeAbove > 0 && subtotal >= freeAbove)
                 shippingFee = 0;
 
-            // Coupon: re-evaluated here from the DB (the preview endpoint is advisory only),
-            // then redeemed atomically so two concurrent checkouts can't exceed the usage limit.
-            decimal discount = 0;
-            Coupon? coupon = null;
+            // Discount: a logged-in member of a customer group gets the group's percentage; a coupon
+            // gives its own. They do NOT stack — the shopper gets whichever is larger. The coupon is
+            // re-evaluated here from the DB (the preview endpoint is advisory only) and is only
+            // redeemed when it is the discount actually applied, atomically so two concurrent
+            // checkouts can't exceed its usage limit.
+            var account = await _customerAuth.ResolveAsync(Request);
+            decimal groupDiscount = 0;
+            string? groupLabel = null;
+            if (account?.GroupId != null)
+            {
+                var group = await _context.CustomerGroups.AsNoTracking().FirstOrDefaultAsync(g => g.Id == account.GroupId);
+                if (group != null && group.DiscountPercent > 0)
+                {
+                    groupDiscount = Math.Round(Math.Min(subtotal * group.DiscountPercent / 100m, subtotal), 2, MidpointRounding.AwayFromZero);
+                    groupLabel = $"{group.Name} member {group.DiscountPercent:0.##}%";
+                }
+            }
+
+            decimal discount = groupDiscount;
+            string? discountLabel = groupLabel;
+            Coupon? coupon = null;      // set only when the coupon is the discount applied (and was redeemed)
             if (!string.IsNullOrWhiteSpace(dto.CouponCode))
             {
                 var code = dto.CouponCode.Trim().ToUpperInvariant();
-                coupon = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == code);
-                var eval = CouponRules.Evaluate(coupon, subtotal, DateTime.UtcNow);
+                var found = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == code);
+                var eval = CouponRules.Evaluate(found, subtotal, DateTime.UtcNow);
                 if (!eval.Ok) return BadRequest(new { message = eval.Message });
-                discount = eval.Discount;
 
-                var redeemed = await _context.Database.ExecuteSqlRawAsync(
-                    @"UPDATE coupons SET used_count = used_count + 1
-                      WHERE id = {0} AND company_id = {1} AND is_active AND is_deleted = 0
-                        AND (usage_limit IS NULL OR used_count < usage_limit)", coupon!.Id, companyId.Value);
-                if (redeemed == 0) return BadRequest(new { message = "This coupon has reached its usage limit." });
+                if (eval.Discount >= groupDiscount)
+                {
+                    var redeemed = await _context.Database.ExecuteSqlRawAsync(
+                        @"UPDATE coupons SET used_count = used_count + 1
+                          WHERE id = {0} AND company_id = {1} AND is_active AND is_deleted = 0
+                            AND (usage_limit IS NULL OR used_count < usage_limit)", found!.Id, companyId.Value);
+                    if (redeemed == 0) return BadRequest(new { message = "This coupon has reached its usage limit." });
+                    coupon = found;
+                    discount = eval.Discount;
+                    discountLabel = $"Coupon {found.Code}";
+                }
             }
 
             var total = subtotal + shippingFee - discount;
@@ -165,13 +189,16 @@ namespace Ecommerce.Api.Controllers
                 throw;
             }
 
-            if (coupon != null)
+            var couponCodeUsed = coupon?.Code;
+            var accountId = account?.Id;
+            if (discount > 0 || accountId != null)
             {
                 await _context.Orders.Where(o => o.Id == orderId).ExecuteUpdateAsync(s => s
                     .SetProperty(o => o.Discount, discount)
-                    .SetProperty(o => o.CouponCode, coupon.Code));
+                    .SetProperty(o => o.CouponCode, couponCodeUsed)
+                    .SetProperty(o => o.DiscountLabel, discountLabel)
+                    .SetProperty(o => o.CustomerAccountId, accountId));
             }
-
             // The shopper finished checkout — close any abandoned-cart follow-up for this phone.
             var normalizedPhone = PhoneUtil.NormalizeBd(dto.CustomerPhone);
             if (normalizedPhone != null)
@@ -187,7 +214,7 @@ namespace Ecommerce.Api.Controllers
 
             await RunFraudCheckAsync(orderId, companyId.Value, dto.CustomerPhone, total);
 
-            return Ok(new { orderId, orderNumber, subtotal, shippingFee, discount, total });
+            return Ok(new { orderId, orderNumber, subtotal, shippingFee, discount, discountLabel, total });
         }
 
         // Screens the just-created order for fraud signals (velocity, unusual
@@ -269,7 +296,7 @@ namespace Ecommerce.Api.Controllers
                 vm.Status, vm.PaymentMethod, vm.PaymentStatus, vm.SaleType, vm.CreatedDate,
                 entity.Subtotal, entity.Discount, entity.Tax, entity.ShippingFee,
                 entity.ShippingAddress, entity.CourierName, entity.TrackingNumber,
-                entity.CourierConsignmentId, entity.CourierStatus,
+                entity.CourierConsignmentId, entity.CourierStatus, entity.DiscountLabel,
                 Items = items
             };
         }
@@ -297,6 +324,7 @@ namespace Ecommerce.Api.Controllers
 
             // Best-effort SMS to the customer (only if this company configured a
             // gateway URL in Settings). Never let an SMS failure fail the request.
+            await Audit.LogAsync(_context, HttpContext, "order.status", $"{orderEntity.OrderNumber} -> {dto.Status}" + (string.IsNullOrWhiteSpace(dto.Notes) ? "" : $" ({dto.Notes})"));
             await TryNotifyCustomerAsync(orderEntity, dto.Status);
 
             return Ok(await BuildOrderDetailAsync(id));
@@ -326,6 +354,7 @@ namespace Ecommerce.Api.Controllers
             order.TrackingNumber = string.IsNullOrWhiteSpace(dto.TrackingNumber) ? null : dto.TrackingNumber.Trim();
             await _context.SaveChangesAsync();
 
+            await Audit.LogAsync(_context, HttpContext, "order.courier", $"{order.OrderNumber}: {order.CourierName} {order.TrackingNumber}");
             return Ok(new { order.Id, order.CourierName, order.TrackingNumber });
         }
 
@@ -384,6 +413,7 @@ namespace Ecommerce.Api.Controllers
         {
             if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
             await _context.Database.ExecuteSqlRawAsync("CALL sp_cancel_order({0})", id);
+            await Audit.LogAsync(_context, HttpContext, "order.cancel", $"order id {id}");
             return Ok(new { message = "Order cancelled." });
         }
     }

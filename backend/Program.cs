@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,6 +34,7 @@ builder.Services.AddHttpClient(Ecommerce.Api.Infrastructure.SteadfastClient.Http
     c.Timeout = TimeSpan.FromSeconds(20);
 });
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ISteadfastClient, Ecommerce.Api.Infrastructure.SteadfastClient>();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ICustomerAuth, Ecommerce.Api.Infrastructure.CustomerAuth>();
 builder.Services.AddScoped<ISmsSender, HttpSmsSender>();
 builder.Services.AddScoped<IFraudAnalyzer, FraudAnalyzer>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.PaymentGateway.IPaymentProviderClient, Ecommerce.Api.Infrastructure.PaymentGateway.BkashProvider>();

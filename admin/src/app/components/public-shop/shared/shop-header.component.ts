@@ -10,6 +10,7 @@ import { ProductGroup } from '../../../utils/product-group.util';
 import { TenantService } from '../../../services/tenant/tenant.service';
 import { WishlistService } from '../../../services/wishlist/wishlist.service';
 import { I18nService } from '../../../i18n/i18n.service';
+import { AccountService } from '../../../services/account/account.service';
 
 // Storefront header used by every inner page (shop, product, checkout, wishlist, track):
 // brand, live product search with suggestions, order tracking, wishlist, cart.
@@ -37,7 +38,11 @@ import { I18nService } from '../../../i18n/i18n.service';
            class="p-2.5 text-gray-500 hover:text-indigo-600 rounded-xl hover:bg-indigo-50 transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>
         </a>
-        <a [routerLink]="link('wishlist')" [attr.title]="'Wishlist' | t" [attr.aria-label]="'Wishlist' | t"
+        <a [routerLink]="link('account')" [attr.title]="account.profile ? account.profile.name : ('Account' | t)" [attr.aria-label]="'Account' | t"
+           class="p-2.5 text-gray-500 hover:text-indigo-600 rounded-xl hover:bg-indigo-50 transition">
+          <span *ngIf="account.profile" class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center">{{ account.profile.name.charAt(0).toUpperCase() }}</span>
+          <svg *ngIf="!account.profile" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </a>        <a [routerLink]="link('wishlist')" [attr.title]="'Wishlist' | t" [attr.aria-label]="'Wishlist' | t"
            class="relative p-2.5 text-gray-500 hover:text-rose-500 rounded-xl hover:bg-rose-50 transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
           <span *ngIf="wishlist.count > 0" class="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">{{ wishlist.count }}</span>
@@ -77,6 +82,7 @@ export class ShopHeaderComponent implements OnInit {
   private tenant = inject(TenantService);
   wishlist = inject(WishlistService);
   i18n = inject(I18nService);
+  account = inject(AccountService);
 
   @Input() slug = '';
   @Input() storeName = '';

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
@@ -109,6 +109,7 @@ namespace Ecommerce.Api.Controllers
                     companyId.Value, s.Key, s.Value ?? "", s.GroupName ?? "GENERAL");
             }
 
+            await Audit.LogAsync(_context, HttpContext, "settings.update", string.Join(", ", settingsList.Select(s => s.Key)));
             return Ok(new { message = "Settings updated successfully" });
         }
 

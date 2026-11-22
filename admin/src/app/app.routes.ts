@@ -33,6 +33,9 @@ const workspaceChildren: Routes = [
   { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
   { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
   { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+  { path: 'customer-accounts', loadComponent: () => import('./components/admin/customer-accounts/customer-accounts.component').then(m => m.CustomerAccountsComponent) },
+  { path: 'activity', loadComponent: () => import('./components/admin/activity/activity.component').then(m => m.ActivityComponent) },
+  { path: 'collections', loadComponent: () => import('./components/admin/collections/collection-management.component').then(m => m.CollectionManagementComponent) },
   { path: 'expenses', loadComponent: () => import('./components/admin/expenses/expense-management.component').then(m => m.ExpenseManagementComponent) },
   { path: 'profit', loadComponent: () => import('./components/admin/profit-report/profit-report.component').then(m => m.ProfitReportComponent) },
   { path: 'reviews', loadComponent: () => import('./components/admin/reviews/review-management.component').then(m => m.ReviewManagementComponent) },
@@ -88,6 +91,16 @@ export const routes: Routes = [
     path: 'wishlist',
     canMatch: [tenantHostGuard],
     loadComponent: () => import('./components/public-shop/wishlist-page/wishlist-page.component').then(m => m.WishlistPageComponent)
+  },
+  {
+    path: 'account',
+    canMatch: [tenantHostGuard],
+    loadComponent: () => import('./components/public-shop/account-page/account-page.component').then(m => m.AccountPageComponent)
+  },
+  {
+    path: 'collection/:collectionSlug',
+    canMatch: [tenantHostGuard],
+    loadComponent: () => import('./components/public-shop/collection-page/collection-page.component').then(m => m.CollectionPageComponent)
   },
   {
     path: 'track-order',
@@ -157,6 +170,9 @@ export const routes: Routes = [
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
       { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+      { path: 'customer-accounts', loadComponent: () => import('./components/admin/customer-accounts/customer-accounts.component').then(m => m.CustomerAccountsComponent) },
+      { path: 'activity', loadComponent: () => import('./components/admin/activity/activity.component').then(m => m.ActivityComponent) },
+      { path: 'collections', loadComponent: () => import('./components/admin/collections/collection-management.component').then(m => m.CollectionManagementComponent) },
       { path: 'expenses', loadComponent: () => import('./components/admin/expenses/expense-management.component').then(m => m.ExpenseManagementComponent) },
       { path: 'profit', loadComponent: () => import('./components/admin/profit-report/profit-report.component').then(m => m.ProfitReportComponent) },
       { path: 'reviews', loadComponent: () => import('./components/admin/reviews/review-management.component').then(m => m.ReviewManagementComponent) },
@@ -213,6 +229,14 @@ export const routes: Routes = [
   {
     path: ':companySlug/wishlist',
     loadComponent: () => import('./components/public-shop/wishlist-page/wishlist-page.component').then(m => m.WishlistPageComponent)
+  },
+  {
+    path: ':companySlug/account',
+    loadComponent: () => import('./components/public-shop/account-page/account-page.component').then(m => m.AccountPageComponent)
+  },
+  {
+    path: ':companySlug/collection/:collectionSlug',
+    loadComponent: () => import('./components/public-shop/collection-page/collection-page.component').then(m => m.CollectionPageComponent)
   },
   {
     path: ':companySlug/track-order',

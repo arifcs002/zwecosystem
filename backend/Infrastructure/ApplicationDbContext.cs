@@ -50,6 +50,11 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<AbandonedCart> AbandonedCarts { get; set; }
         public DbSet<Expense> Expenses { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<CustomerGroup> CustomerGroups { get; set; }
+        public DbSet<CustomerAccount> CustomerAccounts { get; set; }
+        public DbSet<CustomerSession> CustomerSessions { get; set; }
+        public DbSet<Collection> Collections { get; set; }
+        public DbSet<CollectionItem> CollectionItems { get; set; }
 
         private void ResolveTenantAndUser()
         {
@@ -177,6 +182,11 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<AbandonedCart>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
             modelBuilder.Entity<Expense>().HasQueryFilter(e => e.IsDeleted == 0 && (!CompanyId.HasValue || e.CompanyId == CompanyId));
             modelBuilder.Entity<Review>().HasQueryFilter(r => r.IsDeleted == 0 && (!CompanyId.HasValue || r.CompanyId == CompanyId));
+            modelBuilder.Entity<CustomerGroup>().HasQueryFilter(g => g.IsDeleted == 0 && (!CompanyId.HasValue || g.CompanyId == CompanyId));
+            modelBuilder.Entity<CustomerAccount>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
+            modelBuilder.Entity<CustomerSession>().HasQueryFilter(s => !CompanyId.HasValue || s.CompanyId == CompanyId);
+            modelBuilder.Entity<Collection>().HasQueryFilter(c => c.IsDeleted == 0 && (!CompanyId.HasValue || c.CompanyId == CompanyId));
+            modelBuilder.Entity<CollectionItem>().HasQueryFilter(i => !CompanyId.HasValue || i.CompanyId == CompanyId);
             modelBuilder.Entity<Company>().HasQueryFilter(c => c.IsDeleted == 0);
             modelBuilder.Entity<SubscriptionPlan>().HasQueryFilter(sp => sp.IsDeleted == 0);
             modelBuilder.Entity<Role>().HasQueryFilter(r => r.IsDeleted == 0);

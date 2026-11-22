@@ -112,7 +112,7 @@
 
           <div class="space-y-2 text-sm">
             <div class="flex justify-between text-gray-600"><span>{{ 'Subtotal' | t }}</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
-            <div *ngIf="couponDiscount > 0" class="flex justify-between text-emerald-600 font-medium"><span>{{ 'Discount' | t }}</span><span>−৳{{ couponDiscount | number:'1.0-0' }}</span></div>
+            <div *ngIf="discountApplied > 0" class="flex justify-between text-emerald-600 font-medium"><span>{{ 'Discount' | t }} <span class="text-xs font-normal opacity-80">({{ discountLabel }})</span></span><span>−৳{{ discountApplied | number:'1.0-0' }}</span></div>
             <div class="flex justify-between text-gray-600">
               <span>{{ 'Delivery' | t }}</span>
               <span [class.text-emerald-600]="shippingFee === 0" [class.font-semibold]="shippingFee === 0">{{ shippingFee === 0 ? 'FREE' : '৳' + (shippingFee | number:'1.0-0') }}</span>

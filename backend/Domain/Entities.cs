@@ -656,6 +656,14 @@ namespace Ecommerce.Api.Domain
         [Column("coupon_code")]
         public string? CouponCode { get; set; }
 
+        // The logged-in storefront customer who placed the order (null for guests).
+        [Column("customer_account_id")]
+        public int? CustomerAccountId { get; set; }
+
+        // Human label for the discount applied ("Coupon EID10", "VIP member 10%").
+        [Column("discount_label")]
+        public string? DiscountLabel { get; set; }
+
         // Set when the parcel was booked through a courier API (Steadfast).
         [Column("courier_consignment_id")]
         public string? CourierConsignmentId { get; set; }
@@ -712,6 +720,73 @@ namespace Ecommerce.Api.Domain
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
+    }
+
+    // A set of customers (e.g. VIP, Wholesale) that can get an automatic percentage discount.
+    [Table("customer_groups")]
+    public class CustomerGroup : AuditEntity
+    {
+        [Key] [Column("id")] public int Id { get; set; }
+        [Column("company_id")] public int CompanyId { get; set; }
+        [Required] [Column("name")] public string Name { get; set; } = string.Empty;
+        [Column("description")] public string? Description { get; set; }
+        [Column("discount_percent")] public decimal DiscountPercent { get; set; }
+    }
+
+    // A shopper's login on one store. NOT a staff User: it has no roles and its sessions are only
+    // understood by api/account/*. Phone is the login id (unverified — no SMS OTP yet), so group
+    // discounts are assigned by the shop owner per account, never inferred from the phone number.
+    [Table("customer_accounts")]
+    public class CustomerAccount : AuditEntity
+    {
+        [Key] [Column("id")] public int Id { get; set; }
+        [Column("company_id")] public int CompanyId { get; set; }
+        [Required] [Column("name")] public string Name { get; set; } = string.Empty;
+        [Required] [Column("phone")] public string Phone { get; set; } = string.Empty;
+        [Column("email")] public string? Email { get; set; }
+        [Required] [Column("password_hash")] public string PasswordHash { get; set; } = string.Empty;
+        [Column("address")] public string? Address { get; set; }
+        [Column("district")] public string? District { get; set; }
+        [Column("thana")] public string? Thana { get; set; }
+        [Column("group_id")] public int? GroupId { get; set; }
+        [Column("is_active")] public bool IsActive { get; set; } = true;
+        [Column("last_login")] public DateTime? LastLogin { get; set; }
+    }
+
+    [Table("customer_sessions")]
+    public class CustomerSession
+    {
+        [Key] [Column("id")] public int Id { get; set; }
+        [Column("company_id")] public int CompanyId { get; set; }
+        [Column("account_id")] public int AccountId { get; set; }
+        [Required] [Column("token_hash")] public string TokenHash { get; set; } = string.Empty;
+        [Column("expires_at")] public DateTime ExpiresAt { get; set; }
+        [Column("created_date")] public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        [Column("ip_address")] public string? IpAddress { get; set; }
+        [Column("user_agent")] public string? UserAgent { get; set; }
+    }
+
+    // A curated set of products ("Eid Collection") shown on its own storefront page.
+    [Table("collections")]
+    public class Collection : AuditEntity
+    {
+        [Key] [Column("id")] public int Id { get; set; }
+        [Column("company_id")] public int CompanyId { get; set; }
+        [Required] [Column("name")] public string Name { get; set; } = string.Empty;
+        [Required] [Column("slug")] public string Slug { get; set; } = string.Empty;
+        [Column("description")] public string? Description { get; set; }
+        [Column("is_active")] public bool IsActive { get; set; } = true;
+        [Column("sort_order")] public int SortOrder { get; set; }
+    }
+
+    [Table("collection_items")]
+    public class CollectionItem
+    {
+        [Key] [Column("id")] public int Id { get; set; }
+        [Column("company_id")] public int CompanyId { get; set; }
+        [Column("collection_id")] public int CollectionId { get; set; }
+        [Required] [Column("product_key")] public string ProductKey { get; set; } = string.Empty;
+        [Column("sort_order")] public int SortOrder { get; set; }
     }
 
     // A money-out entry (rent, ads, salary, packaging…) used by the profit & loss report.

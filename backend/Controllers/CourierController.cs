@@ -1,4 +1,4 @@
-using Ecommerce.Api.Infrastructure;
+﻿using Ecommerce.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +61,7 @@ namespace Ecommerce.Api.Controllers
             order.TrackingNumber = result.TrackingCode ?? result.ConsignmentId;
             order.CourierStatus = result.Status;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "courier.book", $"{order.OrderNumber} -> Steadfast {order.TrackingNumber}");
             return Ok(new { order.CourierName, order.TrackingNumber, order.CourierConsignmentId, order.CourierStatus });
         }
 

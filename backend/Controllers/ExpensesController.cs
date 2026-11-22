@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
@@ -52,6 +52,7 @@ namespace Ecommerce.Api.Controllers
             Apply(e, dto);
             _context.Expenses.Add(e);
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "expense.create", $"{e.Category} {e.Amount}");
             return Ok(new { e.Id });
         }
 
@@ -78,6 +79,7 @@ namespace Ecommerce.Api.Controllers
             e.DeletedDate = DateTime.UtcNow;
             e.DeletedBy = _context.CurrentUserId;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "expense.delete", $"{e.Category} {e.Amount} on {e.ExpenseDate:yyyy-MM-dd}");
             return Ok(new { message = "Expense deleted." });
         }
 

@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { StorefrontData, StorefrontService } from '../../../services/storefront/storefront.service';
 import { TenantService } from '../../../services/tenant/tenant.service';
 import { ReviewService } from '../../../services/review/review.service';
+import { CollectionService, ShopCollection } from '../../../services/collection/collection.service';
 import { ProductGroup, groupProducts } from '../../../utils/product-group.util';
 import { ShopHeaderComponent } from '../shared/shop-header.component';
 import { ShopFooterComponent } from '../shared/shop-footer.component';
@@ -60,6 +61,12 @@ type Sort = 'newest' | 'price-asc' | 'price-desc' | 'name';
               </button>
             </div>
           </div>
+          <div *ngIf="collections.length">
+            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{{ 'Collections' | t }}</p>
+            <div class="flex flex-wrap lg:flex-col gap-1.5">
+              <a *ngFor="let c of collections" [routerLink]="link('collection', c.slug)" class="px-3 py-1.5 rounded-lg text-sm bg-gray-50 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition">{{ c.name }}</a>
+            </div>
+          </div>
           <div>
             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Price (৳)</p>
             <div class="flex items-center gap-2">
@@ -101,6 +108,8 @@ export class ShopPageComponent implements OnInit, OnDestroy {
   private tenant = inject(TenantService);
   private storefront = inject(StorefrontService);
   private reviews = inject(ReviewService);
+  private collectionService = inject(CollectionService);
+  collections: ShopCollection[] = [];
   private sub?: Subscription;
 
   slug = '';
@@ -135,6 +144,7 @@ export class ShopPageComponent implements OnInit, OnDestroy {
         this.store = data;
         localStorage.setItem('tenant_company_id', String(data.company.id));
         this.reviews.ensureSummary(data.company.id);
+        this.collectionService.publicList().subscribe({ next: (c) => this.collections = c, error: () => this.collections = [] });
         const val = (k: string) => data.settings.find(s => s.key === k)?.value;
         if (val('low_stock_threshold') && !isNaN(+val('low_stock_threshold')!)) this.lowStock = +val('low_stock_threshold')!;
         if (val('new_badge_days') && !isNaN(+val('new_badge_days')!)) this.newDays = +val('new_badge_days')!;

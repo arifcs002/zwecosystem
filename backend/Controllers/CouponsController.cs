@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
@@ -73,6 +73,7 @@ namespace Ecommerce.Api.Controllers
             Apply(coupon, dto, code);
             _context.Coupons.Add(coupon);
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "coupon.create", coupon.Code);
             return Ok(new { coupon.Id, coupon.Code });
         }
 
@@ -101,6 +102,7 @@ namespace Ecommerce.Api.Controllers
             coupon.IsActive = !coupon.IsActive;
             coupon.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, coupon.IsActive ? "coupon.enable" : "coupon.disable", coupon.Code);
             return Ok(new { coupon.Id, coupon.IsActive });
         }
 
@@ -113,6 +115,7 @@ namespace Ecommerce.Api.Controllers
             coupon.DeletedDate = DateTime.UtcNow;
             coupon.DeletedBy = _context.CurrentUserId;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "coupon.delete", coupon.Code);
             return Ok(new { message = "Coupon deleted." });
         }
 

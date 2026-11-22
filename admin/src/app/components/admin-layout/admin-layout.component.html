@@ -155,7 +155,14 @@
           <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('admin')">▸</span>
         </button>
         <div class="nav-group-items" [class.expanded]="isGroupExpanded('admin')">
-          <a [routerLink]="basePath + '/expenses'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
+          <a [routerLink]="basePath + '/customer-accounts'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Customer Accounts</span>
+          </a>
+          <a [routerLink]="basePath + '/activity'" *ngIf="authService.hasRight('PAGE_USER_MANAGEMENT') || authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🕵️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Activity &amp; Sessions</span>
+          </a>          <a [routerLink]="basePath + '/expenses'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">💸</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Expenses</span>
           </a>
@@ -209,7 +216,10 @@
             <span class="nav-icon">🔢</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
           </a>
-          <a [routerLink]="basePath + '/reviews'" routerLinkActive="active" class="nav-item">
+          <a [routerLink]="basePath + '/collections'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🗂️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Collections</span>
+          </a>          <a [routerLink]="basePath + '/reviews'" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">⭐</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Reviews</span>
           </a>

@@ -7,6 +7,7 @@ import { CartService } from '../../../services/cart/cart.service';
 import { OrderService } from '../../../services/order/order.service';
 import { CouponService } from '../../../services/coupon/coupon.service';
 import { AbandonedCartService } from '../../../services/abandoned-cart/abandoned-cart.service';
+import { AccountService } from '../../../services/account/account.service';
 import { StorefrontData, StorefrontService } from '../../../services/storefront/storefront.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { TenantService } from '../../../services/tenant/tenant.service';
@@ -33,6 +34,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private orderService = inject(OrderService);
   private couponService = inject(CouponService);
   private abandoned = inject(AbandonedCartService);
+  account = inject(AccountService);
   private notify = inject(GlobalNotificationService);
   private tenant = inject(TenantService);
   cart = inject(CartService);
@@ -71,6 +73,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.groups = groupProducts(data.products);
         localStorage.setItem('tenant_company_id', data.company.id.toString());
         this.applySettings(data);
+        this.account.use(data.company.id);
+        this.prefillFromAccount();
         this.scheduleCapture();
       },
       error: () => { /* header/footer just stay empty; the form still works */ }
@@ -103,7 +107,36 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (this.freeDeliveryAbove > 0 && this.subtotal >= this.freeDeliveryAbove) return 0;
     return this.deliveryCharge;
   }
-  get total() { return Math.max(this.subtotal + this.shippingFee - this.couponDiscount, 0); }
+  // A logged-in group member gets the group's percentage; a coupon gives its own. They do not stack —
+  // the shopper gets whichever is larger (the server applies exactly this rule).
+  get memberDiscount(): number {
+    const g = this.account.profile?.group;
+    if (!g || g.discountPercent <= 0) return 0;
+    return Math.min(Math.round(this.subtotal * g.discountPercent) / 100, this.subtotal);
+  }
+  get discountApplied(): number { return Math.max(this.couponDiscount, this.memberDiscount); }
+  get discountLabel(): string {
+    if (this.discountApplied <= 0) return '';
+    return this.couponDiscount >= this.memberDiscount && this.appliedCoupon
+      ? this.appliedCoupon : (this.account.profile?.group?.name || 'Member');
+  }
+  get total() { return Math.max(this.subtotal + this.shippingFee - this.discountApplied, 0); }
+
+  // Fill name / phone / address from the logged-in account, without overwriting what was typed.
+  private prefillFromAccount() {
+    const t = setInterval(() => {
+      if (!this.account.ready) return;
+      clearInterval(t);
+      const p = this.account.profile; const info = this.cart.customerInfo;
+      if (!p) return;
+      if (!info.name) info.name = p.name;
+      if (!info.mobile) info.mobile = p.phone;
+      if (!info.address && p.address) info.address = p.address;
+      if (!info.district && p.district) info.district = p.district;
+      if (!info.thana && p.thana) info.thana = p.thana;
+    }, 100);
+    setTimeout(() => clearInterval(t), 5000);
+  }
   get phoneLooksValid() { return BD_MOBILE.test((this.cart.customerInfo.mobile || '').replace(/[\s\-()]/g, '')); }
 
   backToShop() { this.router.navigate(this.tenant.routeSegments(this.companySlug)); }

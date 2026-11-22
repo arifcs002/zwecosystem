@@ -1,4 +1,4 @@
-using Ecommerce.Api.Domain;
+﻿using Ecommerce.Api.Domain;
 using Ecommerce.Api.Infrastructure;
 using Ecommerce.Api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -141,6 +141,7 @@ namespace Ecommerce.Api.Controllers
             review.UpdatedDate = DateTime.UtcNow;
             review.UpdatedBy = _context.CurrentUserId;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "review." + status.ToLowerInvariant(), $"{review.ReviewerName} ({review.Rating} stars)");
             return Ok(new { review.Id, review.Status });
         }
 
@@ -153,6 +154,7 @@ namespace Ecommerce.Api.Controllers
             review.DeletedDate = DateTime.UtcNow;
             review.DeletedBy = _context.CurrentUserId;
             await _context.SaveChangesAsync();
+            await Audit.LogAsync(_context, HttpContext, "review.delete", review.ReviewerName);
             return Ok(new { message = "Review deleted." });
         }
     }
