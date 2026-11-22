@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+﻿import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ImgUrlPipe } from '../../../../pipes/img-url.pipe';
+import { ImgFallbackDirective } from '../../../../directives/img-fallback.directive';
 import { ProductGroup, discountPercent } from '../../../../utils/product-group.util';
 
 // Presentational product card (GhorerBazar-style): image, sale/stock badges,
@@ -9,7 +10,7 @@ import { ProductGroup, discountPercent } from '../../../../utils/product-group.u
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, ImgUrlPipe],
+  imports: [CommonModule, ImgUrlPipe, ImgFallbackDirective],
   templateUrl: './product-card.component.html',
   styleUrl: './product-card.component.css'
 })

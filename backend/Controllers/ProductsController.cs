@@ -28,6 +28,10 @@ namespace Ecommerce.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetPublicProducts()
         {
+            // No tenant (no X-Tenant-ID) must NOT fall through to the "global view" of the
+            // query filter — that would list every company's catalogue to an anonymous caller.
+            if (!_context.CompanyId.HasValue) return Ok(new List<object>());
+
             var items = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)

@@ -1,0 +1,51 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">💎 My Plan</h1>
+      <p class="page-subtitle">Your current subscription and usage</p>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="isLoading">Loading...</div>
+
+  <div *ngIf="!isLoading && !plan" class="table-card">
+    <div class="empty-row">No subscription plan assigned yet. Contact support to get started.</div>
+  </div>
+
+  <div *ngIf="!isLoading && plan" class="plan-summary-card">
+    <div class="plan-summary-header">
+      <div>
+        <div class="plan-summary-name">{{ plan.name }}</div>
+        <div class="plan-summary-price">৳{{ plan.price | number:'1.0-0' }} / {{ plan.billingCycle }}</div>
+      </div>
+    </div>
+
+    <div class="usage-grid">
+      <div class="usage-item">
+        <div class="usage-label">Products</div>
+        <div class="usage-value">{{ usage.products }} <span *ngIf="limitFor('max_products')">/ {{ limitFor('max_products') }}</span></div>
+        <div class="usage-bar" *ngIf="limitFor('max_products')">
+          <div class="usage-bar-fill" [style.width.%]="percentOf(usage.products, 'max_products')"></div>
+        </div>
+      </div>
+      <div class="usage-item">
+        <div class="usage-label">Users</div>
+        <div class="usage-value">{{ usage.users }} <span *ngIf="limitFor('max_users')">/ {{ limitFor('max_users') }}</span></div>
+        <div class="usage-bar" *ngIf="limitFor('max_users')">
+          <div class="usage-bar-fill" [style.width.%]="percentOf(usage.users, 'max_users')"></div>
+        </div>
+      </div>
+      <div class="usage-item">
+        <div class="usage-label">Orders (all-time)</div>
+        <div class="usage-value">{{ usage.orders }}</div>
+      </div>
+    </div>
+
+    <div class="plan-features-section">
+      <div class="section-title">Plan Features</div>
+      <ul class="plan-features">
+        <li *ngFor="let f of featuresOf()"><span class="check">✔</span> {{ f.key }}: <strong>{{ f.value }}</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>

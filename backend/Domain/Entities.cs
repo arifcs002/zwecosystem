@@ -652,8 +652,106 @@ namespace Ecommerce.Api.Domain
         [Column("customer_ip")]
         public string? CustomerIp { get; set; }
 
+        // Storefront coupon redeemed on this order (the amount is in Discount).
+        [Column("coupon_code")]
+        public string? CouponCode { get; set; }
+
         public List<OrderItem> Items { get; set; } = new();
         public List<Payment> Payments { get; set; } = new();
+    }
+
+    // Storefront discount code (per company).
+    [Table("coupons")]
+    public class Coupon : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [Required]
+        [Column("code")]
+        public string Code { get; set; } = string.Empty;
+
+        [Column("description")]
+        public string? Description { get; set; }
+
+        [Required]
+        [Column("discount_type")]
+        public string DiscountType { get; set; } = "PERCENT"; // PERCENT | FIXED
+
+        [Column("discount_value")]
+        public decimal DiscountValue { get; set; }
+
+        [Column("min_order_amount")]
+        public decimal MinOrderAmount { get; set; }
+
+        [Column("max_discount_amount")]
+        public decimal? MaxDiscountAmount { get; set; }
+
+        [Column("usage_limit")]
+        public int? UsageLimit { get; set; }
+
+        [Column("used_count")]
+        public int UsedCount { get; set; }
+
+        [Column("starts_at")]
+        public DateTime? StartsAt { get; set; }
+
+        [Column("expires_at")]
+        public DateTime? ExpiresAt { get; set; }
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+    }
+
+    // A storefront cart whose owner left a phone number but never placed the order —
+    // the shop owner follows up by phone/WhatsApp. One row per browser session.
+    [Table("abandoned_carts")]
+    public class AbandonedCart : AuditEntity
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("company_id")]
+        public int CompanyId { get; set; }
+
+        [Required]
+        [Column("session_key")]
+        public string SessionKey { get; set; } = string.Empty;
+
+        [Column("customer_name")]
+        public string? CustomerName { get; set; }
+
+        [Required]
+        [Column("customer_phone")]
+        public string CustomerPhone { get; set; } = string.Empty;
+
+        [Column("shipping_address")]
+        public string? ShippingAddress { get; set; }
+
+        // Server-built snapshot: [{productId,name,quantity,price}] — never client-supplied text.
+        [Column("cart_json")]
+        public string CartJson { get; set; } = "[]";
+
+        [Column("item_count")]
+        public int ItemCount { get; set; }
+
+        [Column("subtotal")]
+        public decimal Subtotal { get; set; }
+
+        [Required]
+        [Column("status")]
+        public string Status { get; set; } = "OPEN"; // OPEN | CONTACTED | RECOVERED | DISMISSED
+
+        [Column("last_activity")]
+        public DateTime LastActivity { get; set; } = DateTime.UtcNow;
+
+        [Column("recovered_order_id")]
+        public int? RecoveredOrderId { get; set; }
     }
 
     // One row per order status change — powers the order timeline.

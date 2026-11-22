@@ -14,6 +14,8 @@ export interface PublicCheckoutRequest {
   shippingThana?: string;
   orderNotes?: string;
   paymentMethod: string;
+  couponCode?: string;
+  sessionKey?: string;
 }
 
 export interface PublicOrderResult {
@@ -21,7 +23,26 @@ export interface PublicOrderResult {
   orderNumber: string;
   subtotal: number;
   shippingFee: number;
+  discount?: number;
   total: number;
+}
+
+export interface TrackedOrder {
+  orderNumber: string;
+  status: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  createdDate: string;
+  subtotal: number;
+  discount: number;
+  shippingFee: number;
+  total: number;
+  couponCode?: string | null;
+  shippingAddress?: string | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
+  items: { productName: string; quantity: number; unitPrice: number; totalPrice: number; imageUrl?: string }[];
+  timeline: { status: string; date: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +54,11 @@ export class OrderService {
   // from localStorage so the backend knows which store the order belongs to.
   placePublicOrder(dto: PublicCheckoutRequest): Observable<PublicOrderResult> {
     return this.http.post<PublicOrderResult>(`${this.apiUrl}/public`, dto);
+  }
+
+  // Storefront order tracking — anonymous; needs BOTH the order number and the phone.
+  trackOrder(orderNumber: string, phone: string): Observable<TrackedOrder> {
+    return this.http.get<TrackedOrder>(`${this.apiUrl}/track`, { params: { orderNumber, phone } });
   }
 
   getOrders(): Observable<any[]> {

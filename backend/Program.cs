@@ -232,7 +232,15 @@ app.Use(async (context, next) =>
             // delaying logout/expiry enforcement.
             if (!memCache.TryGetValue(cacheKey, out UserSession? session))
             {
-                var dbContext = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+                // SECURITY: use a throwaway scope, NOT the request's scoped DbContext.
+                // ApplicationDbContext resolves its tenant (CompanyId) once, in its
+                // constructor, from HttpContext.User. Here context.User is still the
+                // unauthenticated principal (the Bearer value is a session token, not a
+                // JWT), so a request-scoped context created at this point would be cached
+                // for the whole request with CompanyId == null — i.e. NO tenant query
+                // filter — letting that request read/write every company's data.
+                using var sessionScope = context.RequestServices.CreateScope();
+                var dbContext = sessionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 session = await dbContext.UserSessions.AsNoTracking()
                     .FirstOrDefaultAsync(s => s.SessionToken == token && s.IsActive && s.ExpiresAt > DateTime.UtcNow);
                 memCache.Set(cacheKey, session, TimeSpan.FromSeconds(20));
@@ -483,6 +491,14 @@ using (var scope = app.Services.CreateScope())
             )");
         dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS idx_refunds_order ON refunds(order_id)");
 
+        // Versioned SQL migrations (Migrations/Sql/*.sql) — every new schema change
+        // goes here as a numbered file, applied exactly once and tracked.
+        var migrationsDir = Path.Combine(AppContext.BaseDirectory, "Migrations", "Sql");
+        if (!Directory.Exists(migrationsDir))
+            migrationsDir = Path.Combine(Directory.GetCurrentDirectory(), "Migrations", "Sql");
+        var appliedCount = SqlMigrationRunner.Run(dbContext.Database.GetDbConnection(), migrationsDir, Console.WriteLine);
+        Console.WriteLine($"--> SQL migrations applied this start: {appliedCount}");
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)
@@ -493,3 +509,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+// Exposed so integration tests can host the app with WebApplicationFactory<Program>.
+public partial class Program { }

@@ -102,7 +102,23 @@ namespace Ecommerce.Api.Models
         List<OrderItemDto> Items,
         string CustomerName, string CustomerPhone,
         string ShippingAddress, string? ShippingDistrict, string? ShippingThana,
-        string? OrderNotes, string PaymentMethod);
+        string? OrderNotes, string PaymentMethod,
+        string? CouponCode = null, string? SessionKey = null);
+
+    // ── Coupons / abandoned carts (storefront) ──────────────
+    public record CouponUpsertDto(
+        string Code, string? Description, string DiscountType, decimal DiscountValue,
+        decimal MinOrderAmount, decimal? MaxDiscountAmount, int? UsageLimit,
+        DateTime? StartsAt, DateTime? ExpiresAt, bool IsActive);
+
+    // The subtotal is recomputed server-side from Items — a client-sent total is never trusted.
+    public record CouponValidateDto(string Code, List<OrderItemDto> Items);
+
+    public record CartCaptureDto(
+        string SessionKey, string? CustomerName, string CustomerPhone,
+        string? ShippingAddress, List<OrderItemDto> Items);
+
+    public record AbandonedCartStatusDto(string Status);
 
     public class StatusUpdateDto
     {

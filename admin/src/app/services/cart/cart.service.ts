@@ -76,7 +76,7 @@ export class CartService {
 
   // Maps the current cart + customer info into the shape the public checkout
   // API expects. Prices are intentionally omitted — the backend re-reads them.
-  buildOrderRequest() {
+  buildOrderRequest(couponCode?: string) {
     return {
       items: this.cart.map(i => ({ productId: i.product.id, quantity: i.quantity })),
       customerName: this.customerInfo.name.trim(),
@@ -85,8 +85,23 @@ export class CartService {
       shippingDistrict: this.customerInfo.district?.trim() || undefined,
       shippingThana: this.customerInfo.thana?.trim() || undefined,
       orderNotes: this.customerInfo.notes?.trim() || undefined,
-      paymentMethod: this.customerInfo.paymentMethod
+      paymentMethod: this.customerInfo.paymentMethod,
+      couponCode: couponCode || undefined,
+      sessionKey: this.sessionKey
     };
+  }
+
+  // Random per-browser id that ties an abandoned-cart record to the order that later
+  // recovers it. Not an identity — just a correlation key.
+  get sessionKey(): string {
+    try {
+      let k = localStorage.getItem('shop_session_key');
+      if (!k || !/^[A-Za-z0-9-]{8,64}$/.test(k)) {
+        k = (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`);
+        localStorage.setItem('shop_session_key', k);
+      }
+      return k;
+    } catch { return `s-${Date.now()}`; }
   }
 
   // Called once the order has been accepted by the backend.

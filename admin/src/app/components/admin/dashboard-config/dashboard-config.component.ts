@@ -12,6 +12,7 @@ import { AppVersionService, AppVersion } from '../../../services/app-version/app
 import { resolveImageUrl } from '../../../utils/image-url.util';
 import { CompanyService } from '../../../services/company/company.service';
 import { AuthService } from '../../../services/auth/auth.service';
+import { MyPlanComponent } from '../my-plan/my-plan.component';
 
 interface CategoryNode {
   id: number;
@@ -26,11 +27,12 @@ const ORDER_KEY_PREFIX = 'category_order_';
 @Component({
   selector: 'app-dashboard-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
+  imports: [CommonModule, FormsModule, ImgUrlPipe, MyPlanComponent],
   templateUrl: './dashboard-config.component.html',
   styleUrl: './dashboard-config.component.css'
 })
 export class DashboardConfigComponent implements OnInit {
+  activeTab: 'general' | 'plan' = 'general';
   private settingsService = inject(SettingsService);
   private categoryService = inject(CategoryService);
   private productService = inject(ProductService);

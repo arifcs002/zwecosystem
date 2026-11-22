@@ -202,6 +202,14 @@
             <span class="nav-icon">🔢</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
           </a>
+          <a [routerLink]="basePath + '/coupons'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🎟️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Coupons</span>
+          </a>
+          <a [routerLink]="basePath + '/abandoned-carts'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🛍️</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Abandoned Carts</span>
+          </a>
         </div>
       </div>
 

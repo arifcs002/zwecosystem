@@ -448,3 +448,13 @@ select.form-input option:disabled {
   }
   .modal-body { max-height: none; flex: 1; overflow-y: auto; }
 }
+
+/* -- Public storefront ----------------------------------------------
+   The app's global theme is dark (body text #e5e7eb). Storefront pages sit on a light
+   surface, so without this, any text/input that has no explicit Tailwind colour inherits
+   near-white text on white and is practically invisible (typed form values, selects). */
+.shop-root { color: #111827; background-color: #f9fafb; }
+.shop-root input, .shop-root select, .shop-root textarea { color: #111827; }
+.shop-root input::placeholder, .shop-root textarea::placeholder { color: #9ca3af; }
+.shop-root option { color: #111827; background: #fff; }
+.shop-root img.img-fallback { object-fit: cover; }

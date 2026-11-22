@@ -110,7 +110,7 @@ export class OrderManagementComponent implements OnInit {
       <tr>
         <td>${esc(it.product?.name || it.productName || it.productId)}</td>
         <td style="text-align:center">${esc(it.quantity)}</td>
-        <td style="text-align:right">${money(it.price)}</td>
+        <td style="text-align:right">${money(it.unitPrice ?? it.price)}</td>
         <td style="text-align:right">${money(it.totalPrice ?? (it.price * it.quantity))}</td>
       </tr>`).join('');
 

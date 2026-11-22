@@ -1,7 +1,7 @@
-<div class="card" (click)="open.emit(group)">
+﻿<div class="card" (click)="open.emit(group)">
   <!-- Image + badges -->
   <div class="thumb">
-    <img *ngIf="group.imageUrl" [src]="group.imageUrl | imgUrl" [alt]="group.baseName" loading="lazy">
+    <img *ngIf="group.imageUrl" [src]="group.imageUrl | imgUrl" appImgFallback [alt]="group.baseName" loading="lazy">
     <div *ngIf="!group.imageUrl" class="ph">🛍️</div>
 
     <div class="badge-stack">

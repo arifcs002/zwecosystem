@@ -16,7 +16,14 @@
     Loading settings…
   </div>
 
-  <div *ngIf="!isLoading" class="space-y-6 max-w-4xl">
+  <div class="tab-row" *ngIf="!isLoading">
+    <button [class.active]="activeTab === 'general'" (click)="activeTab = 'general'" class="tab-btn">⚙️ General Settings</button>
+    <button [class.active]="activeTab === 'plan'" (click)="activeTab = 'plan'" class="tab-btn">💎 My Plan</button>
+  </div>
+
+  <app-my-plan *ngIf="!isLoading && activeTab === 'plan'"></app-my-plan>
+
+  <div *ngIf="!isLoading && activeTab === 'general'" class="space-y-6 max-w-4xl">
 
     <!-- Mobile App Download (staff/super-admin only — no public/customer login exists) -->
     <div *ngIf="latestAppVersion" class="bg-gradient-to-r from-violet-900/20 to-indigo-900/20 border border-violet-600/20 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">

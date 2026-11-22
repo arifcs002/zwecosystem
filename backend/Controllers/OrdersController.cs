@@ -16,13 +16,61 @@ namespace Ecommerce.Api.Controllers
         private readonly IFileTextLogger _fileLogger;
         private readonly ISmsSender _smsSender;
         private readonly IFraudAnalyzer _fraudAnalyzer;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
 
-        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender, IFraudAnalyzer fraudAnalyzer)
+        public OrdersController(ApplicationDbContext context, IFileTextLogger fileLogger, ISmsSender smsSender, IFraudAnalyzer fraudAnalyzer,
+            Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
         {
             _context = context;
             _fileLogger = fileLogger;
             _smsSender = smsSender;
             _fraudAnalyzer = fraudAnalyzer;
+            _cache = cache;
+        }
+
+        // ── Storefront: customer-facing order tracking ─────────────────────────────
+        // Anonymous. A caller must know BOTH the order number and the phone it was
+        // placed with; any mismatch gets the same 404 so neither can be probed alone.
+        // Only customer-safe fields are returned (no internal notes, no fraud data).
+        [HttpGet("track")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Track([FromQuery] string? orderNumber, [FromQuery] string? phone)
+        {
+            if (!_context.CompanyId.HasValue) return BadRequest(new { message = "Store context is required." });
+            if (RateLimit.Exceeded(_cache, $"order-track:{RateLimit.ClientKey(HttpContext)}", 20, TimeSpan.FromMinutes(1)))
+                return StatusCode(429, new { message = "Too many attempts. Please wait a minute." });
+
+            var notFound = NotFound(new { message = "We couldn't find an order with those details." });
+            var number = (orderNumber ?? "").Trim();
+            var wanted = PhoneUtil.Last10Digits(phone);
+            if (number.Length == 0 || number.Length > 64 || wanted.Length < 10) return notFound;
+
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderNumber == number);
+            if (order == null || PhoneUtil.Last10Digits(order.CustomerPhone) != wanted) return notFound;
+
+            var vm = (await _context.Database
+                .SqlQueryRaw<OrderListVm>("SELECT * FROM sp_get_order({0})", order.Id).ToListAsync()).FirstOrDefault();
+            var items = ParseItems(vm?.ItemsJson);
+            var timeline = await _context.OrderStatusHistory.AsNoTracking()
+                .Where(h => h.OrderId == order.Id && h.CompanyId == order.CompanyId)
+                .OrderBy(h => h.CreatedDate)
+                .Select(h => new { h.Status, date = h.CreatedDate })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                order.OrderNumber, order.Status, order.PaymentMethod, order.PaymentStatus,
+                createdDate = order.CreatedDate,
+                order.Subtotal, order.Discount, order.ShippingFee, order.Total,
+                order.CouponCode, order.ShippingAddress, order.CourierName, order.TrackingNumber,
+                items, timeline
+            });
+        }
+
+        private static System.Text.Json.JsonElement ParseItems(string? json)
+        {
+            try { return System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json).RootElement.Clone(); }
+            catch (System.Text.Json.JsonException) { return System.Text.Json.JsonDocument.Parse("[]").RootElement.Clone(); }
         }
 
         // Storefront guest checkout. Anonymous — the tenant is resolved from the
@@ -71,23 +119,75 @@ namespace Ecommerce.Api.Controllers
                 && freeAbove > 0 && subtotal >= freeAbove)
                 shippingFee = 0;
 
-            var total = subtotal + shippingFee;
+            // Coupon: re-evaluated here from the DB (the preview endpoint is advisory only),
+            // then redeemed atomically so two concurrent checkouts can't exceed the usage limit.
+            decimal discount = 0;
+            Coupon? coupon = null;
+            if (!string.IsNullOrWhiteSpace(dto.CouponCode))
+            {
+                var code = dto.CouponCode.Trim().ToUpperInvariant();
+                coupon = await _context.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == code);
+                var eval = CouponRules.Evaluate(coupon, subtotal, DateTime.UtcNow);
+                if (!eval.Ok) return BadRequest(new { message = eval.Message });
+                discount = eval.Discount;
+
+                var redeemed = await _context.Database.ExecuteSqlRawAsync(
+                    @"UPDATE coupons SET used_count = used_count + 1
+                      WHERE id = {0} AND company_id = {1} AND is_active AND is_deleted = 0
+                        AND (usage_limit IS NULL OR used_count < usage_limit)", coupon!.Id, companyId.Value);
+                if (redeemed == 0) return BadRequest(new { message = "This coupon has reached its usage limit." });
+            }
+
+            var total = subtotal + shippingFee - discount;
             var orderNumber = $"WEB-{DateTime.UtcNow.Ticks}";
             var payment = string.IsNullOrWhiteSpace(dto.PaymentMethod) ? "COD" : dto.PaymentMethod;
 
-            var orderId = (await _context.Database.SqlQueryRaw<int>(
-                "SELECT sp_create_online_order({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})",
-                companyId.Value, orderNumber,
-                dto.CustomerName, dto.CustomerPhone,
-                dto.ShippingAddress, dto.ShippingDistrict ?? "", dto.ShippingThana ?? "",
-                dto.OrderNotes ?? "",
-                subtotal, shippingFee, total, payment,
-                productIds.ToArray(), quantities.ToArray(), prices.ToArray()
-            ).ToListAsync()).FirstOrDefault();
+            int orderId;
+            try
+            {
+                orderId = (await _context.Database.SqlQueryRaw<int>(
+                    "SELECT sp_create_online_order({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})",
+                    companyId.Value, orderNumber,
+                    dto.CustomerName, dto.CustomerPhone,
+                    dto.ShippingAddress, dto.ShippingDistrict ?? "", dto.ShippingThana ?? "",
+                    dto.OrderNotes ?? "",
+                    subtotal, shippingFee, total, payment,
+                    productIds.ToArray(), quantities.ToArray(), prices.ToArray()
+                ).ToListAsync()).FirstOrDefault();
+            }
+            catch
+            {
+                // Order failed after the coupon was redeemed — hand the redemption back.
+                if (coupon != null)
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE coupons SET used_count = GREATEST(used_count - 1, 0) WHERE id = {0} AND company_id = {1}",
+                        coupon.Id, companyId.Value);
+                throw;
+            }
+
+            if (coupon != null)
+            {
+                await _context.Orders.Where(o => o.Id == orderId).ExecuteUpdateAsync(s => s
+                    .SetProperty(o => o.Discount, discount)
+                    .SetProperty(o => o.CouponCode, coupon.Code));
+            }
+
+            // The shopper finished checkout — close any abandoned-cart follow-up for this phone.
+            var normalizedPhone = PhoneUtil.NormalizeBd(dto.CustomerPhone);
+            if (normalizedPhone != null)
+            {
+                await _context.AbandonedCarts
+                    .Where(c => (c.Status == "OPEN" || c.Status == "CONTACTED")
+                                && (c.CustomerPhone == normalizedPhone || (dto.SessionKey != null && c.SessionKey == dto.SessionKey)))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.Status, "RECOVERED")
+                        .SetProperty(c => c.RecoveredOrderId, orderId)
+                        .SetProperty(c => c.UpdatedDate, DateTime.UtcNow));
+            }
 
             await RunFraudCheckAsync(orderId, companyId.Value, dto.CustomerPhone, total);
 
-            return Ok(new { orderId, orderNumber, subtotal, shippingFee, total });
+            return Ok(new { orderId, orderNumber, subtotal, shippingFee, discount, total });
         }
 
         // Screens the just-created order for fraud signals (velocity, unusual
@@ -139,11 +239,38 @@ namespace Ecommerce.Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrder(int id)
         {
-            var order = await _context.Database
+            var detail = await BuildOrderDetailAsync(id);
+            if (detail == null) return NotFound();
+            return Ok(detail);
+        }
+
+        // Order detail for the admin UI. sp_get_order has no company filter, so the
+        // tenant check MUST happen here first: _context.Orders carries the per-company
+        // query filter, so another company's order id resolves to null (-> 404)
+        // instead of leaking its customer data and line items.
+        private async Task<object?> BuildOrderDetailAsync(int id)
+        {
+            var entity = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
+            if (entity == null) return null;
+
+            var vm = (await _context.Database
                 .SqlQueryRaw<OrderListVm>("SELECT * FROM sp_get_order({0})", id)
-                .ToListAsync();
-            if (!order.Any()) return NotFound();
-            return Ok(order.First());
+                .ToListAsync()).FirstOrDefault();
+            if (vm == null) return null;
+
+            // The SP returns line items as a JSON string; the UI expects a real array.
+            System.Text.Json.JsonElement items;
+            try { items = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(vm.ItemsJson) ? "[]" : vm.ItemsJson).RootElement.Clone(); }
+            catch (System.Text.Json.JsonException) { items = System.Text.Json.JsonDocument.Parse("[]").RootElement.Clone(); }
+
+            return new
+            {
+                vm.Id, vm.OrderNumber, vm.CustomerName, vm.CustomerPhone, vm.Total,
+                vm.Status, vm.PaymentMethod, vm.PaymentStatus, vm.SaleType, vm.CreatedDate,
+                entity.Subtotal, entity.Discount, entity.Tax, entity.ShippingFee,
+                entity.ShippingAddress, entity.CourierName, entity.TrackingNumber,
+                Items = items
+            };
         }
 
         [HttpPut("{id}/status")]
@@ -171,10 +298,7 @@ namespace Ecommerce.Api.Controllers
             // gateway URL in Settings). Never let an SMS failure fail the request.
             await TryNotifyCustomerAsync(orderEntity, dto.Status);
 
-            var order = await _context.Database
-                .SqlQueryRaw<OrderListVm>("SELECT * FROM sp_get_order({0})", id)
-                .ToListAsync();
-            return Ok(order.FirstOrDefault());
+            return Ok(await BuildOrderDetailAsync(id));
         }
 
         // ── GET /{id}/history — the order's status timeline ────────────────────

@@ -1,25 +1,25 @@
-<div class="min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
+﻿<div class="shop-root min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
 
-  <!-- Header -->
-  <nav class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-screen-lg mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3 cursor-pointer" (click)="backToShop()">
-        <img *ngIf="companyLogo" [src]="companyLogo" class="h-9 w-9 rounded-xl object-contain border border-gray-100" alt="">
-        <span class="font-bold text-gray-900 text-lg">{{ companyName }}</span>
-      </div>
-      <button (click)="backToShop()" class="text-sm text-gray-500 hover:text-indigo-600 font-medium">← Continue shopping</button>
-    </div>
-  </nav>
+  <app-shop-header [slug]="companySlug" [storeName]="companyName" [logo]="store?.company?.logoUrl || ''" [groups]="groups"></app-shop-header>
 
   <div class="max-w-screen-lg mx-auto w-full px-4 py-8 flex-1">
 
     <!-- ══ SUCCESS ══ -->
-    <div *ngIf="placedOrderNumber" class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mt-8">
-      <div class="text-5xl mb-4">✅</div>
+    <div *ngIf="placedOrderNumber" class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mt-4">
+      <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl flex items-center justify-center mx-auto mb-4">✓</div>
       <h1 class="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-      <p class="text-gray-500 mb-1">Your order <span class="font-semibold text-gray-800">{{ placedOrderNumber }}</span> has been placed.</p>
-      <p class="text-gray-500 mb-6">Total: <span class="font-bold text-gray-900">৳{{ placedTotal | number:'1.0-0' }}</span> — we'll call you to confirm delivery.</p>
-      <button (click)="backToShop()" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">Back to Shop</button>
+      <p class="text-gray-500 mb-3">Thank you for your order. We'll call you to confirm delivery.</p>
+      <div class="bg-gray-50 rounded-xl p-3 mb-3">
+        <p class="text-xs text-gray-400">Order number</p>
+        <p class="font-bold text-gray-900 break-all">{{ placedOrderNumber }}</p>
+        <button (click)="copyOrderNumber()" class="text-xs font-semibold text-indigo-600 hover:underline mt-1">{{ copied ? 'Copied ✓' : 'Copy' }}</button>
+      </div>
+      <p class="text-gray-500 mb-5">Total: <span class="font-bold text-gray-900">৳{{ placedTotal | number:'1.0-0' }}</span></p>
+      <div class="flex flex-col sm:flex-row gap-2 justify-center">
+        <a [routerLink]="link('track-order')" [queryParams]="{ order: placedOrderNumber, phone: placedPhone }"
+           class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">Track my order</a>
+        <button (click)="backToShop()" class="px-5 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition">Continue shopping</button>
+      </div>
     </div>
 
     <!-- ══ EMPTY CART ══ -->
@@ -40,19 +40,18 @@
           <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>Order Review</h2>
           <div class="space-y-3">
             <div *ngFor="let item of cart.cart" class="flex items-center gap-3">
-              <img *ngIf="item.product.image" [src]="item.product.image" class="w-14 h-14 rounded-lg object-cover border border-gray-100" alt="">
-              <div *ngIf="!item.product.image" class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl">📦</div>
+              <img [src]="item.product.image" appImgFallback class="w-14 h-14 rounded-lg object-cover border border-gray-100 bg-gray-50" alt="">
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}<span *ngIf="item.product.size" class="text-gray-400 font-normal"> · {{ item.product.size }}</span></p>
                 <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
               </div>
               <div class="flex items-center gap-1.5">
-                <button (click)="cart.updateQuantity(item, -1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">−</button>
+                <button (click)="changeQty(item, -1)" aria-label="Decrease quantity" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">−</button>
                 <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
-                <button (click)="cart.updateQuantity(item, 1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
+                <button (click)="changeQty(item, 1)" aria-label="Increase quantity" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
               </div>
               <span class="text-sm font-bold text-gray-900 w-16 text-right">৳{{ (item.product.price * item.quantity) | number:'1.0-0' }}</span>
-              <button (click)="cart.removeFromCart(item)" class="text-gray-300 hover:text-rose-500 ml-1">✕</button>
+              <button (click)="removeItem(item)" aria-label="Remove item" class="text-gray-300 hover:text-rose-500 ml-1">✕</button>
             </div>
           </div>
         </div>
@@ -62,15 +61,19 @@
           <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>Shipping Address</h2>
           <div class="space-y-3">
             <div class="grid sm:grid-cols-2 gap-3">
-              <input [(ngModel)]="cart.customerInfo.name" placeholder="Full Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-              <input [(ngModel)]="cart.customerInfo.mobile" placeholder="Mobile Number *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <input [(ngModel)]="cart.customerInfo.name" (ngModelChange)="scheduleCapture()" name="name" autocomplete="name" placeholder="Full Name *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <div>
+                <input [(ngModel)]="cart.customerInfo.mobile" (ngModelChange)="scheduleCapture()" name="mobile" inputmode="tel" autocomplete="tel" placeholder="Mobile Number * (01XXXXXXXXX)" class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
+                       [ngClass]="cart.customerInfo.mobile && !phoneLooksValid ? 'border-amber-300' : 'border-gray-200'">
+                <p *ngIf="cart.customerInfo.mobile && !phoneLooksValid" class="text-[11px] text-amber-600 mt-1">Enter an 11-digit mobile number like 01712345678</p>
+              </div>
             </div>
-            <textarea [(ngModel)]="cart.customerInfo.address" rows="2" placeholder="Full Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+            <textarea [(ngModel)]="cart.customerInfo.address" (ngModelChange)="scheduleCapture()" name="address" rows="2" autocomplete="street-address" placeholder="Full Address *" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
             <div class="grid sm:grid-cols-2 gap-3">
-              <input [(ngModel)]="cart.customerInfo.district" placeholder="District" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-              <input [(ngModel)]="cart.customerInfo.thana" placeholder="Thana / Area" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <input [(ngModel)]="cart.customerInfo.district" name="district" placeholder="District" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <input [(ngModel)]="cart.customerInfo.thana" name="thana" placeholder="Thana / Area" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
             </div>
-            <textarea [(ngModel)]="cart.customerInfo.notes" rows="1" placeholder="Special notes (optional)" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+            <textarea [(ngModel)]="cart.customerInfo.notes" name="notes" rows="1" placeholder="Special notes (optional)" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
           </div>
         </div>
       </div>
@@ -93,8 +96,23 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <!-- Coupon -->
+          <div class="mb-4">
+            <div *ngIf="!appliedCoupon" class="flex gap-2">
+              <input [(ngModel)]="couponInput" name="coupon" (keydown.enter)="applyCoupon()" placeholder="Coupon code" autocomplete="off" aria-label="Coupon code"
+                     class="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase placeholder:normal-case focus:outline-none focus:border-indigo-400">
+              <button (click)="applyCoupon()" [disabled]="couponBusy" class="px-4 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50">{{ couponBusy ? '…' : 'Apply' }}</button>
+            </div>
+            <div *ngIf="appliedCoupon" class="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              <span class="text-sm font-semibold text-emerald-700">🏷️ {{ appliedCoupon }}</span>
+              <button (click)="removeCoupon()" class="text-xs font-semibold text-emerald-700 hover:underline">Remove</button>
+            </div>
+            <p *ngIf="couponMessage" role="status" class="text-xs mt-1.5" [ngClass]="couponError ? 'text-rose-600' : 'text-emerald-600'">{{ couponMessage }}</p>
+          </div>
+
           <div class="space-y-2 text-sm">
             <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
+            <div *ngIf="couponDiscount > 0" class="flex justify-between text-emerald-600 font-medium"><span>Discount</span><span>−৳{{ couponDiscount | number:'1.0-0' }}</span></div>
             <div class="flex justify-between text-gray-600">
               <span>Delivery</span>
               <span [class.text-emerald-600]="shippingFee === 0" [class.font-semibold]="shippingFee === 0">{{ shippingFee === 0 ? 'FREE' : '৳' + (shippingFee | number:'1.0-0') }}</span>
@@ -110,4 +128,6 @@
       </div>
     </div>
   </div>
+
+  <app-shop-footer [store]="store" [slug]="companySlug"></app-shop-footer>
 </div>

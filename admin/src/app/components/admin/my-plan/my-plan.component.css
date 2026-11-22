@@ -1,0 +1,28 @@
+.plan-summary-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.plan-summary-header { margin-bottom: 1.5rem; }
+.plan-summary-name { font-size: 1.3rem; font-weight: 700; color: #e5e7eb; }
+.plan-summary-price { font-size: 1rem; color: #a78bfa; font-weight: 600; margin-top: 0.25rem; }
+
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.usage-label { font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.25rem; }
+.usage-value { font-size: 1.25rem; font-weight: 700; color: #e5e7eb; margin-bottom: 0.5rem; }
+.usage-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.usage-bar-fill { height: 100%; background: linear-gradient(135deg, #7c3aed, #3b82f6); }
+
+.plan-features-section { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
+.section-title { font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin-bottom: 0.75rem; }
+.plan-features { list-style: none; margin: 0; padding: 0; }
+.plan-features li { font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.5rem; }
+.plan-features .check { color: #10b981; margin-right: 0.3rem; }

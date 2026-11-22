@@ -5,7 +5,9 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Category } from '../../services/category/category.service';
 import { CartService } from '../../services/cart/cart.service';
 import { ImgUrlPipe } from '../../pipes/img-url.pipe';
-import { CartWidgetComponent } from './cart-widget/cart-widget.component';
+import { ShopHeaderComponent } from './shared/shop-header.component';
+import { ShopFooterComponent } from './shared/shop-footer.component';
+import { ImgFallbackDirective } from '../../directives/img-fallback.directive';
 import { ProductGroup, groupProducts, groupForProductId, toShopProduct } from '../../utils/product-group.util';
 import { StorefrontBlock, parseLayout } from '../../models/storefront-layout.model';
 import { resolveBlockProducts } from '../../utils/storefront-source.util';
@@ -43,7 +45,7 @@ export interface CategoryTree {
   selector: 'app-public-shop',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, RouterModule, ImgUrlPipe, CartWidgetComponent,
+    CommonModule, FormsModule, RouterModule, ImgUrlPipe, ShopHeaderComponent, ShopFooterComponent, ImgFallbackDirective,
     HeroSliderComponent, CategoryIconsComponent, ProductCarouselComponent,
     BrandCarouselComponent, TestimonialsComponent
   ],
@@ -63,6 +65,10 @@ export class PublicShopComponent implements OnInit {
   companyAppCode = '';
   isValidStore: boolean | null = null;
   isLoading = false;
+
+  // Shared header/footer inputs: the full storefront payload + grouped products for live search.
+  storeData: StorefrontData | null = null;
+  searchGroups: ProductGroup[] = [];
 
   // Category tree for left sidebar
   categoryTree: CategoryTree[] = [];
@@ -129,6 +135,8 @@ export class PublicShopComponent implements OnInit {
           this.companyLogo = data.company.logoUrl || '';
           this.companyAppCode = data.company.appCode || '';
           this.isValidStore = true;
+          this.storeData = data;
+          this.searchGroups = groupProducts(data.products);
           localStorage.setItem('tenant_company_id', data.company.id.toString());
           this.loadedSlug = this.companySlug;
           this.processStorefront(data.settings, data.categories, data.products, data.brands);

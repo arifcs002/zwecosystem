@@ -79,9 +79,9 @@
           <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
           <tbody>
             <tr *ngFor="let item of selectedOrder.items">
-              <td>{{ item.product?.name || item.productId }}</td>
+              <td>{{ item.productName || item.product?.name || item.productId }}</td>
               <td>{{ item.quantity }}</td>
-              <td>৳{{ item.price | number:'1.0-0' }}</td>
+              <td>৳{{ (item.unitPrice ?? item.price) | number:'1.0-0' }}</td>
               <td>৳{{ item.totalPrice | number:'1.0-0' }}</td>
             </tr>
           </tbody>

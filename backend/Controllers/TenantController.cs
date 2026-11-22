@@ -43,9 +43,17 @@ namespace Ecommerce.Api.Controllers
             return Ok(config);
         }
         
+        // Writes shop settings, so it must be authenticated and tenant-scoped:
+        // a company user may only write their own company's settings (their
+        // token pins _context.CompanyId); a superadmin may write any company's.
         [HttpPost("{companyId}/settings")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
         public async Task<IActionResult> SaveSettings(int companyId, [FromBody] System.Collections.Generic.Dictionary<string, string> newSettings)
         {
+            var isSuperAdmin = User.IsInRole("superadmin") || User.IsInRole("super_admin");
+            if (!isSuperAdmin && _context.CompanyId != companyId) return Forbid();
+            if (!await _context.Companies.AnyAsync(c => c.Id == companyId)) return NotFound(new { message = "Company not found" });
+
             var existingSettings = await _context.CompanySettings.Where(s => s.CompanyId == companyId).ToListAsync();
             
             foreach (var kvp in newSettings)

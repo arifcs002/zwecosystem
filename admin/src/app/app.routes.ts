@@ -33,6 +33,8 @@ const workspaceChildren: Routes = [
   { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
   { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
   { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+  { path: 'coupons', loadComponent: () => import('./components/admin/coupons/coupon-management.component').then(m => m.CouponManagementComponent) },
+  { path: 'abandoned-carts', loadComponent: () => import('./components/admin/abandoned-carts/abandoned-carts.component').then(m => m.AbandonedCartsComponent) },
   { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
 ];
@@ -72,6 +74,21 @@ export const routes: Routes = [
     path: 'page/:key',
     canMatch: [tenantHostGuard],
     loadComponent: () => import('./components/public-shop/policy-page/policy-page.component').then(m => m.PolicyPageComponent)
+  },
+  {
+    path: 'shop',
+    canMatch: [tenantHostGuard],
+    loadComponent: () => import('./components/public-shop/shop-page/shop-page.component').then(m => m.ShopPageComponent)
+  },
+  {
+    path: 'wishlist',
+    canMatch: [tenantHostGuard],
+    loadComponent: () => import('./components/public-shop/wishlist-page/wishlist-page.component').then(m => m.WishlistPageComponent)
+  },
+  {
+    path: 'track-order',
+    canMatch: [tenantHostGuard],
+    loadComponent: () => import('./components/public-shop/track-order/track-order.component').then(m => m.TrackOrderComponent)
   },
   {
     path: 'login',
@@ -136,6 +153,8 @@ export const routes: Routes = [
       { path: 'ecommerce/checkout', loadComponent: () => import('./components/admin/ecommerce/checkout/ecommerce-checkout.component').then(m => m.EcommerceCheckoutComponent) },
       { path: 'ecommerce/pages', loadComponent: () => import('./components/admin/ecommerce/pages/ecommerce-pages.component').then(m => m.EcommercePagesComponent) },
       { path: 'ecommerce/product-codes', loadComponent: () => import('./components/admin/ecommerce/product-codes/product-codes.component').then(m => m.ProductCodesComponent) },
+      { path: 'coupons', loadComponent: () => import('./components/admin/coupons/coupon-management.component').then(m => m.CouponManagementComponent) },
+      { path: 'abandoned-carts', loadComponent: () => import('./components/admin/abandoned-carts/abandoned-carts.component').then(m => m.AbandonedCartsComponent) },
       { path: 'app-releases', loadComponent: () => import('./components/admin/app-releases/app-releases.component').then(m => m.AppReleasesComponent) },
       { path: 'dashboard-view', loadComponent: () => import('./components/admin/dashboard-view/dashboard-view.component').then(m => m.DashboardViewComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
@@ -178,6 +197,18 @@ export const routes: Routes = [
   {
     path: ':companySlug/page/:key',
     loadComponent: () => import('./components/public-shop/policy-page/policy-page.component').then(m => m.PolicyPageComponent)
+  },
+  {
+    path: ':companySlug/shop',
+    loadComponent: () => import('./components/public-shop/shop-page/shop-page.component').then(m => m.ShopPageComponent)
+  },
+  {
+    path: ':companySlug/wishlist',
+    loadComponent: () => import('./components/public-shop/wishlist-page/wishlist-page.component').then(m => m.WishlistPageComponent)
+  },
+  {
+    path: ':companySlug/track-order',
+    loadComponent: () => import('./components/public-shop/track-order/track-order.component').then(m => m.TrackOrderComponent)
   },
 
   // --- DEFAULT ENTRY ---

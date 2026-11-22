@@ -54,6 +54,16 @@ namespace Ecommerce.Api.Controllers
             var quantities  = new List<int>();
             var prices      = new List<decimal>();
 
+            if (dto.Items == null || dto.Items.Count == 0)
+                return BadRequest(new { message = "The cart is empty." });
+            // A zero/negative quantity would add stock and create negative revenue.
+            if (dto.Items.Any(i => i.Quantity <= 0))
+                return BadRequest(new { message = "Quantity must be at least 1." });
+            if (dto.Items.Any(i => i.Price.HasValue && i.Price.Value < 0))
+                return BadRequest(new { message = "Price cannot be negative." });
+            if (dto.Discount < 0)
+                return BadRequest(new { message = "Discount cannot be negative." });
+
             foreach (var item in dto.Items)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
@@ -67,6 +77,9 @@ namespace Ecommerce.Api.Controllers
                 quantities.Add(item.Quantity);
                 prices.Add(unitPrice);
             }
+
+            if (dto.Discount > subtotal)
+                return BadRequest(new { message = "Discount cannot exceed the subtotal." });
 
             var total = Math.Max(subtotal - dto.Discount, 0);
             var orderNumber   = $"POS-{DateTime.UtcNow.Ticks}";

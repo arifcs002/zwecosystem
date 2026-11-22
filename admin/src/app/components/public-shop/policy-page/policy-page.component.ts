@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CompanyService } from '../../../services/company/company.service';
@@ -18,7 +18,7 @@ const PAGE_TITLES: Record<string, string> = {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
+    <div class="shop-root min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
       <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-screen-lg mx-auto px-4 h-16 flex items-center justify-between">
           <div class="flex items-center gap-3 cursor-pointer" (click)="backToShop()">
