@@ -21,6 +21,9 @@ export interface PosCheckoutRequest {
   customerName?: string;
   customerPhone?: string;
   transactionId?: string;
+  clientRef?: string;   // unique per sale: a resend returns the original sale instead of a second one
+  soldAt?: string;
+  offline?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

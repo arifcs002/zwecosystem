@@ -11,6 +11,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tenantId = localStorage.getItem('tenant_company_id');
 
   let headers = req.headers;
+  // Background work (offline POS sync) asks for no error toasts; its own screen reports problems.
+  const quiet = headers.has('X-Quiet');
+  if (quiet) headers = headers.delete('X-Quiet');
 
   if (token) {
     headers = headers.set('Authorization', `Bearer ${token}`);
@@ -32,6 +35,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedReq).pipe(
     tap({
       error: (error) => {
+        if (quiet) return;
+        // The POS screen handles a dropped connection itself (it keeps the sale and sends it later).
+        if (error.status === 0 && req.url.includes('/pos/')) return;
         // Shopper account calls report their own errors inline (wrong password, not logged in...);
         // a 401 there is NOT a staff session expiry and must never log staff out or redirect.
         if (req.url.includes('/account/') || req.url.endsWith('/account')) return;

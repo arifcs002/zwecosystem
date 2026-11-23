@@ -58,6 +58,16 @@ jobs:
           npm ci --legacy-peer-deps
           npm run build -- --configuration=production
 
+      # The receipt-printing maths test runs TypeScript directly, which needs Node 22+.
+      - name: ⚙️ Set up Node 22 for the printer-logic test
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 🖨️ Receipt printing (ESC/POS) logic test
+        working-directory: admin
+        run: npm run test:escpos
+
   build-and-push:
     name: Build & Push Docker Images
     needs: test
@@ -284,6 +294,21 @@ jobs:
             else
               echo "No running postgres container yet (first deploy) — skipping backup."
             fi
+
+            # Optional off-server copy of the backups. Does nothing until BACKUP_REMOTE=<rclone remote:path> is added to
+            # /data/apps/zwecosystem/.env and rclone is installed on the VPS (see docs/DEPLOY-HTTPS-AND-BACKUP.md).
+            # A failed copy only warns: the local backup above already exists, and a deploy must not hang on a cloud outage.
+            BACKUP_REMOTE=$(grep -E '^BACKUP_REMOTE=' /data/apps/zwecosystem/.env 2>/dev/null | head -n1 | cut -d= -f2-)
+            if [ -n "$BACKUP_REMOTE" ]; then
+              if command -v rclone >/dev/null 2>&1; then
+                rclone copy /data/backups "$BACKUP_REMOTE" --include "pre-deploy-*.sql.gz" --include "uploads-*.tar.gz" --max-age 2d \
+                  && echo "Off-server backup copy OK -> $BACKUP_REMOTE" \
+                  || echo "::warning::Off-server backup copy FAILED (local backup is safe)"
+              else
+                echo "::warning::BACKUP_REMOTE is set but rclone is not installed on the VPS"
+              fi
+            fi
+            set +e   # the backup guard above needed -e; nothing below should abort on a harmless non-zero exit
 
             # Pull latest pre-built images and restart containers
             docker compose pull

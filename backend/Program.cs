@@ -197,6 +197,20 @@ app.Use(async (context, next) =>
     }
 });
 
+// Baseline response hardening for everything the API serves (JSON, uploaded images, SEO pages).
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var h = context.Response.Headers;
+        h["X-Content-Type-Options"] = "nosniff";
+        h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        if (!h.ContainsKey("X-Frame-Options")) h["X-Frame-Options"] = "DENY";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 // Configure the HTTP request pipeline.
 app.UseCors("AllowAll"); // MUST be first so CORS headers appear even on errors
 

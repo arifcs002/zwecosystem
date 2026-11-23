@@ -2,6 +2,7 @@
   "name": "admin",
   "version": "0.0.0",
   "scripts": {
+    "test:escpos": "node --experimental-strip-types tests/escpos.test.mts",
     "ng": "ng",
     "start": "ng serve --port 3800",
     "build": "ng build",
@@ -18,10 +19,11 @@
     "@angular/platform-browser": "^17.3.0",
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
+    "@capacitor-community/bluetooth-le": "^8.4.0",
     "@capacitor-mlkit/barcode-scanning": "^8.1.0",
-    "@capacitor/android": "^8.4.1",
+    "@capacitor/android": "^8.6.2",
     "@capacitor/cli": "^7.6.7",
-    "@capacitor/core": "^8.4.1",
+    "@capacitor/core": "^8.6.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"

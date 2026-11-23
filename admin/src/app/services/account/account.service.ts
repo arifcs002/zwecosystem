@@ -8,6 +8,7 @@ export interface ShopperProfile {
   id: number; name: string; phone: string; email?: string | null;
   address?: string | null; district?: string | null; thana?: string | null;
   group: { name: string; discountPercent: number } | null;
+  phoneVerified?: boolean;
 }
 export interface ShopperOrder {
   orderNumber: string; status: string; total: number; discount: number; discountLabel?: string | null;
@@ -56,6 +57,9 @@ export class AccountService {
   }
   sendOtp(phone: string, purpose: 'reset' | 'verify'): Observable<any> {
     return this.http.post(`${this.apiUrl}/otp/send`, { phone, purpose });
+  }
+  verifyPhone(code: string): Observable<ShopperProfile> {
+    return this.http.post<ShopperProfile>(`${this.apiUrl}/phone/verify`, { code }).pipe(tap(p => this.profile = p));
   }
   resetPassword(phone: string, code: string, newPassword: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/password/reset`, { phone, code, newPassword });

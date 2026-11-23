@@ -61,7 +61,15 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
         <div class="flex items-start justify-between gap-3 mb-5">
           <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ p.name }}</h1>
-            <p class="text-sm text-gray-500">{{ p.phone }}</p>
+            <p class="text-sm text-gray-500">{{ p.phone }}
+              <span *ngIf="p.phoneVerified" class="ml-1 text-xs font-semibold text-emerald-600">&#10003; {{ 'Verified' | t }}</span>
+              <button *ngIf="!p.phoneVerified && !vOpen" type="button" (click)="startVerify()" [disabled]="busy" class="ml-2 text-xs font-semibold text-indigo-600 hover:underline">{{ 'Verify number' | t }}</button>
+            </p>
+            <form *ngIf="!p.phoneVerified && vOpen" (ngSubmit)="confirmVerify()" class="mt-2 flex gap-2 items-center flex-wrap">
+              <input [(ngModel)]="vCode" name="vcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" [placeholder]="'6-digit code from SMS' | t" class="border border-gray-200 rounded-lg px-3 py-2 text-sm tracking-widest w-44 focus:outline-none focus:border-indigo-400">
+              <button type="submit" [disabled]="busy" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg disabled:opacity-60">{{ 'Verify' | t }}</button>
+            </form>
+            <p *ngIf="vMsg" role="status" class="text-xs mt-1" [ngClass]="vOk ? 'text-emerald-600' : 'text-rose-600'">{{ vMsg | t }}</p>
             <p *ngIf="p.group" class="mt-1 inline-block text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">★ {{ p.group.name }} — {{ p.group.discountPercent }}% {{ 'off every order' | t }}</p>
           </div>
           <button (click)="logout()" class="text-sm font-semibold text-gray-500 hover:text-rose-600 border border-gray-200 rounded-lg px-3 py-1.5">{{ 'Log out' | t }}</button>
@@ -192,6 +200,27 @@ export class AccountPageComponent implements OnInit {
     this.account.changePassword(this.pw.current, this.pw.next).subscribe({
       next: () => { this.busy = false; this.pwOk = true; this.pwMsg = 'Password changed. Other devices were signed out.'; this.pw = { current: '', next: '' }; },
       error: (e) => { this.busy = false; this.pwOk = false; this.pwMsg = e?.error?.message || 'Could not change the password.'; }
+    });
+  }
+
+  vOpen = false; vCode = ''; vMsg = ''; vOk = false;
+
+  startVerify() {
+    const phone = this.account.profile?.phone;
+    if (!phone || this.busy) return;
+    this.busy = true; this.vMsg = '';
+    this.account.sendOtp(phone, 'verify').subscribe({
+      next: () => { this.busy = false; this.vOpen = true; this.vOk = true; this.vMsg = 'A code is on its way.'; },
+      error: (e) => { this.busy = false; this.vOk = false; this.vMsg = e?.status === 429 ? 'Too many codes requested. Please wait a few minutes.' : e?.status === 503 ? 'SMS codes are not available for this shop right now.' : (e?.error?.message || 'Could not send the code.'); }
+    });
+  }
+
+  confirmVerify() {
+    if (this.vCode.trim().length !== 6 || this.busy) { this.vOk = false; this.vMsg = 'Enter the 6-digit code.'; return; }
+    this.busy = true; this.vMsg = '';
+    this.account.verifyPhone(this.vCode.trim()).subscribe({
+      next: () => { this.busy = false; this.vOpen = false; this.vCode = ''; this.vOk = true; this.vMsg = 'Number verified.'; },
+      error: (e) => { this.busy = false; this.vOk = false; this.vMsg = e?.error?.message || 'That code is wrong or has expired.'; }
     });
   }
 

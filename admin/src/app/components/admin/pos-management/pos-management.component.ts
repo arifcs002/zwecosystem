@@ -1,7 +1,10 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PosService, PosProduct } from '../../../services/pos/pos.service';
+import { OfflinePosService, OfflineSale } from '../../../services/pos/offline-pos.service';
+import { BluetoothPrinterService } from '../../../services/pos/bluetooth-printer.service';
 import { SettingsService, CompanySetting } from '../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -15,6 +18,8 @@ interface CartLine {
   price: number; // editable copy of product.price (only actually applied in BARGAIN mode)
 }
 
+const RECEIPT_TEXT_KEY = 'pos_receipt_texts';
+
 @Component({
   selector: 'app-pos-management',
   standalone: true,
@@ -27,6 +32,8 @@ export class PosManagementComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private notify = inject(GlobalNotificationService);
   authService = inject(AuthService);
+  offline = inject(OfflinePosService);
+  printer = inject(BluetoothPrinterService);
 
   @ViewChild(CameraScannerComponent) scanner?: CameraScannerComponent;
 
@@ -45,7 +52,10 @@ export class PosManagementComponent implements OnInit {
   showSettings = false;
   savingSettings = false;
 
-  ngOnInit() { this.loadMode(); }
+  ngOnInit() {
+    this.loadMode();
+    this.offline.start();
+  }
 
   loadMode() {
     this.settingsService.getSettings().subscribe({
@@ -77,14 +87,24 @@ export class PosManagementComponent implements OnInit {
   onCameraScanned(code: string) { this.lookupAndAdd(code); }
 
   private lookupAndAdd(barcode: string) {
+    // No connection: use the copy of the product list kept on this device.
+    if (!navigator.onLine) { void this.lookupLocal(barcode); return; }
     this.isLoading = true;
     this.posService.lookup(barcode).subscribe({
       next: (p) => { this.addToCart(p); this.isLoading = false; },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.isLoading = false;
+        // The connection dropped mid-request: fall back to the local copy instead of failing the scan.
+        if (err.status === 0) { void this.lookupLocal(barcode); return; }
         this.notify.notify({ type: 'warning', title: 'Not found', message: `No product matches "${barcode}".`, ttlMs: 3500 });
       }
     });
+  }
+
+  private async lookupLocal(barcode: string) {
+    const p = await this.offline.findLocal(barcode);
+    if (p) { this.addToCart(p); return; }
+    this.notify.notify({ type: 'warning', title: 'Not found offline', message: `"${barcode}" is not in this device's product list. Connect once to refresh it.`, ttlMs: 4500 });
   }
 
   addToCart(p: PosProduct) {
@@ -129,25 +149,95 @@ export class PosManagementComponent implements OnInit {
       quantity: l.quantity,
       price: this.isBargain ? l.price : null
     }));
-    this.posService.checkout({
+    const request = {
       items, discount: this.discount || 0, paymentMethod: this.paymentMethod,
       customerName: this.customerName, customerPhone: this.customerPhone
-    }).subscribe({
+    };
+    // Every sale gets a unique reference. If the answer is lost (signal drops right after paying) the sale can be
+    // sent again safely: the server recognises the reference and returns the original sale instead of making a second.
+    const clientRef = OfflinePosService.newRef();
+    const soldAtDate = new Date();
+    const soldAt = soldAtDate.toISOString();
+    const snapshot = {
+      lines: this.cart.map(l => ({ productId: l.product.id, name: l.product.name, barcode: l.product.barcode, quantity: l.quantity, unitPrice: this.isBargain ? l.price : l.product.price })),
+      subtotal: this.subtotal, discount: this.discount || 0, total: this.total
+    };
+
+    if (!navigator.onLine) { void this.saveOffline(clientRef, soldAt, request, snapshot); return; }
+
+    this.posService.checkout({ ...request, clientRef }).subscribe({
       next: (res) => {
         this.isCheckingOut = false;
-        this.lastReceipt = res.receipt;
-        this.cart = [];
-        this.discount = 0;
-        this.customerName = '';
-        this.customerPhone = '';
+        this.lastReceipt = { ...res.receipt, lines: snapshot.lines, date: soldAtDate };
+        this.rememberReceiptText(res.receipt);
+        this.resetSale();
         this.notify.notify({ type: 'success', title: 'Sale complete', message: `Order ${res.orderNumber} — ৳${res.receipt.total}`, ttlMs: 4000 });
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 0) { void this.saveOffline(clientRef, soldAt, request, snapshot); return; }   // connection dropped: keep the sale
         this.isCheckingOut = false;
         this.notify.notify({ type: 'error', title: 'Checkout failed', message: err?.error?.message || 'Could not complete the sale.', ttlMs: 5000 });
       }
     });
   }
 
-  closeReceipt() { this.lastReceipt = null; }
+  private async saveOffline(clientRef: string, soldAt: string, request: any, snapshot: { lines: any[]; subtotal: number; discount: number; total: number }) {
+    const saved = await this.offline.queueSale({ clientRef, soldAt, request, ...snapshot });
+    this.isCheckingOut = false;
+    if (!saved) {
+      this.notify.notify({ type: 'error', title: 'Cannot save offline', message: 'This browser blocks local storage, so the sale was NOT saved. Reconnect and try again.', ttlMs: 8000 });
+      return;
+    }
+    const texts = this.receiptText();
+    this.lastReceipt = {
+      header: texts.header, footer: texts.footer, orderNumber: saved.localNumber,
+      subtotal: snapshot.subtotal, discount: snapshot.discount, total: snapshot.total,
+      paymentMethod: request.paymentMethod, offline: true, lines: snapshot.lines, date: new Date(soldAt)
+    };
+    this.resetSale();
+    this.notify.notify({ type: 'warning', title: 'Saved offline', message: 'No connection. The sale is stored on this device and will be sent automatically.', ttlMs: 6000 });
+  }
+
+  private resetSale() {
+    this.cart = [];
+    this.discount = 0;
+    this.customerName = '';
+    this.customerPhone = '';
+  }
+
+  private rememberReceiptText(r: any) {
+    try { localStorage.setItem(RECEIPT_TEXT_KEY, JSON.stringify({ header: r?.header, footer: r?.footer })); } catch { /* ignore */ }
+  }
+  private receiptText(): { header: string; footer: string } {
+    try {
+      const t = JSON.parse(localStorage.getItem(RECEIPT_TEXT_KEY) || '{}');
+      return { header: t.header || 'Thank you!', footer: t.footer || 'Please visit again.' };
+    } catch { return { header: 'Thank you!', footer: 'Please visit again.' }; }
+  }
+
+  closeReceipt() { this.lastReceipt = null; this.printMsg = ''; }
+
+  // ── Bluetooth receipt printing ───────────────────────────────
+  printMsg = '';
+  printOk = false;
+
+  async printReceipt() {
+    const r = this.lastReceipt;
+    if (!r) return;
+    this.printMsg = ''; this.printOk = false;
+    try {
+      await this.printer.print({
+        header: r.header, footer: r.footer, orderNumber: r.orderNumber,
+        lines: (r.lines || []).map((l: any) => ({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice })),
+        subtotal: r.subtotal, discount: r.discount, total: r.total, paymentMethod: r.paymentMethod,
+        cashierName: r.cashierName, date: r.date ? new Date(r.date) : new Date(), offline: r.offline
+      });
+      this.printOk = true; this.printMsg = 'Sent to the printer.';
+    } catch {
+      this.printMsg = this.printer.error$.value || '';       // a cancelled device chooser leaves this empty
+    }
+  }
+
+  // ── Offline status bar ───────────────────────────────────────
+  trackRef(_: number, s: OfflineSale) { return s.clientRef; }
 }

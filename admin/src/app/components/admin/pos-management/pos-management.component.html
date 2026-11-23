@@ -10,6 +10,26 @@
     </button>
   </div>
 
+  <!-- Connection / offline sales status -->
+  <div class="net-bar" [class.is-off]="(offline.online$ | async) === false" role="status">
+    <span class="net-state">{{ (offline.online$ | async) ? '🟢 Online' : '🔴 Offline — sales are kept on this device' }}</span>
+    <span *ngIf="(offline.pending$ | async) as n" class="net-pending">⏳ {{ n }} sale{{ n === 1 ? '' : 's' }} waiting to send</span>
+    <span *ngIf="offline.syncing$ | async" class="net-sync">Sending…</span>
+    <span class="net-cat" title="Products available for scanning without a connection">📦 {{ offline.catalogCount$ | async }} on device</span>
+    <span *ngIf="(offline.storageOk$ | async) === false" class="net-warn">⚠ This browser blocks local storage: offline sales cannot be saved.</span>
+  </div>
+
+  <div class="net-failed" *ngIf="(offline.failed$ | async) as failed">
+    <div *ngIf="failed.length" class="nf-box">
+      <strong>{{ failed.length }} offline sale{{ failed.length === 1 ? ' was' : 's were' }} not accepted by the server</strong>
+      <div class="nf-row" *ngFor="let s of failed; trackBy: trackRef">
+        <span>{{ s.localNumber }} · ৳{{ s.total | number:'1.0-0' }} · {{ s.soldAt | date:'d MMM, h:mm a' }} — {{ s.error }}</span>
+        <button class="btn-mini" (click)="offline.retry(s.clientRef)">Retry</button>
+        <button class="btn-mini" (click)="offline.discard(s.clientRef)">Discard</button>
+      </div>
+    </div>
+  </div>
+
   <div class="settings-panel" *ngIf="showSettings">
     <p class="panel-hint">Fixed Price: cashiers cannot edit the sale price. Manual/Bargaining: cashiers can set their own sale price per item.</p>
     <div class="seg">
@@ -99,11 +119,19 @@
   <div class="receipt" (click)="$event.stopPropagation()">
     <h3>{{ lastReceipt.header }}</h3>
     <p class="r-order">Order: {{ lastReceipt.orderNumber }}</p>
+    <p *ngIf="lastReceipt.offline" class="r-offline">Saved offline &mdash; it will be sent to the server automatically when you are back online.</p>
     <div class="r-row"><span>Subtotal</span><span>৳{{ lastReceipt.subtotal | number:'1.0-0' }}</span></div>
     <div class="r-row"><span>Discount</span><span>৳{{ lastReceipt.discount | number:'1.0-0' }}</span></div>
     <div class="r-row grand"><span>Total</span><span>৳{{ lastReceipt.total | number:'1.0-0' }}</span></div>
     <p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p>
     <p class="r-footer">{{ lastReceipt.footer }}</p>
+    <div class="r-print" *ngIf="printer.supported">
+      <button class="btn-mini" (click)="printReceipt()" [disabled]="(printer.status$ | async) === 'printing' || (printer.status$ | async) === 'connecting'">
+        🖨 {{ (printer.status$ | async) === 'printing' ? 'Printing…' : (printer.status$ | async) === 'connecting' ? 'Connecting…' : (printer.deviceName$ | async) ? 'Print to ' + (printer.deviceName$ | async) : 'Print (Bluetooth)' }}
+      </button>
+      <p *ngIf="printMsg" role="status" class="r-print-msg" [class.ok]="printOk">{{ printMsg }}</p>
+    </div>
+    <p class="r-print-hint" *ngIf="!printer.supported">Bluetooth printing needs Chrome, Edge or the Auleco app.</p>
     <button class="btn-mini" (click)="closeReceipt()">Close</button>
   </div>
 </div>
