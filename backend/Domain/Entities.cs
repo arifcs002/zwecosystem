@@ -751,6 +751,7 @@ namespace Ecommerce.Api.Domain
         [Column("group_id")] public int? GroupId { get; set; }
         [Column("is_active")] public bool IsActive { get; set; } = true;
         [Column("last_login")] public DateTime? LastLogin { get; set; }
+        [Column("phone_verified_at")] public DateTime? PhoneVerifiedAt { get; set; }
     }
 
     [Table("customer_sessions")]
@@ -1186,5 +1187,22 @@ namespace Ecommerce.Api.Domain
 
         [Column("user_agent")]
         public string? UserAgent { get; set; }
+    }
+}
+
+namespace Ecommerce.Api.Domain
+{
+    [System.ComponentModel.DataAnnotations.Schema.Table("phone_otps")]
+    public class PhoneOtpRow
+    {
+        [System.ComponentModel.DataAnnotations.Key] [System.ComponentModel.DataAnnotations.Schema.Column("id")] public int Id { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column("company_id")] public int CompanyId { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column("phone")] public string Phone { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Schema.Column("purpose")] public string Purpose { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Schema.Column("code_hash")] public string CodeHash { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Schema.Column("attempts")] public int Attempts { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column("expires_at")] public DateTime ExpiresAt { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column("used_at")] public DateTime? UsedAt { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column("created_date")] public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
 }

@@ -126,6 +126,9 @@
     public record AccountLoginDto(string Phone, string Password);
     public record AccountUpdateDto(string Name, string? Email, string? Address, string? District, string? Thana);
     public record AccountPasswordDto(string CurrentPassword, string NewPassword);
+    public record OtpSendDto(string Phone, string Purpose);
+    public record PasswordResetDto(string Phone, string Code, string NewPassword);
+    public record PhoneVerifyDto(string Code);
     public record GroupUpsertDto(string Name, string? Description, decimal DiscountPercent);
     public record AccountGroupDto(int? GroupId);
     public record CollectionUpsertDto(string Name, string? Description, bool IsActive, int SortOrder, List<string>? ProductKeys);

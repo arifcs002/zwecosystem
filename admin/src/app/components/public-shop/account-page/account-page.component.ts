@@ -7,6 +7,7 @@ import { AccountService, ShopperOrder } from '../../../services/account/account.
 import { TenantService } from '../../../services/tenant/tenant.service';
 import { ProductGroup, groupProducts } from '../../../utils/product-group.util';
 import { TranslatePipe } from '../../../i18n/translate.pipe';
+import { I18nService } from '../../../i18n/i18n.service';
 import { ShopHeaderComponent } from '../shared/shop-header.component';
 import { ShopFooterComponent } from '../shared/shop-footer.component';
 
@@ -29,12 +30,27 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
           <button role="tab" [attr.aria-selected]="mode === 'register'" (click)="setMode('register')" class="flex-1 py-2 text-sm font-semibold rounded-lg transition" [ngClass]="mode === 'register' ? 'bg-white shadow text-gray-900' : 'text-gray-500'">{{ 'Create account' | t }}</button>
         </div>
 
-        <form (ngSubmit)="submitAuth()" class="space-y-3">
+        <p *ngIf="notice && !forgot" role="status" class="mb-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">{{ notice | t }}</p>
+        <form *ngIf="forgot" (ngSubmit)="forgotStep === 1 ? sendCode() : resetNow()" class="space-y-3">
+          <h2 class="font-bold text-gray-900">{{ 'Reset your password' | t }}</h2>
+          <input [(ngModel)]="form.phone" name="fphone" inputmode="tel" autocomplete="tel" [readOnly]="forgotStep === 2" [placeholder]="'Mobile number (01XXXXXXXXX)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+          <ng-container *ngIf="forgotStep === 2">
+            <input [(ngModel)]="fcode" name="fcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" [placeholder]="'6-digit code from SMS' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm tracking-widest focus:outline-none focus:border-indigo-400">
+            <input [(ngModel)]="fnew" name="fnew" type="password" autocomplete="new-password" [placeholder]="'New password (at least 8 characters)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+          </ng-container>
+          <p *ngIf="forgotInfo" class="text-sm text-emerald-700">{{ forgotInfo | t }}</p>
+          <p *ngIf="error" role="alert" class="text-sm text-rose-600">{{ error }}</p>
+          <button type="submit" [disabled]="busy" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-60">{{ busy ? ('Please wait…' | t) : (forgotStep === 1 ? ('Send code' | t) : ('Reset password' | t)) }}</button>
+          <button type="button" (click)="closeForgot()" class="w-full text-sm text-gray-500 hover:underline">{{ 'Back to log in' | t }}</button>
+        </form>
+
+        <form *ngIf="!forgot" (ngSubmit)="submitAuth()" class="space-y-3">
           <input *ngIf="mode === 'register'" [(ngModel)]="form.name" name="name" autocomplete="name" [placeholder]="'Full Name *' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
           <input [(ngModel)]="form.phone" name="phone" inputmode="tel" autocomplete="tel" [placeholder]="'Mobile number (01XXXXXXXXX)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
           <input *ngIf="mode === 'register'" [(ngModel)]="form.email" name="email" type="email" autocomplete="email" [placeholder]="'Email (optional)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
           <input [(ngModel)]="form.password" name="password" type="password" [autocomplete]="mode === 'login' ? 'current-password' : 'new-password'" [placeholder]="(mode === 'register' ? 'Password (at least 8 characters)' : 'Password') | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
           <p *ngIf="error" role="alert" class="text-sm text-rose-600">{{ error }}</p>
+          <button *ngIf="mode === 'login'" type="button" (click)="openForgot()" class="text-sm text-indigo-600 hover:underline">{{ 'Forgot password?' | t }}</button>
           <button type="submit" [disabled]="busy" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-60">{{ busy ? ('Please wait…' | t) : (mode === 'login' ? ('Log in' | t) : ('Create account' | t)) }}</button>
         </form>
         <p class="text-xs text-gray-400 mt-4 text-center">{{ 'You can still order without an account.' | t }}</p>
@@ -105,6 +121,8 @@ export class AccountPageComponent implements OnInit {
   private tenant = inject(TenantService);
   private storefront = inject(StorefrontService);
   account = inject(AccountService);
+  private i18n = inject(I18nService);
+  private tr(s: string) { return this.i18n.t(s); }
 
   slug = '';
   store: StorefrontData | null = null;
@@ -174,6 +192,31 @@ export class AccountPageComponent implements OnInit {
     this.account.changePassword(this.pw.current, this.pw.next).subscribe({
       next: () => { this.busy = false; this.pwOk = true; this.pwMsg = 'Password changed. Other devices were signed out.'; this.pw = { current: '', next: '' }; },
       error: (e) => { this.busy = false; this.pwOk = false; this.pwMsg = e?.error?.message || 'Could not change the password.'; }
+    });
+  }
+
+  notice = '';
+  forgot = false; forgotStep: 1 | 2 = 1; fcode = ''; fnew = ''; forgotInfo = '';
+  openForgot() { this.forgot = true; this.forgotStep = 1; this.error = ''; this.forgotInfo = ''; this.fcode = ''; this.fnew = ''; }
+  closeForgot() { this.forgot = false; this.error = ''; this.forgotInfo = ''; }
+
+  sendCode() {
+    this.error = '';
+    if (!this.form.phone.trim()) { this.error = 'Enter your mobile number.'; return; }
+    this.busy = true;
+    this.account.sendOtp(this.form.phone.trim(), 'reset').subscribe({
+      next: () => { this.busy = false; this.forgotStep = 2; this.forgotInfo = 'If this number has an account, a code is on its way.'; },
+      error: (e) => { this.busy = false; this.error = e?.status === 429 ? 'Too many codes requested. Please wait a few minutes.' : (e?.error?.message || 'Could not send the code.'); }
+    });
+  }
+
+  resetNow() {
+    this.error = '';
+    if (this.fcode.trim().length !== 6 || this.fnew.length < 8) { this.error = 'Enter the 6-digit code and a new password of at least 8 characters.'; return; }
+    this.busy = true;
+    this.account.resetPassword(this.form.phone.trim(), this.fcode.trim(), this.fnew).subscribe({
+      next: () => { this.busy = false; this.forgot = false; this.form.password = ''; this.error = ''; this.mode = 'login'; this.forgotInfo = ''; this.notice = 'Password changed. Please log in.'; },
+      error: (e) => { this.busy = false; this.forgotInfo = ''; this.error = e?.error?.message || 'Could not reset the password.'; }
     });
   }
 

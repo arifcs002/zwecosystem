@@ -53,6 +53,7 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<CustomerGroup> CustomerGroups { get; set; }
         public DbSet<CustomerAccount> CustomerAccounts { get; set; }
         public DbSet<CustomerSession> CustomerSessions { get; set; }
+        public DbSet<PhoneOtpRow> PhoneOtps { get; set; }
         public DbSet<Collection> Collections { get; set; }
         public DbSet<CollectionItem> CollectionItems { get; set; }
 
@@ -184,6 +185,7 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<Review>().HasQueryFilter(r => r.IsDeleted == 0 && (!CompanyId.HasValue || r.CompanyId == CompanyId));
             modelBuilder.Entity<CustomerGroup>().HasQueryFilter(g => g.IsDeleted == 0 && (!CompanyId.HasValue || g.CompanyId == CompanyId));
             modelBuilder.Entity<CustomerAccount>().HasQueryFilter(a => a.IsDeleted == 0 && (!CompanyId.HasValue || a.CompanyId == CompanyId));
+            modelBuilder.Entity<PhoneOtpRow>().HasQueryFilter(o => !CompanyId.HasValue || o.CompanyId == CompanyId);
             modelBuilder.Entity<CustomerSession>().HasQueryFilter(s => !CompanyId.HasValue || s.CompanyId == CompanyId);
             modelBuilder.Entity<Collection>().HasQueryFilter(c => c.IsDeleted == 0 && (!CompanyId.HasValue || c.CompanyId == CompanyId));
             modelBuilder.Entity<CollectionItem>().HasQueryFilter(i => !CompanyId.HasValue || i.CompanyId == CompanyId);

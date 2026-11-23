@@ -26,12 +26,14 @@ namespace Ecommerce.Api.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ICustomerAuth _auth;
         private readonly IMemoryCache _cache;
+        private readonly ISmsSender _sms;
 
-        public AccountController(ApplicationDbContext context, ICustomerAuth auth, IMemoryCache cache)
+        public AccountController(ApplicationDbContext context, ICustomerAuth auth, IMemoryCache cache, ISmsSender sms)
         {
             _context = context;
             _auth = auth;
             _cache = cache;
+            _sms = sms;
         }
 
         [HttpPost("register")]
@@ -164,6 +166,95 @@ namespace Ecommerce.Api.Controllers
             return Ok(rows);
         }
 
+        // ── SMS one-time codes ───────────────────────────────────────────────────
+        // Sent through the shop's own gateway (company setting sms_api_url), same as order SMS.
+        // The answer never reveals whether a number has an account.
+
+        [HttpPost("otp/send")]
+        public async Task<IActionResult> SendOtp([FromBody] OtpSendDto dto)
+        {
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return BadRequest(new { message = "Store context is required." });
+            var purpose = (dto.Purpose ?? "").ToLowerInvariant();
+            if (purpose != "reset" && purpose != "verify") return BadRequest(new { message = "Unknown purpose." });
+
+            string? phone;
+            if (purpose == "verify")
+            {
+                var me = await _auth.ResolveAsync(Request);
+                if (me == null) return Unauthorized(new { message = "Please log in." });
+                phone = me.Phone;
+            }
+            else phone = PhoneUtil.NormalizeBd(dto.Phone);
+            if (phone == null) return BadRequest(new { message = "Enter a valid Bangladeshi mobile number (01XXXXXXXXX)." });
+
+            if (RateLimit.Exceeded(_cache, $"otp-client:{RateLimit.ClientKey(HttpContext)}", 10, TimeSpan.FromHours(1)) ||
+                RateLimit.Exceeded(_cache, $"otp-phone:{companyId}:{phone}", 3, TimeSpan.FromMinutes(10)))
+                return StatusCode(429, new { message = "Too many codes requested. Please wait a few minutes." });
+
+            var apiUrl = await _context.CompanySettings.AsNoTracking()
+                .Where(s => s.CompanyId == companyId.Value && s.Key == "sms_api_url").Select(s => s.Value).FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(apiUrl))
+                return StatusCode(503, new { message = "SMS codes aren't available for this shop right now." });
+
+            var generic = Ok(new { message = "If this number can receive a code, it is on its way.", expiresInMinutes = (int)PhoneOtp.Life.TotalMinutes });
+            if (purpose == "reset")
+            {
+                var exists = await _context.CustomerAccounts.AnyAsync(a => a.Phone == phone && a.IsActive);
+                if (!exists) return generic;
+            }
+
+            var code = await PhoneOtp.IssueAsync(_context, companyId.Value, phone, purpose);
+            var shop = await _context.CompanySettings.AsNoTracking()
+                .Where(s => s.CompanyId == companyId.Value && (s.Key == "shop_name" || s.Key == "store_name"))
+                .Select(s => s.Value).FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(shop))
+                shop = await _context.Companies.AsNoTracking().Where(c => c.Id == companyId.Value).Select(c => c.Name).FirstOrDefaultAsync();
+            var from = string.IsNullOrWhiteSpace(shop) ? "" : $" ({shop})";
+            await _sms.SendAsync(apiUrl, phone, $"{code} is your verification code{from}. It expires in {(int)PhoneOtp.Life.TotalMinutes} minutes.");
+            return generic;
+        }
+
+        [HttpPost("password/reset")]
+        public async Task<IActionResult> ResetPassword([FromBody] PasswordResetDto dto)
+        {
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return BadRequest(new { message = "Store context is required." });
+            var phone = PhoneUtil.NormalizeBd(dto.Phone);
+            if (RateLimit.Exceeded(_cache, $"otp-reset:{RateLimit.ClientKey(HttpContext)}", 20, TimeSpan.FromHours(1)))
+                return StatusCode(429, new { message = "Too many attempts. Please wait a while." });
+            var pwError = PasswordError(dto.NewPassword);
+            if (pwError != null) return BadRequest(new { message = pwError });
+
+            const string bad = "That code is wrong or has expired.";
+            if (phone == null) return BadRequest(new { message = bad });
+            var res = await PhoneOtp.VerifyAsync(_context, companyId.Value, phone, "reset", dto.Code);
+            if (res == OtpResult.TooManyAttempts) return StatusCode(429, new { message = "Too many wrong codes. Request a new one." });
+            if (res != OtpResult.Ok) return BadRequest(new { message = bad });
+
+            var account = await _context.CustomerAccounts.FirstOrDefaultAsync(a => a.Phone == phone && a.IsActive);
+            if (account == null) return BadRequest(new { message = bad });
+            account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            account.PhoneVerifiedAt ??= DateTime.UtcNow;     // the code proved they hold the phone
+            account.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await _context.CustomerSessions.Where(s => s.AccountId == account.Id).ExecuteDeleteAsync();   // sign out everywhere
+            return Ok(new { message = "Password changed. Please log in." });
+        }
+
+        [HttpPost("phone/verify")]
+        public async Task<IActionResult> VerifyPhone([FromBody] PhoneVerifyDto dto)
+        {
+            var account = await _auth.ResolveAsync(Request);
+            if (account == null) return Unauthorized(new { message = "Please log in." });
+            var res = await PhoneOtp.VerifyAsync(_context, account.CompanyId, account.Phone, "verify", dto.Code);
+            if (res == OtpResult.TooManyAttempts) return StatusCode(429, new { message = "Too many wrong codes. Request a new one." });
+            if (res != OtpResult.Ok) return BadRequest(new { message = "That code is wrong or has expired." });
+            account.PhoneVerifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return Ok(await Profile(account));
+        }
+
         // ── helpers ──────────────────────────────────────────────────────────────
 
         private async Task<object> StartSession(CustomerAccount account)
@@ -190,7 +281,7 @@ namespace Ecommerce.Api.Controllers
             var group = a.GroupId == null ? null
                 : await _context.CustomerGroups.AsNoTracking().Where(g => g.Id == a.GroupId)
                     .Select(g => new { g.Name, g.DiscountPercent }).FirstOrDefaultAsync();
-            return new { a.Id, a.Name, a.Phone, a.Email, a.Address, a.District, a.Thana, group };
+            return new { a.Id, a.Name, a.Phone, a.Email, a.Address, a.District, a.Thana, group, phoneVerified = a.PhoneVerifiedAt != null };
         }
 
         private static string? PasswordError(string? pw)

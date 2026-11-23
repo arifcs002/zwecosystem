@@ -54,6 +54,12 @@ export class AccountService {
   changePassword(currentPassword: string, newPassword: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/password`, { currentPassword, newPassword });
   }
+  sendOtp(phone: string, purpose: 'reset' | 'verify'): Observable<any> {
+    return this.http.post(`${this.apiUrl}/otp/send`, { phone, purpose });
+  }
+  resetPassword(phone: string, code: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/password/reset`, { phone, code, newPassword });
+  }
   orders(): Observable<ShopperOrder[]> { return this.http.get<ShopperOrder[]>(`${this.apiUrl}/orders`); }
 
   private start(r: SessionResult) {

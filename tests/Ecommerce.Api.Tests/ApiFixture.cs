@@ -58,6 +58,7 @@ public class ApiFixture : IAsyncLifetime
     public static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
     public FakeSteadfast Courier { get; } = new();
+    public FakeSms Sms { get; } = new();
     public FakeMetaCapi Capi { get; } = new();
     public WebApplicationFactory<Program> Factory { get; private set; } = default!;
     public string ConnectionString { get; private set; } = "";
@@ -90,6 +91,8 @@ public class ApiFixture : IAsyncLifetime
                 s.AddSingleton<Ecommerce.Api.Infrastructure.ISteadfastClient>(Courier);
                 s.RemoveAll<Ecommerce.Api.Infrastructure.IMetaCapiClient>();
                 s.AddSingleton<Ecommerce.Api.Infrastructure.IMetaCapiClient>(Capi);
+                s.RemoveAll<Ecommerce.Api.Infrastructure.ISmsSender>();
+                s.AddSingleton<Ecommerce.Api.Infrastructure.ISmsSender>(Sms);
             });
         });
 
@@ -223,3 +226,13 @@ public class Shop
 
 [CollectionDefinition("api")]
 public class ApiCollection : ICollectionFixture<ApiFixture> { }
+
+/// <summary>Records every SMS instead of calling a gateway.</summary>
+public class FakeSms : Ecommerce.Api.Infrastructure.ISmsSender
+{
+    public List<(string? Url, string To, string Message)> Sent { get; } = new();
+    public Task<bool> SendAsync(string? apiUrlTemplate, string toNumber, string message)
+    { lock (Sent) Sent.Add((apiUrlTemplate, toNumber, message)); return Task.FromResult(true); }
+    public string LastCodeFor(string phone) =>
+        System.Text.RegularExpressions.Regex.Match(Sent.Last(s => s.To == phone).Message, @"^(\d{6})").Groups[1].Value;
+}
