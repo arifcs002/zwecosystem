@@ -33,7 +33,9 @@ namespace Ecommerce.Api.Controllers
         // re-running the stored procedures every time.
         private async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory)
         {
-            var cached = await _cache.GetStringAsync(key);
+            // Redis being down must never take the dashboard down — fall back to the DB.
+            string? cached = null;
+            try { cached = await _cache.GetStringAsync(key); } catch { }
             if (cached != null)
             {
                 var value = JsonSerializer.Deserialize<T>(cached);
@@ -41,7 +43,7 @@ namespace Ecommerce.Api.Controllers
             }
 
             var result = await factory();
-            await _cache.SetStringAsync(key, JsonSerializer.Serialize(result), CacheTtl);
+            try { await _cache.SetStringAsync(key, JsonSerializer.Serialize(result), CacheTtl); } catch { }
             return result;
         }
 

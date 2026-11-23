@@ -11,8 +11,56 @@ env:
   IMAGE_NAME_FRONTEND: ghcr.io/${{ github.repository }}/admin-dashboard:latest
 
 jobs:
+  test:
+    name: Run Tests (blocks deploy on failure)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: zwecodb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # DB name must contain "test" — the test fixture refuses anything else.
+      DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=zwecodb_test;Username=postgres;Password=postgres
+      JWT_SECRET: ci-only-secret-key-at-least-32-characters-long
+      ASPNETCORE_ENVIRONMENT: Testing
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 🧪 Backend integration tests
+        run: dotnet test tests/Ecommerce.Api.Tests --configuration Release
+
+      - name: ⚙️ Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: 🏗️ Angular production build
+        working-directory: admin
+        run: |
+          npm ci --legacy-peer-deps
+          npm run build -- --configuration=production
+
   build-and-push:
     name: Build & Push Docker Images
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -70,7 +118,8 @@ jobs:
               image: postgres:15-alpine
               container_name: zwecosystem-postgres
               ports:
-                - "5436:5432"
+                # loopback only — reach it via SSH tunnel, never the internet
+                - "127.0.0.1:5436:5432"
               environment:
                 POSTGRES_DB: ${POSTGRES_DB}
                 POSTGRES_USER: ${POSTGRES_USER}
@@ -97,7 +146,7 @@ jobs:
               image: ghcr.io/${{ github.repository }}/backend:latest
               container_name: zwecosystem-api
               ports:
-                - "5500:8080"
+                - "127.0.0.1:5500:8080"
               environment:
                 - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
                 - JWT_SECRET=${JWT_SECRET}
@@ -207,6 +256,23 @@ jobs:
             # Log in to GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Back up the production DB BEFORE touching containers. If the DB
+            # container exists and the dump fails, abort the deploy.
+            set -e
+            mkdir -p /data/backups
+            if docker ps --format '{{.Names}}' | grep -qx zwecosystem-postgres; then
+              BK=/data/backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql.gz
+              docker exec zwecosystem-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > "$BK"
+              if [ ! -s "$BK" ] || ! gzip -t "$BK"; then
+                echo "::error::DB backup failed or empty — aborting deploy"; rm -f "$BK"; exit 1
+              fi
+              echo "Backup OK: $BK ($(du -h "$BK" | cut -f1))"
+              # keep the newest 14 backups
+              ls -1t /data/backups/pre-deploy-*.sql.gz | tail -n +15 | xargs -r rm -f
+            else
+              echo "No running postgres container yet (first deploy) — skipping backup."
+            fi
+
             # Pull latest pre-built images and restart containers
             docker compose pull
             docker compose up -d --remove-orphans
@@ -225,7 +291,8 @@ jobs:
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 85/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 80/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 443/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw allow 6379/tcp
+              # Redis must not be public: close any previously opened 6379 rule
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw delete allow 6379/tcp || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw deny 5500/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw deny 5432/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S ufw reload
@@ -234,7 +301,7 @@ jobs:
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --add-port=85/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --add-port=80/tcp
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --add-port=443/tcp
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --add-port=6379/tcp
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --remove-port=6379/tcp 2>/dev/null || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --remove-port=5500/tcp --permanent 2>/dev/null || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --permanent --zone=public --remove-port=5432/tcp --permanent 2>/dev/null || true
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S firewall-cmd --reload
@@ -245,7 +312,7 @@ jobs:
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 85 -j ACCEPT
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 80 -j ACCEPT
               echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 443 -j ACCEPT
-              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -I INPUT -p tcp --dport 6379 -j ACCEPT
+              echo "${{ secrets.SSH_PASSWORD }}" | sudo -S iptables -D INPUT -p tcp --dport 6379 -j ACCEPT 2>/dev/null || true
             fi
 
             echo "==> Deployment complete!"

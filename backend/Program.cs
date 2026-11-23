@@ -127,9 +127,22 @@ Console.WriteLine("--> Using PostgreSQL Database.");
 // Configure CORS for Angular Dashboard frontend
 builder.Services.AddCors(options =>
 {
+    // Auth is header-based (Bearer / X-Customer-Token), never cookies, but we
+    // still only answer browsers on our own domains, local dev, and the
+    // Capacitor mobile shell. Extra origins: CORS_EXTRA_ORIGINS="https://a.com,https://b.com".
+    var extraOrigins = (Environment.GetEnvironmentVariable("CORS_EXTRA_ORIGINS") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin =>
+              {
+                  if (!Uri.TryCreate(origin, UriKind.Absolute, out var u)) return false;
+                  if (extraOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)) return true;
+                  if (u.Scheme == "capacitor" || u.Scheme == "ionic") return true;
+                  var h = u.Host.ToLowerInvariant();
+                  if (h == "localhost" || h.EndsWith(".localhost") || h == "127.0.0.1") return true;
+                  return (u.Scheme == "https" || u.Scheme == "http") && (h == "auleco.com" || h.EndsWith(".auleco.com"));
+              })
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -171,7 +184,13 @@ app.Use(async (context, next) =>
             "UNHANDLED",
             $"{context.Request.Method} {context.Request.Path} failed with status {context.Response.StatusCode}",
             ex);
-        throw;
+        // Generic body only — never leak exception text or stack traces.
+        if (!context.Response.HasStarted)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"message\":\"Something went wrong. Please try again.\"}");
+        }
     }
 });
 
