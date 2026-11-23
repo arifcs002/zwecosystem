@@ -160,6 +160,7 @@ jobs:
                 - SmtpSettings__FromName=ZW Ecosystem
                 - ASPNETCORE_ENVIRONMENT=Production
                 - UPLOADS_DIR=/data/uploads
+                - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
               volumes:
                 - /data/apps/textlog:/data/apps/textlog
                 - /data/apps/uploads:/data/uploads

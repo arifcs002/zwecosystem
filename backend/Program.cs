@@ -526,6 +526,9 @@ using (var scope = app.Services.CreateScope())
         var appliedCount = SqlMigrationRunner.Run(dbContext.Database.GetDbConnection(), migrationsDir, Console.WriteLine);
         Console.WriteLine($"--> SQL migrations applied this start: {appliedCount}");
 
+        SuperAdminBootstrap.Run(dbContext, Environment.GetEnvironmentVariable("SUPERADMIN_PASSWORD"),
+            app.Environment.IsProduction(), Console.WriteLine);
+
         Console.WriteLine("--> Database is ready & seeded.");
     }
     catch (Exception ex)

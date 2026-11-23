@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 
 namespace Ecommerce.Api.Tests;
@@ -11,6 +12,38 @@ public class Batch5Tests(ApiFixture f)
         req.Headers.Add("Origin", origin);
         var r = await f.NewClient().SendAsync(req);
         return r.Headers.TryGetValues("Access-Control-Allow-Origin", out var v) ? v.First() : null;
+    }
+
+    [Fact]
+    public async Task SuperAdminPassword_RotatesOnlySeedHash_AndEnforcesMinLength()
+    {
+        var seed = Ecommerce.Api.Infrastructure.SuperAdminBootstrap.SeedHash;
+        var logs = new List<string>();
+        async Task<string> Hash() => await f.Scalar<string>("SELECT password_hash FROM users WHERE email='arifsuperadmin'");
+        void Run(string? pw)
+        {
+            using var scope = f.Factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<Ecommerce.Api.Infrastructure.ApplicationDbContext>();
+            Ecommerce.Api.Infrastructure.SuperAdminBootstrap.Run(db, pw, true, logs.Add);
+        }
+        try
+        {
+            await f.Exec("UPDATE users SET password_hash=@h WHERE email='arifsuperadmin'", ("h", seed));
+
+            Run("short");                                   // too short → untouched
+            Assert.Equal(seed, await Hash());
+            Run(null);                                      // no env → warning only
+            Assert.Contains(logs, l => l.Contains("WARNING"));
+            Assert.Equal(seed, await Hash());
+
+            Run("a-Strong-New-Password-1");                 // rotated
+            Assert.True(BCrypt.Net.BCrypt.Verify("a-Strong-New-Password-1", await Hash()));
+            Assert.False(BCrypt.Net.BCrypt.Verify("123456", await Hash()));
+
+            Run("A-Different-Password-22");                 // already changed → NOT overwritten
+            Assert.True(BCrypt.Net.BCrypt.Verify("a-Strong-New-Password-1", await Hash()));
+        }
+        finally { await f.Exec("UPDATE users SET password_hash=@h WHERE user_type='superadmin'", ("h", seed)); }
     }
 
     [Fact]
