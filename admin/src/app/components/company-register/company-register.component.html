@@ -159,6 +159,25 @@
         </div>
       </div>
 
+      <div *ngIf="plans.length" class="mt-9">
+        <h3 class="text-sm font-semibold text-white mb-1">Choose your plan</h3>
+        <p *ngIf="trialDays > 0" class="text-xs text-neutral-500 mb-4">Start with a {{ trialDays }}-day free trial. You can change plan later.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label *ngFor="let p of plans" class="block cursor-pointer rounded-xl p-4 transition"
+            [style.border]="formData.planId === p.id ? '1.5px solid #f43f5e' : '1px solid rgba(255,255,255,.1)'"
+            [style.background]="formData.planId === p.id ? 'rgba(244,63,94,.08)' : 'rgba(255,255,255,.02)'">
+            <input type="radio" name="planId" class="sr-only" [value]="p.id" [(ngModel)]="formData.planId">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="font-bold text-white">{{ p.name }}</span>
+              <span class="text-sm text-neutral-300">৳{{ p.price | number:'1.0-0' }} <span class="text-neutral-500">/ {{ p.billingCycle }}</span></span>
+            </div>
+            <ul class="mt-3 space-y-1 text-xs text-neutral-400">
+              <li *ngFor="let perk of p.perks">✔ {{ perk }}</li>
+            </ul>
+          </label>
+        </div>
+      </div>
+
       <div class="mt-9 pt-6 flex flex-col sm:flex-row items-center justify-between gap-5" style="border-top: 1px solid rgba(255,255,255,.08);">
         <p class="text-sm text-neutral-500">Already have an approved account?
           <a routerLink="/" class="ml-1 font-medium" style="color:#fb7185;">Return Home</a>

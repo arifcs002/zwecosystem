@@ -21,6 +21,15 @@ namespace Ecommerce.Api.Controllers
             _fileLogger = fileLogger;
         }
 
+        // Public price list for the signup page (name, price, cycle and what's included — nothing else).
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublic()
+        {
+            var plans = await _context.SubscriptionPlans.AsNoTracking().OrderBy(p => p.Price).ToListAsync();
+            return Ok(plans.Select(p => new { p.Id, p.Name, p.Price, p.BillingCycle, features = p.Features, trialDays = PlanAccess.TrialDays }));
+        }
+
         // Any authenticated user can view the plan catalog (needed so company
         // admins can see what other tiers offer, e.g. for an upgrade prompt).
         [HttpGet]
@@ -72,6 +81,9 @@ namespace Ecommerce.Api.Controllers
             plan.BillingCycle = string.IsNullOrWhiteSpace(dto.BillingCycle) ? plan.BillingCycle : dto.BillingCycle;
             plan.Features = dto.Features;
             await _context.SaveChangesAsync();
+            var memCache = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+            foreach (var cid in await _context.Companies.IgnoreQueryFilters().Where(c => c.SubscriptionPlanId == id).Select(c => c.Id).ToListAsync())
+                PlanAccess.Invalidate(memCache, cid);
             return Ok(plan);
         }
 
@@ -103,6 +115,7 @@ namespace Ecommerce.Api.Controllers
 
             company.SubscriptionPlanId = dto.SubscriptionPlanId;
             await _context.SaveChangesAsync();
+            PlanAccess.Invalidate(HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(), companyId);
             return Ok(new { message = "Plan assigned.", companyId, dto.SubscriptionPlanId });
         }
 

@@ -73,6 +73,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
         const titleByStatus: Record<number, string> = {
           400: 'Check the form',
+          402: 'Subscription ended',
           403: 'Access denied',
           404: 'Not found',
           409: 'Conflict detected',
@@ -82,6 +83,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
         const messageByStatus: Record<number, string> = {
           400: 'Please review the highlighted fields and try again.',
+          402: 'Renew your plan to make changes.',
           403: 'You do not have permission to do that.',
           404: 'The requested resource could not be found.',
           409: 'The data already exists or conflicts with current records.',

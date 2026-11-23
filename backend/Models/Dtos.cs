@@ -32,6 +32,7 @@
         public string Division    { get; set; } = string.Empty;
         public string District    { get; set; } = string.Empty;
         public string Thana       { get; set; } = string.Empty;
+        public int?   PlanId      { get; set; }
     }
 
     // ── Users ───────────────────────────────────────────────
@@ -188,3 +189,4 @@
     // which is a legitimate request, not a validation error.
     public record CompanySettingDto(string Key, string? Value, string? GroupName);
 }
+

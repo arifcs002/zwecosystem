@@ -96,6 +96,9 @@ namespace Ecommerce.Api.Controllers
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
 
+            var limitErr = await ProductLimitErrorAsync(companyId.Value, new[] { (dto.Name, dto.CategoryId) });
+            if (limitErr != null) return limitErr;
+
             var barcode = dto.Barcode;
             if (string.IsNullOrEmpty(barcode)) barcode = GenerateBarcode(companyId.Value);
 
@@ -125,6 +128,9 @@ namespace Ecommerce.Api.Controllers
         {
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
+
+            var limitErr = await ProductLimitErrorAsync(companyId.Value, new[] { (dto.Name, dto.CategoryId) });
+            if (limitErr != null) return limitErr;
 
             var created = new List<Product>();
             var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
@@ -164,6 +170,8 @@ namespace Ecommerce.Api.Controllers
             var companyId = _context.CompanyId;
             if (!companyId.HasValue) return BadRequest("Company context is required.");
             if (dto.Products == null || dto.Products.Count == 0) return BadRequest("Add at least one product.");
+            var limitErr = await ProductLimitErrorAsync(companyId.Value, dto.Products.Where(l => !string.IsNullOrWhiteSpace(l.Name)).Select(l => (l.Name, dto.CategoryId)));
+            if (limitErr != null) return limitErr;
 
             var created = new List<Product>();
             var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
@@ -291,6 +299,23 @@ namespace Ecommerce.Api.Controllers
             var ids = candidates.Where(c => rx.Replace(c.Name, "").Trim() == baseName).Select(c => c.Id).ToList();
             if (!ids.Contains(id)) ids.Add(id);
             return ids;
+        }
+
+        // Plan limit on distinct products (a product with several sizes counts once). Returns an error result,
+        // or null when the plan allows the addition (or has no max_products limit).
+        private async Task<IActionResult?> ProductLimitErrorAsync(int companyId, IEnumerable<(string Name, int? CategoryId)> adding)
+        {
+            var cache = HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+            var plan = await PlanAccess.GetAsync(_context, cache, companyId);
+            var max = plan?.Limit("max_products");
+            if (max == null) return null;
+
+            static string Key(string name, int? cat) => $"{ProductKey.BaseName(name)}::{cat?.ToString() ?? ""}";
+            var keys = (await _context.Products.AsNoTracking().Select(p => new { p.Name, p.CategoryId }).ToListAsync())
+                .Select(x => Key(x.Name, x.CategoryId)).ToHashSet();
+            foreach (var a in adding) keys.Add(Key(a.Name, a.CategoryId));
+            if (keys.Count <= max) return null;
+            return StatusCode(403, new { code = "plan_limit", message = $"Your plan allows up to {max} products. Upgrade your plan to add more." });
         }
 
         // Unit label + spec list. null = "not sent" (leave the row alone, so older clients can't wipe it);

@@ -1,10 +1,24 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { RequiredErrorComponent } from '../../shared/required-error/required-error.component';
+
+export interface PublicPlan { id: number; name: string; price: number; billingCycle: string; perks: string[]; }
+
+// Turns a plan's feature JSON into short, readable bullets. Only things the plan actually includes are listed.
+export function planPerks(features: string | null | undefined): string[] {
+  let f: Record<string, any> = {};
+  try { f = features ? JSON.parse(features) : {}; } catch { f = {}; }
+  const out: string[] = [];
+  if (typeof f['max_products'] === 'number') out.push(`Up to ${f['max_products']} products`);
+  if (f['ecommerce_enabled'] !== false) out.push('Online store with your own web address');
+  if (f['pos_enabled'] !== false) out.push('Point of Sale (POS) for the counter');
+  out.push(f['multi_staff'] === true ? 'Multiple staff logins' : 'Owner login');
+  return out;
+}
 
 const VALID_PHONE_PREFIXES = ['019', '015', '014', '013', '018', '017', '016'];
 
@@ -14,9 +28,10 @@ const VALID_PHONE_PREFIXES = ['019', '015', '014', '013', '018', '017', '016'];
   imports: [CommonModule, FormsModule, RouterModule, RequiredErrorComponent],
   templateUrl: './company-register.component.html'
 })
-export class CompanyRegisterComponent {
+export class CompanyRegisterComponent implements OnInit {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   formData = {
     companyName: '',
@@ -29,8 +44,26 @@ export class CompanyRegisterComponent {
     address: '',
     division: '',
     district: '',
-    thana: ''
+    thana: '',
+    planId: null as number | null
   };
+
+  plans: PublicPlan[] = [];
+  trialDays = 0;
+
+  ngOnInit() {
+    this.http.get<any[]>(`${environment.apiUrl}/subscriptionplans/public`).subscribe({
+      next: (rows) => {
+        this.plans = rows.map(r => ({ id: r.id, name: r.name, price: r.price, billingCycle: r.billingCycle, perks: planPerks(r.features) }));
+        this.trialDays = rows[0]?.trialDays ?? 0;
+        // Default to the cheapest plan so the form works even if the price list can't load.
+        // A plan picked on the home page (?plan=ID) wins; otherwise default to the cheapest.
+        const wanted = Number(this.route.snapshot.queryParamMap.get('plan'));
+        if (this.plans.length && this.formData.planId == null) this.formData.planId = this.plans.find(p => p.id === wanted)?.id ?? this.plans[0].id;
+      },
+      error: () => { /* signup still works: the server falls back to the Basic plan */ }
+    });
+  }
 
   loading = false;
   successMessage = '';

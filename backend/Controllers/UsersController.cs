@@ -95,6 +95,15 @@ namespace Ecommerce.Api.Controllers
                     return Forbid();
             }
 
+            // Plans without multi_staff are single-user: the owner only.
+            if (dto.CompanyId is int planCompany)
+            {
+                var plan = await PlanAccess.GetAsync(_context, HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(), planCompany);
+                if (plan != null && !plan.IsEnabled("multi_staff") &&
+                    await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.CompanyId == planCompany && u.IsDeleted == 0))
+                    return StatusCode(403, new { code = "plan_limit", message = "Your plan includes one login. Upgrade your plan to add staff." });
+            }
+
             if (await _context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == dto.Email))
                 return BadRequest(new { message = "Email already exists" });
 

@@ -39,7 +39,10 @@ namespace Ecommerce.Api.Controllers
             if (await _context.Companies.AnyAsync(c => c.Subdomain == subdomain))
                 return BadRequest(new { message = $"Subdomain '{subdomain}' is already taken." });
 
-            var basicPlan = await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Name == "Basic Plan");
+            // The shop picks a plan at signup; anything missing/unknown falls back to the Basic plan.
+            var chosenPlan = dto.PlanId.HasValue ? await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Id == dto.PlanId.Value) : null;
+            if (dto.PlanId.HasValue && chosenPlan == null) return BadRequest(new { message = "That plan isn't available." });
+            var basicPlan = chosenPlan ?? await _context.SubscriptionPlans.FirstOrDefaultAsync(p => p.Name == "Basic Plan");
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "companyadmin");
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
@@ -49,6 +52,14 @@ namespace Ecommerce.Api.Controllers
                 dto.OwnerFirstName, dto.OwnerLastName, dto.OwnerEmail, dto.OwnerPhone, passwordHash,
                 basicPlan?.Id ?? 0, role?.Id ?? 0
             ).ToListAsync()).FirstOrDefault();
+
+            // (sp_register_company takes a plan id but doesn't store it, so the plan is saved here along with the trial.)
+            // Free trial from the day they sign up (TRIAL_DAYS, default 14). After it ends the owner has a
+            // 7-day grace period, then can still read everything but not change anything until they pay.
+            await _context.Companies.IgnoreQueryFilters().Where(c => c.Id == companyId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(c => c.SubscriptionPlanId, basicPlan != null ? basicPlan.Id : (int?)null)
+                    .SetProperty(c => c.SubscriptionExpiresAt, DateTime.UtcNow.AddDays(PlanAccess.TrialDays)));
             var appCode = await AssignAppCodeAsync(companyId);
 
             return Ok(new { message = "Company registration successful. Awaiting Super Admin approval.", email = dto.OwnerEmail, companyId, subdomain, appCode });

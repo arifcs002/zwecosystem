@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 import { CompanySelectorComponent } from '../shared/company-selector/company-selector.component';
 import { TenantService } from '../../services/tenant/tenant.service';
+import { BillingService, BillingSummary } from '../../services/billing/billing.service';
 
 const NAV_GROUP_STORAGE_KEY = 'zw_nav_expanded_groups';
 
@@ -28,12 +29,28 @@ export class AdminLayoutComponent implements OnInit {
   authService = inject(AuthService);
   router = inject(Router);
   private tenant = inject(TenantService);
+  private billingService = inject(BillingService);
+  billing: BillingSummary | null = null;
   sidebarCollapsed = false;
   mobileSidebarOpen = false; // off-canvas drawer state, < 1024px only
 
   private expandedGroups = new Set<string>();
 
+  // Shows the plan banner and hides modules the plan doesn't include. Platform staff have no shop plan.
+  get planBanner(): { kind: 'expired' | 'warn'; text: string } | null {
+    const b = this.billing;
+    if (!b) return null;
+    const end = b.expiresAt ? new Date(b.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    if (b.status === 'expired') return { kind: 'expired', text: `Your subscription ended on ${end}. You can look at everything, but changes are paused until you renew.` };
+    if (b.status === 'grace') return { kind: 'warn', text: `Your subscription ended on ${end}. Please renew within ${b.graceDays} days or changes will be paused.` };
+    if (b.daysLeft != null && b.daysLeft <= 7) return { kind: 'warn', text: `Your subscription ends in ${Math.max(b.daysLeft, 0)} day${b.daysLeft === 1 ? '' : 's'} (${end}).` };
+    return null;
+  }
+
   ngOnInit() {
+    if (!this.authService.isSuperAdmin()) {
+      this.billingService.mine().subscribe({ next: b => this.billing = b, error: () => { /* menu simply stays complete */ } });
+    }
     const saved = localStorage.getItem(NAV_GROUP_STORAGE_KEY);
     if (saved) {
       try { this.expandedGroups = new Set(JSON.parse(saved)); } catch { /* ignore bad JSON */ }

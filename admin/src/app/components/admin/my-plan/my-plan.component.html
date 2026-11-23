@@ -41,6 +41,35 @@
       </div>
     </div>
 
+    <div class="usage-grid" *ngIf="billing" style="margin-top:16px">
+      <div class="usage-item">
+        <div class="usage-label">Status</div>
+        <div class="usage-value" [style.color]="billing.status === 'active' ? '#34d399' : billing.status === 'grace' ? '#fbbf24' : '#f87171'">{{ statusLabel() }}</div>
+      </div>
+      <div class="usage-item">
+        <div class="usage-label">{{ billing.status === 'active' ? 'Renews / ends on' : 'Ended on' }}</div>
+        <div class="usage-value">{{ billing.expiresAt ? (billing.expiresAt | date:'d MMM yyyy') : 'No end date' }}</div>
+        <small *ngIf="billing.status === 'active' && billing.daysLeft != null" style="opacity:.6">{{ billing.daysLeft }} days left</small>
+      </div>
+    </div>
+
+    <div class="plan-features-section" *ngIf="billing">
+      <div class="section-title">Payments</div>
+      <p *ngIf="billing.payments.length === 0" style="opacity:.6;font-size:13px">No payments recorded yet. To renew, pay the Auleco team (bKash, Nagad, cash or bank) and they will extend your plan.</p>
+      <table *ngIf="billing.payments.length" class="data-table" style="width:100%;font-size:13px">
+        <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Covers</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let p of billing.payments">
+            <td>{{ p.createdDate | date:'d MMM yyyy' }}</td>
+            <td>{{ methodLabel(p.method) }}</td>
+            <td>{{ p.reference || '—' }}</td>
+            <td>{{ p.periodStart | date:'d MMM' }} → {{ p.periodEnd | date:'d MMM yyyy' }}</td>
+            <td style="text-align:right">৳{{ p.amount | number:'1.0-0' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="plan-features-section">
       <div class="section-title">Plan Features</div>
       <ul class="plan-features">

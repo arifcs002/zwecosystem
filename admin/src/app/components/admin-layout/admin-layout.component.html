@@ -79,7 +79,7 @@
         <span class="nav-icon">📈</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
       </a>
-      <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+      <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS') && billing?.modules?.pos !== false" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🧾</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
       </a>
@@ -185,7 +185,7 @@
       </div>
 
       <!-- ===== ECOMMERCE (storefront configuration, collapsible group) ===== -->
-      <div class="nav-group" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')">
+      <div class="nav-group" *ngIf="authService.hasRight('PAGE_STORE_CONFIG') && billing?.modules?.ecommerce !== false">
         <button type="button" class="nav-group-header" (click)="toggleGroup('ecommerce')">
           <span class="nav-icon">🛒</span>
           <span class="nav-label" *ngIf="!sidebarCollapsed">Ecommerce</span>
@@ -242,6 +242,14 @@
 
     </nav>
 
+    <!-- My Plan (shops only) -->
+    <div class="nav-section" *ngIf="!authService.isSuperAdmin()" style="padding:0 8px 6px">
+      <a [routerLink]="basePath + '/my-plan'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">💎</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">My Plan</span>
+      </a>
+    </div>
+
     <!-- Logout -->
     <div class="sidebar-footer">
       <button class="logout-btn" (click)="logout()">
@@ -276,6 +284,12 @@
 
     <!-- Content -->
     <div class="zw-content">
+      <div *ngIf="planBanner as pb" role="status" [style.background]="pb.kind === 'expired' ? 'rgba(244,63,94,.14)' : 'rgba(245,158,11,.14)'"
+           [style.border]="pb.kind === 'expired' ? '1px solid rgba(244,63,94,.4)' : '1px solid rgba(245,158,11,.4)'"
+           style="margin:12px 16px 0;padding:10px 14px;border-radius:10px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span>{{ pb.kind === 'expired' ? '⛔' : '⚠️' }} {{ pb.text }}</span>
+        <a [routerLink]="basePath + '/my-plan'" style="margin-left:auto;font-weight:600;text-decoration:underline">See my plan</a>
+      </div>
       <router-outlet></router-outlet>
     </div>
   </main>

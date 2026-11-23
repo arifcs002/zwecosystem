@@ -304,6 +304,53 @@ app.Use(async (context, next) =>
     await next();
 });
 
+// Plan enforcement: module flags (pos_enabled / ecommerce_enabled) and an expired subscription.
+// Platform staff are exempt; the storefront stays reachable after expiry so shoppers aren't punished
+// for the owner's billing — only the owner's own writes are blocked once the grace period is over.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+    var exempt = !path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/api/auth", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/api/billing", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/api/subscriptionplans", StringComparison.OrdinalIgnoreCase)
+        || context.Request.Method == "OPTIONS";
+    if (exempt) { await next(); return; }
+
+    var user = context.User;
+    var isSuper = user.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role &&
+        (c.Value.Equals("superadmin", StringComparison.OrdinalIgnoreCase) || c.Value.Equals("super_admin", StringComparison.OrdinalIgnoreCase)));
+    var staffCompany = int.TryParse(user.FindFirst("company_id")?.Value, out var sc) ? sc : (int?)null;
+    var cid = staffCompany ?? (int.TryParse(context.Request.Headers["X-Tenant-ID"].ToString(), out var hc) ? hc : (int?)null);
+    if (isSuper || cid == null) { await next(); return; }
+
+    PlanState? plan;
+    using (var scope = context.RequestServices.CreateScope())
+    {
+        plan = await PlanAccess.GetAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+            context.RequestServices.GetRequiredService<IMemoryCache>(), cid.Value);
+    }
+    if (plan == null) { await next(); return; }
+
+    var module = PlanAccess.ModuleFor(path);
+    if (module != null && !plan.IsEnabled(module))
+    {
+        context.Response.StatusCode = 403;
+        await context.Response.WriteAsJsonAsync(new { code = "module_disabled", message = $"Your plan doesn't include {PlanAccess.ModuleLabel(module)}. Upgrade your plan to use it." });
+        return;
+    }
+
+    var isWrite = !(context.Request.Method is "GET" or "HEAD");
+    if (staffCompany != null && isWrite && plan.Status(DateTime.UtcNow) == "expired")
+    {
+        context.Response.StatusCode = 402;
+        await context.Response.WriteAsJsonAsync(new { code = "plan_expired", message = $"Your subscription expired on {plan.ExpiresAt:d MMM yyyy}. Please renew to keep making changes." });
+        return;
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 
 app.MapControllers();

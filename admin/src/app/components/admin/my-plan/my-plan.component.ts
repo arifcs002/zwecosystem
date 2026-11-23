@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubscriptionPlanService, SubscriptionPlan } from '../../../services/subscription-plan/subscription-plan.service';
+import { BillingService, BillingSummary } from '../../../services/billing/billing.service';
 
 @Component({
   selector: 'app-my-plan',
@@ -11,12 +12,27 @@ import { SubscriptionPlanService, SubscriptionPlan } from '../../../services/sub
 })
 export class MyPlanComponent implements OnInit {
   private planService = inject(SubscriptionPlanService);
+  private billingService = inject(BillingService);
+  billing: BillingSummary | null = null;
 
   plan: SubscriptionPlan | null = null;
   usage: { products: number; users: number; orders: number } = { products: 0, users: 0, orders: 0 };
   isLoading = false;
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+    this.billingService.mine().subscribe({ next: b => this.billing = b, error: () => { /* the plan card above still works */ } });
+  }
+
+  statusLabel(): string {
+    switch (this.billing?.status) {
+      case 'expired': return 'Expired — changes paused';
+      case 'grace': return 'Ended — renew soon';
+      default: return 'Active';
+    }
+  }
+
+  methodLabel(m: string): string { return ({ cash: 'Cash', bkash: 'bKash', nagad: 'Nagad', bank: 'Bank', other: 'Other' } as Record<string, string>)[m] || m; }
 
   load() {
     this.isLoading = true;
