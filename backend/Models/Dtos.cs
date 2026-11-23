@@ -66,19 +66,22 @@
         string Name, string SKU, decimal Price, decimal WholesalePrice,
         int StockQuantity, string? Description, int? CategoryId, int? BrandId,
         string? Barcode, string? ImageUrl, int? PricingTagId = null,
-        decimal? CompareAtPrice = null, int? SupplierId = null, string? Size = null);
+        decimal? CompareAtPrice = null, int? SupplierId = null, string? Size = null,
+        string? Uom = null, List<Ecommerce.Api.Infrastructure.SpecDto>? Attributes = null);
 
     public record SizeQtyDto(string Size, int Quantity);
     public record BatchProductCreateDto(
         string Name, decimal Price, decimal WholesalePrice,
         string? Description, int? CategoryId, int? SupplierId,
         string? ImageUrl, List<SizeQtyDto> Sizes, int? PricingTagId = null,
-        decimal? CompareAtPrice = null);
+        decimal? CompareAtPrice = null,
+        string? Uom = null, List<Ecommerce.Api.Infrastructure.SpecDto>? Attributes = null);
 
     // Bulk add: one supplier + category chosen once, many products in one submit.
     public record BulkProductLineDto(
         string Name, decimal Price, decimal WholesalePrice, string? Description,
-        string? ImageUrl, int? PricingTagId, decimal? CompareAtPrice, List<SizeQtyDto> Sizes);
+        string? ImageUrl, int? PricingTagId, decimal? CompareAtPrice, List<SizeQtyDto> Sizes,
+        string? Uom = null, List<Ecommerce.Api.Infrastructure.SpecDto>? Attributes = null);
     public record BulkProductsCreateDto(
         int? CategoryId, int? SupplierId, List<BulkProductLineDto> Products);
 

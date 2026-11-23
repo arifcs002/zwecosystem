@@ -44,10 +44,15 @@ namespace Ecommerce.Api.Controllers
                 .Select(p => new
                 {
                     p.Id, p.Name, p.Price, p.CompareAtPrice, p.ImageUrl,
-                    p.StockQuantity, p.CategoryId, p.CreatedDate,
+                    p.StockQuantity, p.CategoryId, p.CreatedDate, p.Uom, p.AttributesJson,
                     Category = p.Category != null ? new { p.Category.Name } : null
                 })
                 .ToListAsync();
+            var productsOut = products.Select(p => new
+            {
+                p.Id, p.Name, p.Price, p.CompareAtPrice, p.ImageUrl, p.StockQuantity, p.CategoryId, p.CreatedDate,
+                p.Category, p.Uom, Attributes = ProductSpecs.Parse(p.AttributesJson)
+            }).ToList();
 
             var categories = await _context.Categories
                 .IgnoreQueryFilters().AsNoTracking()
@@ -67,7 +72,7 @@ namespace Ecommerce.Api.Controllers
                 .ToListAsync();
             var settings = allSettings.Where(s => SettingsController.IsPublicSettingKey(s.key)).ToList();
 
-            return Ok(new { company, settings, products, categories, brands });
+            return Ok(new { company, settings, products = productsOut, categories, brands });
         }
     }
 }

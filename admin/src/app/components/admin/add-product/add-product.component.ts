@@ -33,6 +33,8 @@ interface ProductLine {
   price: number;            // selling price (auto-computed, editable)
   compareAtPrice: number | null;
   pricingTagId: number | null;
+  uom: string;
+  specs: { key: string; value: string }[];
   description: string;
   sizeQuantities: { [size: string]: number };
   imageFile: File | null;
@@ -151,6 +153,8 @@ export class AddProductComponent implements OnInit {
         line.price = p.price;
         line.compareAtPrice = p.compareAtPrice ?? null;
         line.pricingTagId = p.pricingTagId ?? null;
+        line.uom = p.uom || '';
+        line.specs = (p.attributes || []).map(a => ({ key: a.key, value: a.value }));
         line.description = p.description || '';
         line.imageUrl = p.imageUrl || '';
         line.imagePreview = p.imageUrl ? resolveImageUrl(p.imageUrl) : null;
@@ -217,9 +221,15 @@ export class AddProductComponent implements OnInit {
   // deepest/last-selected category, which is where products are saved.
   get categoryOptions(): FlatCategory[] { return buildIndentedList(this.categories); }
 
+  readonly uomSuggestions = ['pcs', 'pair', 'set', 'dozen', 'packet', 'box', 'kg', 'gram', 'litre', 'metre'];
+  addSpec(line: ProductLine) { if (line.specs.length < 20) line.specs.push({ key: '', value: '' }); }
+  removeSpec(line: ProductLine, i: number) { line.specs.splice(i, 1); }
+  // Blank rows are dropped; an edit always sends the list so clearing every row really clears it.
+  private specPayload(line: ProductLine) { return line.specs.filter(s => s.key.trim() && s.value.trim()); }
+
   newLine(): ProductLine {
     return { isExisting: false, name: '', wholesalePrice: 0, profitPercent: null, profitAmount: null, price: 0,
-             compareAtPrice: null, pricingTagId: null, description: '', sizeQuantities: {}, imageFile: null,
+             compareAtPrice: null, pricingTagId: null, uom: '', specs: [], description: '', sizeQuantities: {}, imageFile: null,
              imagePreview: null, imageUrl: '', existingGroup: null, existingSearch: '', restockQuantities: {},
              restockCost: null, existingResults: [] };
   }
@@ -324,6 +334,8 @@ onSubmit() {
           imageUrl: res.imageUrl || line.imageUrl || '',
           pricingTagId: line.pricingTagId,
           compareAtPrice: line.compareAtPrice,
+          uom: line.uom || '',
+          attributes: this.specPayload(line),
           supplierId: this.supplierId,
           size: this.editSize
         };
@@ -379,6 +391,8 @@ onSubmit() {
       imageUrl: l.imageUrl || '',
       pricingTagId: l.pricingTagId,
       compareAtPrice: l.compareAtPrice,
+      uom: l.uom || undefined,
+      attributes: this.specPayload(l),
       sizes: this.availableSizes
         .filter(sz => (l.sizeQuantities[sz] || 0) > 0)
         .map(sz => ({ size: sz, quantity: l.sizeQuantities[sz] }))

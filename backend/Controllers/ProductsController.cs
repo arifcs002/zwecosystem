@@ -114,6 +114,7 @@ namespace Ecommerce.Api.Controllers
 
             var (fmt, pfx, pad) = await GetIdFormatAsync(companyId.Value);
             await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
+            await ApplySpecsAsync(productId, dto.Uom, dto.Attributes);
 
             var product = await _context.Products.FindAsync(productId);
             return CreatedAtAction(nameof(GetProduct), new { id = productId }, product);
@@ -148,6 +149,7 @@ namespace Ecommerce.Api.Controllers
                 ).ToListAsync()).FirstOrDefault();
 
                 await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
+                await ApplySpecsAsync(productId, dto.Uom, dto.Attributes);
                 var product = await _context.Products.FindAsync(productId);
                 if (product != null) created.Add(product);
             }
@@ -201,6 +203,7 @@ namespace Ecommerce.Api.Controllers
                         ).ToListAsync()).FirstOrDefault();
 
                         await AssignCodeAsync(productId, companyId.Value, fmt, pfx, pad);
+                        await ApplySpecsAsync(productId, line.Uom, line.Attributes);
                         var product = await _context.Products.FindAsync(productId);
                         if (product != null) created.Add(product);
                     }
@@ -231,6 +234,7 @@ namespace Ecommerce.Api.Controllers
                 id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity,
                 dto.Description ?? "", dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId,
                 dto.Size ?? "", dto.SupplierId, _context.CurrentUserId, dto.PricingTagId, dto.CompareAtPrice ?? 0);
+            await ApplySpecsAsync(id, dto.Uom, dto.Attributes);
 
             var product = await _context.Products.FindAsync(id);
             return Ok(product);
@@ -269,6 +273,22 @@ namespace Ecommerce.Api.Controllers
 ^XZ";
 
             return Ok(new { message = $"Barcode sent to {ipAddress}:{port}", zpl = zpl.Trim(), ipAddress, port });
+        }
+
+        // Unit label + spec list. null = "not sent" (leave the row alone, so older clients can't wipe it);
+        // an empty string / empty list clears it.
+        private async Task ApplySpecsAsync(int productId, string? uom, List<SpecDto>? attrs)
+        {
+            if (uom == null && attrs == null) return;
+            var cleanUom = ProductSpecs.CleanUom(uom);
+            var json = ProductSpecs.ToJson(attrs);
+            if (uom != null && attrs != null)
+                await _context.Products.Where(p => p.Id == productId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Uom, cleanUom).SetProperty(p => p.AttributesJson, json));
+            else if (uom != null)
+                await _context.Products.Where(p => p.Id == productId).ExecuteUpdateAsync(s => s.SetProperty(p => p.Uom, cleanUom));
+            else
+                await _context.Products.Where(p => p.Id == productId).ExecuteUpdateAsync(s => s.SetProperty(p => p.AttributesJson, json));
         }
 
         private static string GenerateBarcode(int companyId)

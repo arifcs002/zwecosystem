@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface ProductSpec { key: string; value: string; }
+
 export interface SizeQtyDto {
   size: string;
   quantity: number;
@@ -19,6 +21,8 @@ export interface BatchProductCreateDto {
   sizes: SizeQtyDto[];
   pricingTagId?: number | null;
   compareAtPrice?: number | null;
+  uom?: string;
+  attributes?: ProductSpec[];
 }
 
 export interface BulkProductLineDto {
@@ -30,6 +34,8 @@ export interface BulkProductLineDto {
   pricingTagId?: number | null;
   compareAtPrice?: number | null;
   sizes: SizeQtyDto[];
+  uom?: string;
+  attributes?: ProductSpec[];
 }
 export interface BulkProductsCreateDto {
   categoryId?: number;
@@ -47,6 +53,8 @@ export interface Product {
   description?: string;
   price: number;
   compareAtPrice?: number | null;
+  uom?: string | null;
+  attributes?: ProductSpec[];
   wholesalePrice: number;
   stockQuantity: number;
   size?: string;

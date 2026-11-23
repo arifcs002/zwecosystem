@@ -1,4 +1,4 @@
-import { Product } from '../services/product/product.service';
+import { Product, ProductSpec } from '../services/product/product.service';
 import { ShopProduct } from '../services/cart/cart.service';
 import { resolveImageUrl } from './image-url.util';
 
@@ -9,6 +9,8 @@ export interface ProductGroup {
   categoryName: string;
   price: number;
   compareAtPrice: number | null; // "was" price for discount display (from representative variant)
+  uom: string;                   // unit label shown next to the price ("pair", "kg"), may be empty
+  attributes: ProductSpec[];     // spec list (Color: Black …)
   totalStock: number;
   createdDate: string | null;    // latest variant's created date (for "newest" sort / New badge)
   variants: Product[];           // one per size, sorted
@@ -47,6 +49,8 @@ export function groupProducts(products: Product[]): ProductGroup[] {
       categoryName: sorted[0].category?.name || 'Uncategorized',
       price: sorted[0].price,
       compareAtPrice: sorted[0].compareAtPrice ?? null,
+      uom: sorted.find(v => v.uom)?.uom || '',
+      attributes: sorted.find(v => v.attributes?.length)?.attributes || [],
       totalStock: sorted.reduce((s, v) => s + v.stockQuantity, 0),
       createdDate: dates.length ? dates.sort().slice(-1)[0] : null,
       variants: sorted

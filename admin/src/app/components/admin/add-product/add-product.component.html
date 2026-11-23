@@ -144,6 +144,22 @@
       </div>
 
       <div class="form-group">
+        <label>Unit <span class="hint">(opt — shown next to the price)</span></label>
+        <input [(ngModel)]="line.uom" [name]="'uom'+i" class="form-input" list="uom-list" maxlength="20" placeholder="e.g. pair, kg, dozen">
+        <datalist id="uom-list"><option *ngFor="let u of uomSuggestions" [value]="u"></option></datalist>
+      </div>
+
+      <div class="form-group">
+        <label>Details <span class="hint">(opt — e.g. Color: Black, Material: Leather)</span></label>
+        <div *ngFor="let sp of line.specs; let k = index" style="display:flex;gap:8px;margin-bottom:6px">
+          <input [(ngModel)]="sp.key" [name]="'spk'+i+'_'+k" class="form-input" maxlength="40" placeholder="Name" style="flex:1">
+          <input [(ngModel)]="sp.value" [name]="'spv'+i+'_'+k" class="form-input" maxlength="120" placeholder="Value" style="flex:2">
+          <button type="button" (click)="removeSpec(line, k)" aria-label="Remove detail" style="padding:0 10px">✕</button>
+        </div>
+        <button type="button" *ngIf="line.specs.length < 20" (click)="addSpec(line)" class="add-line" style="margin-top:4px">+ Add detail</button>
+      </div>
+
+      <div class="form-group">
         <label>Description</label>
         <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
       </div>

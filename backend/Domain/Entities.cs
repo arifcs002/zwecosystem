@@ -566,6 +566,17 @@ namespace Ecommerce.Api.Domain
 
         [ForeignKey(nameof(PricingTagId))]
         public PricingTag? PricingTag { get; set; }
+
+        // Display-only unit label ("pair", "kg") and spec list (stored as JSON text).
+        [Column("uom")]
+        public string? Uom { get; set; }
+
+        [Column("attributes")]
+        [JsonIgnore]
+        public string? AttributesJson { get; set; }
+
+        [NotMapped]
+        public List<Ecommerce.Api.Infrastructure.SpecDto> Attributes => Ecommerce.Api.Infrastructure.ProductSpecs.Parse(AttributesJson);
     }
 
     [Table("orders")]

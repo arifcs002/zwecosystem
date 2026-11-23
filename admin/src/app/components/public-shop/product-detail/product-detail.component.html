@@ -47,7 +47,7 @@
         <p class="text-xs text-indigo-500 font-semibold uppercase tracking-wide mb-1">{{ group.categoryName }}</p>
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{{ group.baseName }}</h1>
         <div class="flex items-center gap-3 mb-5 flex-wrap">
-          <span class="text-3xl font-extrabold text-gray-900">৳{{ selectedVariant.price | number:'1.0-0' }}</span>
+          <span class="text-3xl font-extrabold text-gray-900">৳{{ selectedVariant.price | number:'1.0-0' }}<span *ngIf="group.uom" class="text-base font-medium text-gray-500"> / {{ group.uom }}</span></span>
           <span *ngIf="discount > 0" class="text-lg text-gray-400 line-through">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
           <span *ngIf="discount > 0" class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">{{ 'Save {n}%' | t:{ n: discount } }}</span>
         </div>
@@ -118,6 +118,16 @@
         </ul>
 
         <!-- Description -->
+        <div *ngIf="group.attributes.length" class="mt-8 pt-6 border-t border-gray-100">
+          <h2 class="font-bold text-gray-900 mb-3">{{ 'Details' | t }}</h2>
+          <dl class="text-sm divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+            <div *ngFor="let a of group.attributes" class="flex gap-4 px-4 py-2.5 bg-white">
+              <dt class="w-1/3 text-gray-500">{{ a.key }}</dt>
+              <dd class="flex-1 text-gray-900">{{ a.value }}</dd>
+            </div>
+          </dl>
+        </div>
+
         <div *ngIf="selectedVariant.description" class="mt-8 pt-6 border-t border-gray-100">
           <h3 class="text-sm font-bold text-gray-900 mb-2">{{ 'Product Details' | t }}</h3>
           <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ selectedVariant.description }}</p>

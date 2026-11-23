@@ -107,6 +107,7 @@ export const BN: Record<string, string> = {
   'Current password': 'বর্তমান পাসওয়ার্ড',
   'New password (at least 8 characters)': 'নতুন পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর)',
   'Change password': 'পাসওয়ার্ড বদলান',
+  'Details': 'বিস্তারিত',
   'Forgot password?': 'পাসওয়ার্ড ভুলে গেছেন?',
   'Reset your password': 'পাসওয়ার্ড রিসেট করুন',
   'Send code': 'কোড পাঠান',
