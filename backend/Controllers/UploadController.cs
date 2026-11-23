@@ -81,7 +81,10 @@ namespace Ecommerce.Api.Controllers
             // this Redis instance isn't managed by docker-compose at all).
             // Never expires: identical content always resolves to the same
             // content-hash key, so there's nothing to invalidate.
-            await _cache.SetAsync(CacheKey(folder, uniqueFileName), outputBytes, new DistributedCacheEntryOptions());
+            // Disk is the source of truth now (bind-mounted host folder, see
+            // ImageStore); Redis is just a warm cache and may be down.
+            await ImageStore.SaveAsync(folder, uniqueFileName, outputBytes);
+            try { await _cache.SetAsync(CacheKey(folder, uniqueFileName), outputBytes, new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(7) }); } catch { }
 
             // Return relative path — Angular resolveImageUrl() prepends siteUrl
             // (port 85 via nginx) so the URL works on any host, not just localhost.

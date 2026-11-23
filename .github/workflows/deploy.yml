@@ -159,8 +159,10 @@ jobs:
                 - SmtpSettings__FromAddress=${SMTP_FROM}
                 - SmtpSettings__FromName=ZW Ecosystem
                 - ASPNETCORE_ENVIRONMENT=Production
+                - UPLOADS_DIR=/data/uploads
               volumes:
                 - /data/apps/textlog:/data/apps/textlog
+                - /data/apps/uploads:/data/uploads
               depends_on:
                 postgres:
                   condition: service_healthy
@@ -213,6 +215,11 @@ jobs:
             fail=1
           fi
 
+          if ! grep -q '/data/uploads' <<< "$backend_block"; then
+            echo "::error::Backend service is missing the uploads volume mount — uploaded images would be lost on redeploy. Aborting."
+            fail=1
+          fi
+
           redis_conn_line=$(grep -m1 'REDIS_CONNECTION_STRING=' <<< "$backend_block")
           if [ -z "$redis_conn_line" ]; then
             echo "::error::Backend service is missing REDIS_CONNECTION_STRING — uploaded images have nowhere to go. Aborting."
@@ -259,7 +266,11 @@ jobs:
             # Back up the production DB BEFORE touching containers. If the DB
             # container exists and the dump fails, abort the deploy.
             set -e
-            mkdir -p /data/backups
+            mkdir -p /data/backups /data/apps/uploads
+            if [ -n "$(ls -A /data/apps/uploads 2>/dev/null)" ]; then
+              tar czf /data/backups/uploads-$(date +%Y%m%d-%H%M%S).tar.gz -C /data/apps uploads
+              ls -1t /data/backups/uploads-*.tar.gz | tail -n +8 | xargs -r rm -f
+            fi
             if docker ps --format '{{.Names}}' | grep -qx zwecosystem-postgres; then
               BK=/data/backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql.gz
               docker exec zwecosystem-postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > "$BK"

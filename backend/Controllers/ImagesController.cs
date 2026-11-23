@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Distributed;
+using Ecommerce.Api.Infrastructure;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -24,8 +25,18 @@ namespace Ecommerce.Api.Controllers
         [HttpGet("{folder}/{fileName}")]
         public async Task<IActionResult> Get(string folder, string fileName)
         {
-            var bytes = await _cache.GetAsync(UploadController.CacheKey(folder, fileName));
-            if (bytes == null) return NotFound();
+            var path = ImageStore.PathFor(folder, fileName);
+            if (path == null) return NotFound();
+
+            byte[]? bytes = System.IO.File.Exists(path) ? await System.IO.File.ReadAllBytesAsync(path) : null;
+            if (bytes == null)
+            {
+                // Legacy images were stored only in Redis: serve them and
+                // copy to disk so they survive a Redis wipe from now on.
+                try { bytes = await _cache.GetAsync(UploadController.CacheKey(folder, fileName)); } catch { }
+                if (bytes == null) return NotFound();
+                try { await ImageStore.SaveAsync(folder, fileName, bytes); } catch { }
+            }
 
             // Uploaded files are content-hash named — the same URL always
             // serves the same bytes, safe to cache forever on the client.
