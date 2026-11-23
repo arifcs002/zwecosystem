@@ -55,24 +55,28 @@ export class OrderManagementComponent implements OnInit {
   }
 
   // ── Steadfast courier ──
-  bookSteadfast() {
+  bookSteadfast() { this.bookCourier('steadfast'); }
+
+  bookCourier(which: 'steadfast' | 'pathao') {
     if (!this.selectedOrder || this.courierBusy) return;
+    const label = which === 'pathao' ? 'Pathao' : 'Steadfast';
     this.courierBusy = true; this.errorMsg = '';
-    this.courierService.book(this.selectedOrder.id).subscribe({
+    this.courierService.book(this.selectedOrder.id, which).subscribe({
       next: (r) => {
         this.courierBusy = false;
         Object.assign(this.selectedOrder, r);
         this.courierName = r.courierName; this.trackingNumber = r.trackingNumber;
-        this.successMsg = 'Sent to Steadfast ✓'; setTimeout(() => this.successMsg = '', 3000);
+        this.successMsg = `Sent to ${label} ✓`; setTimeout(() => this.successMsg = '', 3000);
       },
-      error: (e) => { this.courierBusy = false; this.errorMsg = e?.error?.message || 'Could not send to Steadfast.'; }
+      error: (e) => { this.courierBusy = false; this.errorMsg = e?.error?.message || `Could not send to ${label}.`; }
     });
   }
 
   refreshCourier() {
     if (!this.selectedOrder || this.courierBusy) return;
     this.courierBusy = true; this.errorMsg = '';
-    this.courierService.refresh(this.selectedOrder.id).subscribe({
+    const which = this.selectedOrder.courierName === 'Pathao' ? 'pathao' : 'steadfast';
+    this.courierService.refresh(this.selectedOrder.id, which).subscribe({
       next: (r) => { this.courierBusy = false; this.selectedOrder.courierStatus = r.courierStatus; },
       error: (e) => { this.courierBusy = false; this.errorMsg = e?.error?.message || 'Could not refresh the courier status.'; }
     });

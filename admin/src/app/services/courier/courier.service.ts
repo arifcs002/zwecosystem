@@ -10,8 +10,8 @@ export interface CourierBookingResult {
 @Injectable({ providedIn: 'root' })
 export class CourierService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/courier/steadfast/orders`;
+  private url(courier: 'steadfast' | 'pathao') { return `${environment.apiUrl}/courier/${courier}/orders`; }
 
-  book(orderId: number): Observable<CourierBookingResult> { return this.http.post<CourierBookingResult>(`${this.apiUrl}/${orderId}`, {}); }
-  refresh(orderId: number): Observable<{ courierStatus: string }> { return this.http.get<{ courierStatus: string }>(`${this.apiUrl}/${orderId}/status`); }
+  book(orderId: number, courier: 'steadfast' | 'pathao' = 'steadfast'): Observable<CourierBookingResult> { return this.http.post<CourierBookingResult>(`${this.url(courier)}/${orderId}`, {}); }
+  refresh(orderId: number, courier: 'steadfast' | 'pathao' = 'steadfast'): Observable<{ courierStatus: string }> { return this.http.get<{ courierStatus: string }>(`${this.url(courier)}/${orderId}/status`); }
 }

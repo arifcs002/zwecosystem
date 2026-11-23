@@ -56,6 +56,24 @@ const STATUSES = [
       </div>
       <small style="opacity:.6">Then open any order and press “Send to Steadfast”.</small>
     </div>
+
+    <div class="table-card" style="padding:18px;margin-top:16px">
+      <h3 style="margin:0 0 4px">Pathao Courier</h3>
+      <p style="opacity:.65;font-size:13px;margin:0 0 12px">From your Pathao merchant panel (Developer / API). The login details are stored write-only: once saved, they show as ••••••••. The Store ID is the number of your pickup store.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Client ID</label><input class="form-input" type="password" autocomplete="off" [(ngModel)]="v['secret_pathao_client_id']" /></div>
+        <div class="form-group"><label>Client secret</label><input class="form-input" type="password" autocomplete="off" [(ngModel)]="v['secret_pathao_client_secret']" /></div>
+        <div class="form-group"><label>Merchant email (username)</label><input class="form-input" type="password" autocomplete="off" [(ngModel)]="v['secret_pathao_username']" /></div>
+        <div class="form-group"><label>Merchant password</label><input class="form-input" type="password" autocomplete="new-password" [(ngModel)]="v['secret_pathao_password']" /></div>
+        <div class="form-group"><label>Store ID</label><input class="form-input" inputmode="numeric" maxlength="12" [(ngModel)]="v['pathao_store_id']" placeholder="e.g. 123456" /></div>
+        <div class="form-group"><label>Mode</label>
+          <select class="form-input" [(ngModel)]="v['pathao_sandbox']">
+            <option value="">Live (real parcels)</option>
+            <option value="true">Sandbox (testing only)</option>
+          </select></div>
+      </div>
+      <small style="opacity:.6">Try one parcel in Sandbox mode first, then switch to Live. Then open any order and press “Send to Pathao”.</small>
+    </div>
   </ng-container>
 </div>`
 })
@@ -69,7 +87,8 @@ export class MessagesCourierComponent implements OnInit {
 
   private readonly keys = [
     'sms_api_url', ...STATUSES.map(s => 'sms_template_' + s.key),
-    'invoice_header_text', 'invoice_footer_text', 'secret_steadfast_api_key', 'secret_steadfast_secret_key'
+    'invoice_header_text', 'invoice_footer_text', 'secret_steadfast_api_key', 'secret_steadfast_secret_key',
+    'secret_pathao_client_id', 'secret_pathao_client_secret', 'secret_pathao_username', 'secret_pathao_password', 'pathao_store_id', 'pathao_sandbox'
   ];
 
   ngOnInit() {
@@ -86,7 +105,7 @@ export class MessagesCourierComponent implements OnInit {
     this.saving = true; this.errorMsg = '';
     const payload: CompanySetting[] = this.keys.map(k => ({
       key: k, value: (this.v[k] ?? '').trim(),
-      groupName: k.startsWith('secret_') ? 'COURIER' : k.startsWith('invoice_') ? 'INVOICE' : 'NOTIFICATIONS'
+      groupName: (k.startsWith('secret_') || k.startsWith('pathao_')) ? 'COURIER' : k.startsWith('invoice_') ? 'INVOICE' : 'NOTIFICATIONS'
     }));
     this.settings.updateSettings(payload).subscribe({
       next: () => { this.saving = false; this.successMsg = 'Saved.'; setTimeout(() => this.successMsg = '', 3000); },

@@ -33,6 +33,9 @@ builder.Services.AddHttpClient(Ecommerce.Api.Infrastructure.SteadfastClient.Http
     c.BaseAddress = new Uri("https://portal.packzy.com/api/v1/");
     c.Timeout = TimeSpan.FromSeconds(20);
 });
+builder.Services.AddHttpClient(Ecommerce.Api.Infrastructure.PathaoClient.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<Ecommerce.Api.Infrastructure.IPathaoClient, Ecommerce.Api.Infrastructure.PathaoClient>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ISteadfastClient, Ecommerce.Api.Infrastructure.SteadfastClient>();
 builder.Services.AddScoped<Ecommerce.Api.Infrastructure.ICustomerAuth, Ecommerce.Api.Infrastructure.CustomerAuth>();
 builder.Services.AddSingleton<Ecommerce.Api.Infrastructure.IMetaCapiClient, Ecommerce.Api.Infrastructure.MetaCapiClient>();

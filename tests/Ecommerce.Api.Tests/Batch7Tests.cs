@@ -99,3 +99,28 @@ public class Batch7Tests(ApiFixture f)
         Assert.DoesNotContain(name, other);
     }
 }
+
+[Collection("api")]
+public class Batch7SiblingTests(ApiFixture f)
+{
+    [Fact]
+    public async Task EditingOneSize_UpdatesUnitAndDetailsOnAllSizes_ButNotOtherProducts()
+    {
+        var cat = await f.Scalar<int>("SELECT id FROM categories WHERE company_id=@c ORDER BY id LIMIT 1", ("c", f.A.CompanyId));
+        var tag = Guid.NewGuid().ToString("N")[..6];
+        async Task Make(string n) => await Shop.Ok(await f.A.Admin.PostAsJsonAsync("/api/products/batch", new
+        { name = n, price = 500, wholesalePrice = 300, categoryId = cat, sizes = new[] { new { size = "M", quantity = 3 }, new { size = "L", quantity = 3 } } }), "create");
+        await Make($"Clog {tag}"); await Make($"Clog {tag} Pro");          // second name starts with the first one
+
+        var id = await f.Scalar<int>("SELECT id FROM products WHERE company_id=@c AND name=@n", ("c", f.A.CompanyId), ("n", $"Clog {tag} (Size M)"));
+        var cur = await Shop.Body(await f.A.Admin.GetAsync($"/api/products/{id}"));
+        await Shop.Ok(await f.A.Admin.PutAsJsonAsync($"/api/products/{id}", new
+        {
+            name = cur.GetProperty("name").GetString(), sku = cur.GetProperty("sku").GetString(), price = 500, wholesalePrice = 300,
+            stockQuantity = 3, size = "M", uom = "pair", attributes = new[] { new { key = "Color", value = "Tan" } }
+        }), "update");
+
+        Assert.Equal(2, await f.Scalar<int>("SELECT COUNT(*)::int FROM products WHERE company_id=@c AND name LIKE @n AND uom='pair' AND attributes LIKE '%Tan%'", ("c", f.A.CompanyId), ("n", $"Clog {tag} (Size %")));
+        Assert.Equal(0, await f.Scalar<int>("SELECT COUNT(*)::int FROM products WHERE company_id=@c AND name LIKE @n AND uom IS NOT NULL", ("c", f.A.CompanyId), ("n", $"Clog {tag} Pro%")));
+    }
+}

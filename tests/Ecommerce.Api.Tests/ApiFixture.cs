@@ -59,6 +59,7 @@ public class ApiFixture : IAsyncLifetime
 
     public FakeSteadfast Courier { get; } = new();
     public FakeSms Sms { get; } = new();
+    public FakePathao Pathao { get; } = new();
     public FakeMetaCapi Capi { get; } = new();
     public WebApplicationFactory<Program> Factory { get; private set; } = default!;
     public string ConnectionString { get; private set; } = "";
@@ -91,6 +92,8 @@ public class ApiFixture : IAsyncLifetime
                 s.AddSingleton<Ecommerce.Api.Infrastructure.ISteadfastClient>(Courier);
                 s.RemoveAll<Ecommerce.Api.Infrastructure.IMetaCapiClient>();
                 s.AddSingleton<Ecommerce.Api.Infrastructure.IMetaCapiClient>(Capi);
+                s.RemoveAll<Ecommerce.Api.Infrastructure.IPathaoClient>();
+                s.AddSingleton<Ecommerce.Api.Infrastructure.IPathaoClient>(Pathao);
                 s.RemoveAll<Ecommerce.Api.Infrastructure.ISmsSender>();
                 s.AddSingleton<Ecommerce.Api.Infrastructure.ISmsSender>(Sms);
             });
@@ -235,4 +238,25 @@ public class FakeSms : Ecommerce.Api.Infrastructure.ISmsSender
     { lock (Sent) Sent.Add((apiUrlTemplate, toNumber, message)); return Task.FromResult(true); }
     public string LastCodeFor(string phone) =>
         System.Text.RegularExpressions.Regex.Match(Sent.Last(s => s.To == phone).Message, @"^(\d{6})").Groups[1].Value;
+}
+
+/// <summary>Recording stand-in for the Pathao API.</summary>
+public class FakePathao : IPathaoClient
+{
+    public bool FailNext { get; set; }
+    public string StatusToReturn { get; set; } = "Pending";
+    public List<(PathaoCreds Creds, string Invoice, string Phone, string Address, decimal Cod)> Bookings { get; } = new();
+    private int _seq;
+
+    public Task<CourierBooking> CreateOrderAsync(PathaoCreds c, string invoice, string name, string phone, string address,
+        decimal codAmount, string? note, CancellationToken ct = default)
+    {
+        Bookings.Add((c, invoice, phone, address, codAmount));
+        if (FailNext) { FailNext = false; return Task.FromResult(new CourierBooking(false, null, null, null, "Pathao login failed.")); }
+        var n = Interlocked.Increment(ref _seq);
+        return Task.FromResult(new CourierBooking(true, $"PCID{n}", $"PCID{n}", "Pending", null));
+    }
+
+    public Task<CourierStatusResult> GetStatusAsync(PathaoCreds c, string consignmentId, CancellationToken ct = default)
+        => Task.FromResult(new CourierStatusResult(true, StatusToReturn, null));
 }

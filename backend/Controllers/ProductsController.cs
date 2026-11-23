@@ -224,6 +224,7 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductCreateDto dto)
         {
             if (!await _context.Products.AnyAsync(p => p.Id == id)) return NotFound();
+            var siblingIds = await SiblingIdsAsync(id);   // looked up before the update can change name/category
 
             // dto.Size / dto.SupplierId are forwarded as-is (not hardcoded to
             // ""/null like CreateProduct) — this endpoint is used to edit an
@@ -234,7 +235,8 @@ namespace Ecommerce.Api.Controllers
                 id, dto.Name, dto.SKU, dto.Price, dto.WholesalePrice, dto.StockQuantity,
                 dto.Description ?? "", dto.ImageUrl ?? "", dto.CategoryId, dto.BrandId,
                 dto.Size ?? "", dto.SupplierId, _context.CurrentUserId, dto.PricingTagId, dto.CompareAtPrice ?? 0);
-            await ApplySpecsAsync(id, dto.Uom, dto.Attributes);
+            // Size variants are separate rows of one product, so the unit/details apply to all of them.
+            foreach (var sibId in siblingIds) await ApplySpecsAsync(sibId, dto.Uom, dto.Attributes);
 
             var product = await _context.Products.FindAsync(id);
             return Ok(product);
@@ -273,6 +275,22 @@ namespace Ecommerce.Api.Controllers
 ^XZ";
 
             return Ok(new { message = $"Barcode sent to {ipAddress}:{port}", zpl = zpl.Trim(), ipAddress, port });
+        }
+
+        // This row plus every other size of the same product (same base name + category, same shop).
+        private async Task<List<int>> SiblingIdsAsync(int id)
+        {
+            var me = await _context.Products.AsNoTracking().Where(p => p.Id == id)
+                .Select(p => new { p.Name, p.CategoryId }).FirstOrDefaultAsync();
+            if (me == null) return new List<int>();
+            var rx = new System.Text.RegularExpressions.Regex(@"\s*\(Size [^)]+\)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var baseName = rx.Replace(me.Name, "").Trim();
+            var candidates = await _context.Products.AsNoTracking()
+                .Where(p => p.CategoryId == me.CategoryId && p.Name.StartsWith(baseName))
+                .Select(p => new { p.Id, p.Name }).ToListAsync();   // tenant filter applies
+            var ids = candidates.Where(c => rx.Replace(c.Name, "").Trim() == baseName).Select(c => c.Id).ToList();
+            if (!ids.Contains(id)) ids.Add(id);
+            return ids;
         }
 
         // Unit label + spec list. null = "not sent" (leave the row alone, so older clients can't wipe it);
