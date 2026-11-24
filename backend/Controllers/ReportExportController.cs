@@ -139,6 +139,29 @@ namespace Ecommerce.Api.Controllers
                 rows.Select(r => new object?[] { r.ReturnNumber, r.CreatedDate, r.Kind, r.OrderId, r.RefundAmount, r.RefundMethod, r.CashRefunded, r.Reason }));
         }
 
+        // Owner-only (shows cost and profit): how much each product earned in the range.
+        [HttpGet("products")]
+        public async Task<IActionResult> ProductProfit([FromQuery] string? from, [FromQuery] string? to)
+        {
+            var cid = _context.CompanyId;
+            if (!cid.HasValue) return BadRequest(new { message = "Company context is required." });
+            if (!Range(from, to, out var s, out var e, out var err)) return BadRequest(new { message = err });
+            var rows = await new AnalyticsController(_context).ProductsAsync(cid.Value, s, e, 500);
+            return Csv("product-profit", new[] { "Product", "Units sold", "Units returned", "Revenue", "Cost of goods", "Profit", "Margin %" },
+                rows.Select(r => new object?[] { r.Name, r.Units, r.ReturnedUnits, r.Revenue, r.Cost, r.Profit, r.MarginPercent }));
+        }
+
+        // Owner-only: stock that has not sold for a while, with the money tied up in it.
+        [HttpGet("dead-stock")]
+        public async Task<IActionResult> DeadStockCsv([FromQuery] int days = 60)
+        {
+            var cid = _context.CompanyId;
+            if (!cid.HasValue) return BadRequest(new { message = "Company context is required." });
+            var rows = await new AnalyticsController(_context).DeadStockAsync(cid.Value, Math.Clamp(days, 14, 730));
+            return Csv("dead-stock", new[] { "Product", "In stock", "Cost value", "Last sold", "Days without a sale" },
+                rows.Select(r => new object?[] { r.Name, r.Stock, r.CostValue, r.LastSold, r.DaysSinceSale }));
+        }
+
         // Shows cost prices, so it is an owner-only report (see AccessPolicy).
         [HttpGet("stock")]
         public async Task<IActionResult> Stock()

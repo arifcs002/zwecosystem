@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { StorefrontData, StorefrontService } from '../../../services/storefront/storefront.service';
-import { AccountService, ShopperOrder } from '../../../services/account/account.service';
+import { AccountService, ShopperLoyalty, ShopperOrder, ShopperOrderDetail } from '../../../services/account/account.service';
 import { TenantService } from '../../../services/tenant/tenant.service';
 import { ProductGroup, groupProducts } from '../../../utils/product-group.util';
 import { TranslatePipe } from '../../../i18n/translate.pipe';
@@ -103,6 +103,25 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
           </div>
           <button (click)="logout()" class="text-sm font-semibold text-gray-500 hover:text-rose-600 border border-gray-200 rounded-lg px-3 py-1.5">{{ 'Log out' | t }}</button>
         </div>
+        @if (loyalty && loyalty.enabled) {
+          <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+            <h2 class="font-bold text-gray-900 mb-1">⭐ {{ 'My points' | t }}</h2>
+            @if (!loyalty.verified) {
+              <p class="text-sm text-gray-500">{{ 'Verify your phone number below to see and use your points.' | t }}</p>
+            } @else {
+              <p class="text-2xl font-extrabold text-gray-900">{{ loyalty.balance | number }} <span class="text-sm font-semibold text-gray-400">{{ 'points' | t }} · ≈ ৳{{ (loyalty.worth || 0) | number:'1.0-0' }}</span></p>
+              <p class="text-xs text-gray-400 mt-1">{{ 'Show your phone number at the shop counter to use your points on your next bill.' | t }}@if (loyalty.minRedeem) { {{ 'Minimum' | t }} {{ loyalty.minRedeem }} {{ 'points at a time.' | t }} }</p>
+              @if (loyalty.entries.length) {
+                <div class="divide-y divide-gray-100 mt-3">
+                  @for (e of loyalty.entries; track e) {
+                    <div class="flex justify-between py-1.5 text-sm"><span class="text-gray-600">{{ pointLabel(e.type) | t }} <span class="text-xs text-gray-400">{{ e.date | date:'d MMM' }}</span></span>
+                      <span class="font-semibold" [class.text-rose-600]="e.points < 0" [class.text-emerald-600]="e.points > 0">{{ e.points > 0 ? '+' + e.points : e.points }}</span></div>
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
         <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
           <h2 class="font-bold text-gray-900 mb-3">{{ 'My orders' | t }}</h2>
           @if (orders === null) {
@@ -113,6 +132,7 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
           }
           <div class="divide-y divide-gray-100">
             @for (o of orders; track o) {
+            <div>
               <a [routerLink]="link('track-order')" [queryParams]="{ order: o.orderNumber, phone: p.phone }" class="flex items-center justify-between gap-3 py-3 hover:bg-gray-50 -mx-2 px-2 rounded-lg">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-gray-800 truncate">{{ o.orderNumber }}</p>
@@ -125,6 +145,24 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
                   <p class="text-[11px] font-semibold text-indigo-600">{{ o.status }}</p>
                 </div>
               </a>
+              <button type="button" (click)="toggleOrder(o.orderNumber)" class="text-xs font-semibold text-indigo-600 hover:underline mb-2">{{ openOrder === o.orderNumber ? ('Hide items' | t) : ('View items' | t) }}</button>
+              @if (openOrder === o.orderNumber) {
+                <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-600">
+                  @if (!details[o.orderNumber]) { <p>{{ 'Loading…' | t }}</p> }
+                  @if (details[o.orderNumber]; as d) {
+                    @for (it of d.items; track it) {
+                      <div class="flex justify-between gap-2 py-0.5"><span>{{ it.quantity }} × {{ it.name }}</span><span>৳{{ it.lineTotal | number:'1.0-0' }}</span></div>
+                    }
+                    @if (d.discount > 0) { <div class="flex justify-between py-0.5 text-emerald-700"><span>{{ 'Discount' | t }}@if (d.discountLabel) { ({{ d.discountLabel }}) }</span><span>−৳{{ d.discount | number:'1.0-0' }}</span></div> }
+                    @if (d.shippingFee > 0) { <div class="flex justify-between py-0.5"><span>{{ 'Delivery' | t }}</span><span>৳{{ d.shippingFee | number:'1.0-0' }}</span></div> }
+                    <div class="flex justify-between py-0.5 font-bold text-gray-900"><span>{{ 'Total' | t }}</span><span>৳{{ d.total | number:'1.0-0' }}</span></div>
+                    @if (d.timeline.length) {
+                      <p class="mt-2 text-gray-400">@for (t of d.timeline; track t; let last = $last) { {{ t.status }} ({{ t.date | date:'d MMM' }}){{ last ? '' : ' → ' }} }</p>
+                    }
+                  }
+                </div>
+              }
+            </div>
             }
           </div>
         </section>
@@ -178,6 +216,15 @@ export class AccountPageComponent implements OnInit {
   edit = { name: '', email: '', address: '', district: '', thana: '' };
   pw = { current: '', next: '' };
   orders: ShopperOrder[] | null = null;
+  loyalty: ShopperLoyalty | null = null;
+  openOrder: string | null = null;
+  details: Record<string, ShopperOrderDetail> = {};
+  toggleOrder(no: string) {
+    if (this.openOrder === no) { this.openOrder = null; return; }
+    this.openOrder = no;
+    if (!this.details[no]) this.account.orderDetail(no).subscribe({ next: d => this.details[no] = d, error: () => { /* the row just stays empty */ } });
+  }
+  pointLabel(t: string) { return ({ EARN: 'Earned', REDEEM: 'Used', RETURN_REVERSE: 'Returned goods', CANCEL_EARN: 'Order cancelled', CANCEL_REDEEM: 'Order cancelled (points back)', ADJUST: 'Shop bonus / correction' } as Record<string, string>)[t] || t; }
   busy = false;
   error = ''; profileMsg = ''; profileOk = false; pwMsg = ''; pwOk = false;
 
@@ -207,6 +254,7 @@ export class AccountPageComponent implements OnInit {
     this.edit = { name: p.name, email: p.email || '', address: p.address || '', district: p.district || '', thana: p.thana || '' };
     this.orders = null;
     this.account.orders().subscribe({ next: (o) => this.orders = o, error: () => this.orders = [] });
+    this.loyalty = null; this.account.loyalty().subscribe({ next: l => this.loyalty = l, error: () => this.loyalty = null });
   }
 
   submitAuth() {

@@ -360,6 +360,7 @@
             </a>
           }
 @if (authService.hasRight('PAGE_STORE_CONFIG')) {            <a [routerLink]="basePath + '/offers'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">🎁</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Offers</span>              }            </a>          }
+@if (authService.hasRight('PAGE_STORE_CONFIG')) {            <a [routerLink]="basePath + '/analytics'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">🔍</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Business Insight</span>              }            </a>          }
           @if (!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')) {
             <a [routerLink]="basePath + '/users'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">👤</span>

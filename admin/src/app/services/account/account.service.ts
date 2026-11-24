@@ -14,6 +14,12 @@ export interface ShopperOrder {
   orderNumber: string; status: string; total: number; discount: number; discountLabel?: string | null;
   date: string; trackingNumber?: string | null; courierName?: string | null;
 }
+export interface ShopperLoyalty { enabled: boolean; verified: boolean; earnPer100?: number; pointValue?: number; minRedeem?: number; balance: number; worth?: number; entries: { type: string; points: number; date: string }[]; }
+export interface ShopperOrderDetail {
+  orderNumber: string; status: string; paymentMethod: string; paymentStatus: string; subtotal: number; discount: number; discountLabel?: string | null; shippingFee: number; total: number;
+  date: string; shippingAddress?: string | null; courierName?: string | null; trackingNumber?: string | null;
+  items: { name: string; quantity: number; price: number; lineTotal: number }[]; timeline: { status: string; date: string }[];
+}
 interface SessionResult { token: string; account: ShopperProfile; }
 
 // The storefront shopper's login for the current shop. The token is kept per shop in localStorage and
@@ -65,6 +71,8 @@ export class AccountService {
     return this.http.post(`${this.apiUrl}/password/reset`, { phone, code, newPassword });
   }
   orders(): Observable<ShopperOrder[]> { return this.http.get<ShopperOrder[]>(`${this.apiUrl}/orders`); }
+  orderDetail(orderNumber: string): Observable<ShopperOrderDetail> { return this.http.get<ShopperOrderDetail>(`${this.apiUrl}/orders/${encodeURIComponent(orderNumber)}`); }
+  loyalty(): Observable<ShopperLoyalty> { return this.http.get<ShopperLoyalty>(`${this.apiUrl}/loyalty`); }
 
   private start(r: SessionResult) {
     try { localStorage.setItem('shop_cust_token:' + this.tenantId, r.token); } catch { /* private mode */ }

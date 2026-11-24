@@ -166,6 +166,50 @@ namespace Ecommerce.Api.Controllers
             return Ok(rows);
         }
 
+        // One order of the logged-in shopper with its items and status timeline. Only their own orders are found.
+        [HttpGet("orders/{orderNumber}")]
+        public async Task<IActionResult> OrderDetail(string orderNumber)
+        {
+            var account = await _auth.ResolveAsync(Request);
+            if (account == null) return Unauthorized(new { message = "Please log in." });
+            var o = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(x => x.OrderNumber == orderNumber && x.CustomerAccountId == account.Id);
+            if (o == null) return NotFound(new { message = "Order not found." });
+            var items = await (from i in _context.OrderItems.AsNoTracking()
+                               join p in _context.Products.IgnoreQueryFilters().AsNoTracking() on i.ProductId equals p.Id
+                               where i.OrderId == o.Id
+                               select new { name = p.Name, quantity = i.Quantity, price = i.Price, lineTotal = i.Price * i.Quantity }).ToListAsync();
+            var timeline = await _context.OrderStatusHistory.AsNoTracking().Where(h => h.OrderId == o.Id).OrderBy(h => h.CreatedDate)
+                .Select(h => new { status = h.Status, date = h.CreatedDate }).ToListAsync();
+            return Ok(new
+            {
+                o.OrderNumber, o.Status, o.PaymentMethod, o.PaymentStatus, o.Subtotal, o.Discount, o.DiscountLabel, o.ShippingFee, o.Total,
+                date = o.CreatedDate, o.ShippingAddress, o.CourierName, o.TrackingNumber, items, timeline
+            });
+        }
+
+        // Loyalty points of the logged-in shopper. Shown only for a VERIFIED phone number: points belong to a phone number,
+        // and an unverified account could simply type someone else's number to see their balance.
+        [HttpGet("loyalty")]
+        public async Task<IActionResult> MyLoyalty()
+        {
+            var account = await _auth.ResolveAsync(Request);
+            if (account == null) return Unauthorized(new { message = "Please log in." });
+            var cfg = await Loyalty.ConfigAsync(_context, account.CompanyId);
+            var phone = PhoneUtil.NormalizeBd(account.Phone);
+            if (!cfg.Enabled || phone == null) return Ok(new { enabled = cfg.Enabled, verified = account.PhoneVerifiedAt != null, balance = 0, entries = Array.Empty<object>() });
+            if (account.PhoneVerifiedAt == null) return Ok(new { enabled = true, verified = false, earnPer100 = cfg.EarnPer100, balance = 0, entries = Array.Empty<object>() });
+            var balance = await Loyalty.BalanceAsync(_context, account.CompanyId, phone);
+            var entries = await _context.Database.SqlQueryRaw<LoyaltyController.LoyaltyEntry>(
+                @"SELECT id AS ""Id"", entry_type AS ""EntryType"", points AS ""Points"", order_id AS ""OrderId"", NULL::text AS ""Note"", created_date AS ""CreatedDate""
+                  FROM loyalty_ledger WHERE company_id = {0} AND phone = {1} ORDER BY id DESC LIMIT 20", account.CompanyId, phone).ToListAsync();
+            return Ok(new
+            {
+                enabled = true, verified = true, earnPer100 = cfg.EarnPer100, pointValue = cfg.PointValue, minRedeem = cfg.MinRedeem,
+                balance, worth = Math.Round(balance * cfg.PointValue, 2),
+                entries = entries.Select(e => new { type = e.EntryType, e.Points, date = e.CreatedDate })
+            });
+        }
+
         // ── SMS one-time codes ───────────────────────────────────────────────────
         // Sent through the shop's own gateway (company setting sms_api_url), same as order SMS.
         // The answer never reveals whether a number has an account.
