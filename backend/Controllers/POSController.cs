@@ -122,7 +122,7 @@ namespace Ecommerce.Api.Controllers
             var clientRef = (dto.ClientRef ?? "").Trim();
             if (clientRef.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(clientRef, "^[A-Za-z0-9_-]{8,64}$"))
                 return BadRequest(new { message = "Invalid sale reference." });
-            await using var tx = (clientRef.Length > 0 || isCredit) ? await _context.Database.BeginTransactionAsync() : null;
+            await using var tx = (clientRef.Length > 0 || isCredit || (dto.RedeemPoints ?? 0) > 0) ? await _context.Database.BeginTransactionAsync() : null;
             if (clientRef.Length > 0)
             {
                 await _context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(hashtext({0}))", $"{companyId.Value}:{clientRef}");
@@ -149,10 +149,29 @@ namespace Ecommerce.Api.Controllers
                 prices.Add(unitPrice);
             }
 
-            if (dto.Discount > subtotal)
+            var discount = dto.Discount;
+            var loyalty = await Loyalty.ConfigAsync(_context, companyId.Value);
+            var loyaltyPhone = loyalty.Enabled ? PhoneUtil.NormalizeBd(dto.CustomerPhone) : null;
+            var redeemPoints = 0;
+            if ((dto.RedeemPoints ?? 0) != 0)
+            {
+                redeemPoints = dto.RedeemPoints!.Value;
+                if (redeemPoints < 0) return BadRequest(new { message = "Points to use cannot be negative." });
+                if (!loyalty.Enabled) return BadRequest(new { message = "Loyalty points are not switched on for this shop." });
+                if (loyaltyPhone == null) return BadRequest(new { message = "Points can only be used with the customer's mobile number." });
+                if (redeemPoints < loyalty.MinRedeem) return BadRequest(new { message = $"Use at least {loyalty.MinRedeem} points at a time." });
+                await Loyalty.LockAsync(_context, companyId.Value, loyaltyPhone);
+                var have = await Loyalty.BalanceAsync(_context, companyId.Value, loyaltyPhone);
+                if (redeemPoints > have) return BadRequest(new { message = $"This customer has only {have} points." });
+                var worth = Math.Round(redeemPoints * loyalty.PointValue, 2);
+                if (dto.Discount + worth > subtotal) return BadRequest(new { message = "The points are worth more than the bill. Use fewer points." });
+                discount = dto.Discount + worth;
+            }
+
+            if (discount > subtotal)
                 return BadRequest(new { message = "Discount cannot exceed the subtotal." });
 
-            var total = Math.Max(subtotal - dto.Discount, 0);
+            var total = Math.Max(subtotal - discount, 0);
             var orderNumber   = $"POS-{DateTime.UtcNow.Ticks}";
             decimal paidNow = 0, due = 0, previousBalance = 0;
             if (isCredit)
@@ -173,7 +192,7 @@ namespace Ecommerce.Api.Controllers
                 "SELECT sp_checkout_order({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15})",
                 companyId.Value, orderNumber, "POS", cashierId,
                 dto.CustomerName ?? "Walk-in Customer", isCredit ? creditPhone! : (dto.CustomerPhone ?? ""),
-                "COMPLETED", subtotal, dto.Discount, total,
+                "COMPLETED", subtotal, discount, total,
                 isCredit ? "CREDIT" : dto.PaymentMethod, paymentStatus,
                 productIds.ToArray(), quantities.ToArray(), prices.ToArray(), cashierId
             ).ToListAsync()).FirstOrDefault();
@@ -197,6 +216,16 @@ namespace Ecommerce.Api.Controllers
                 if (paidNow > 0)
                     _context.CreditLedger.Add(CreditLedger.Entry(companyId.Value, creditPhone!, dto.CustomerName!.Trim(), "PAYMENT", -paidNow, orderId, "cash", "Paid at the time of sale", by));
                 await _context.SaveChangesAsync();
+            }
+            int pointsEarned = 0, pointsBalance = 0;
+            if (loyaltyPhone != null)
+            {
+                var by2 = cashierId > 0 ? cashierId : (int?)null;
+                await Loyalty.LockAsync(_context, companyId.Value, loyaltyPhone);
+                if (redeemPoints > 0) await Loyalty.AddAsync(_context, companyId.Value, loyaltyPhone, "REDEEM", -redeemPoints, orderId, $"Used on {orderNumber}", by2);
+                pointsEarned = Loyalty.PointsFor(loyalty, isCredit ? paidNow : total);
+                if (pointsEarned > 0) await Loyalty.AddAsync(_context, companyId.Value, loyaltyPhone, "EARN", pointsEarned, orderId, $"Sale {orderNumber}", by2);
+                pointsBalance = await Loyalty.BalanceAsync(_context, companyId.Value, loyaltyPhone);
             }
             if (tx != null) await tx.CommitAsync();
 
@@ -224,13 +253,16 @@ namespace Ecommerce.Api.Controllers
                     footer      = settings.GetValueOrDefault("receipt_footer", "Please visit again."),
                     orderNumber,
                     subtotal,
-                    discount    = dto.Discount,
+                    discount    = discount,
                     total,
                     paymentMethod = isCredit ? "CREDIT" : dto.PaymentMethod,
                     amountPaid = isCredit ? paidNow : (decimal?)null,
                     due = isCredit ? due : (decimal?)null,
                     previousBalance = isCredit ? previousBalance : (decimal?)null,
                     balance = isCredit ? previousBalance + due : (decimal?)null,
+                    pointsUsed = redeemPoints > 0 ? redeemPoints : (int?)null,
+                    pointsEarned = loyaltyPhone != null ? pointsEarned : (int?)null,
+                    pointsBalance = loyaltyPhone != null ? pointsBalance : (int?)null,
                     cashierName = User.FindFirst("name")?.Value ?? "Cashier"
                 }
             });

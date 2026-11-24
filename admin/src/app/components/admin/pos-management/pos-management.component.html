@@ -104,7 +104,7 @@
         </div>
         <div class="fg">
           <label>Customer Phone (optional)</label>
-          <input class="inp" [(ngModel)]="customerPhone" (ngModelChange)="lookupOwed()" inputmode="tel" [placeholder]="isCredit ? 'Required for credit: 01XXXXXXXXX' : ''">
+          <input class="inp" [(ngModel)]="customerPhone" (ngModelChange)="lookupOwed(); lookupLoyalty()" inputmode="tel" [placeholder]="isCredit ? 'Required for credit: 01XXXXXXXXX' : ''">
         </div>
         <div class="fg">
           <label>Payment Method</label>
@@ -133,10 +133,12 @@
           <label>Discount (BDT)</label>
           <input type="number" class="inp" [(ngModel)]="discount" min="0">
         </div>
+@if (loyalty) {          <div class="fg" style="border:1px solid rgba(251,191,36,.4);border-radius:8px;padding:8px">            <label>⭐ {{ loyalty.balance }} points (worth ৳{{ loyalty.worth | number:'1.0-0' }}) — use points</label>            <input type="number" class="inp" [(ngModel)]="usePoints" min="0" [max]="loyalty.balance" placeholder="0">            @if (pointsProblem) { <small style="color:#f87171">{{ pointsProblem }}</small> }            @else if (usePoints) { <small>−৳{{ pointsWorth | number:'1.0-0' }} off this bill</small> }          </div>        }
 
         <div class="totals">
           <div class="t-row"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
           <div class="t-row"><span>Discount</span><span>−৳{{ discount || 0 | number:'1.0-0' }}</span></div>
+          @if (pointsWorth) { <div class="t-row"><span>Points used</span><span>−৳{{ pointsWorth | number:'1.0-0' }}</span></div> }
           <div class="t-row grand"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
         </div>
 

@@ -168,6 +168,7 @@ namespace Ecommerce.Api.Controllers
                 Items = lines.Select(l => new OrderReturnItem { OrderItemId = l.Item.Id, ProductId = l.Item.ProductId, Quantity = l.Line.Quantity, UnitPrice = l.UnitRefund, Restocked = l.Line.Restock }).ToList()
             };
             _context.OrderReturns.Add(ret);
+            await Loyalty.ReverseOnReturnAsync(_context, companyId.Value, order.Id, refund, order.Total, returnNumber, _context.CurrentUserId);
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
             await Audit.LogAsync(_context, HttpContext, "order.return", $"{order.OrderNumber}: {returnNumber} refund {refund} via {method}");

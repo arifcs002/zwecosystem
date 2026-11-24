@@ -52,7 +52,7 @@
           @for (item of cartService.cart; track item) {
             <div class="flex items-center gap-3 rounded-2xl border border-gray-100 p-3">
               @if (item.product.image) {
-                <img [src]="item.product.image" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0" alt="">
+                <img loading="lazy" decoding="async" [src]="item.product.image" class="w-14 h-14 rounded-xl object-cover border border-gray-100 flex-shrink-0" alt="">
               }
               @if (!item.product.image) {
                 <div class="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">📦</div>
@@ -86,7 +86,7 @@
               @for (reco of recommendations; track reco) {
                 <div class="flex-shrink-0 w-32 rounded-xl border border-gray-100 p-2.5">
                   @if (reco.imageUrl) {
-                    <img [src]="reco.imageUrl | imgUrl" class="w-full h-20 rounded-lg object-cover border border-gray-100 mb-1.5" alt="">
+                    <img loading="lazy" decoding="async" [src]="reco.imageUrl | imgUrl" class="w-full h-20 rounded-lg object-cover border border-gray-100 mb-1.5" alt="">
                   }
                   @if (!reco.imageUrl) {
                     <div class="w-full h-20 rounded-lg bg-gray-100 flex items-center justify-center text-xl mb-1.5">📦</div>

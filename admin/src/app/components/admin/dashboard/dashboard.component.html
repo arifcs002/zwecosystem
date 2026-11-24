@@ -102,6 +102,7 @@
         </div>
       </div>
     </div>
+@if (money && money.customersOweTotal !== undefined) {      <div class="kpi-grid" style="margin-top:12px">        <div class="kpi-card"><div class="kpi-icon">📒</div><div class="kpi-body">          <div class="kpi-label">Customers owe you</div>          <div class="kpi-value">৳{{ money.customersOweTotal | number:'1.0-0' }}</div>          <div class="kpi-sub">{{ money.customersOwing }} customers (baki)</div></div></div>        <div class="kpi-card"><div class="kpi-icon">🏭</div><div class="kpi-body">          <div class="kpi-label">You owe suppliers</div>          <div class="kpi-value">৳{{ money.weOweSuppliersTotal | number:'1.0-0' }}</div>          <div class="kpi-sub">{{ money.suppliersOwed }} suppliers</div></div></div>        <div class="kpi-card"><div class="kpi-icon">↩️</div><div class="kpi-body">          <div class="kpi-label">Returns, last 30 days</div>          <div class="kpi-value">৳{{ money.returns30Value | number:'1.0-0' }}</div>          <div class="kpi-sub">{{ money.returns30Count }} returns · today {{ money.returnsTodayCount }}</div></div></div>      </div>    }
     <!-- ===== ORDER PIPELINE ===== -->
     <div class="pipeline-section">
       <div class="section-title">🔄 Order Pipeline</div>

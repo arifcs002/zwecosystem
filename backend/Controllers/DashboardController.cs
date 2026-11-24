@@ -47,6 +47,33 @@ namespace Ecommerce.Api.Controllers
             return result;
         }
 
+        // Money that is out in the world: what customers owe us (baki), what we owe suppliers, and returns taken back.
+        [HttpGet("money")]
+        public async Task<IActionResult> Money()
+        {
+            var cid = _context.CompanyId;
+            if (!cid.HasValue) return Ok(new { });
+            var cust = await _context.CreditLedger.AsNoTracking().Where(e => e.CompanyId == cid.Value)
+                .GroupBy(e => e.Phone).Select(g => g.Sum(e => e.Amount)).ToListAsync();
+            var sup = await _context.SupplierLedger.AsNoTracking().Where(e => e.CompanyId == cid.Value)
+                .GroupBy(e => e.SupplierId).Select(g => g.Sum(e => e.Amount)).ToListAsync();
+            var since = DateTime.UtcNow.AddDays(-30);
+            var rets = await _context.OrderReturns.AsNoTracking().Where(r => r.CreatedDate >= since)
+                .Select(r => new { r.RefundAmount, r.CreatedDate }).ToListAsync();
+            var todayStart = DateTime.UtcNow.AddHours(6).Date.AddHours(-6);
+            return Ok(new
+            {
+                customersOweTotal = cust.Where(b => b > 0).Sum(),
+                customersOwing = cust.Count(b => b > 0),
+                weOweSuppliersTotal = sup.Where(b => b > 0).Sum(),
+                suppliersOwed = sup.Count(b => b > 0),
+                returns30Count = rets.Count,
+                returns30Value = rets.Sum(r => r.RefundAmount),
+                returnsTodayCount = rets.Count(r => r.CreatedDate >= todayStart),
+                returnsTodayValue = rets.Where(r => r.CreatedDate >= todayStart).Sum(r => r.RefundAmount)
+            });
+        }
+
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats([FromQuery] int? companyId)
         {

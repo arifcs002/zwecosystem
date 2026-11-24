@@ -469,6 +469,7 @@ namespace Ecommerce.Api.Controllers
             await _context.Database.ExecuteSqlRawAsync("CALL sp_cancel_order({0})", order.Id);
             if (string.Equals(order.PaymentMethod, "CREDIT", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(order.CustomerPhone))
                 await CreditLedger.ReverseOrderAsync(_context, order.CompanyId, order.Id, order.CustomerPhone, order.CustomerName, _context.CurrentUserId, $"Order {order.OrderNumber} cancelled");
+            await Loyalty.ReverseOnCancelAsync(_context, order.CompanyId, order.Id, _context.CurrentUserId);
             await tx.CommitAsync();
             order.Status = "CANCELLED";
             return (true, null);

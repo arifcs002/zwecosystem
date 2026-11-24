@@ -18,7 +18,7 @@ import { Brand } from '../../../../services/brand/brand.service';
           @for (b of brands; track b) {
             <div class="brand" [title]="b.name">
               @if (b.logoUrl) {
-                <img [src]="b.logoUrl | imgUrl" [alt]="b.name">
+                <img [src]="b.logoUrl | imgUrl" [alt]="b.name" loading="lazy" decoding="async">
               }
               @if (!b.logoUrl) {
                 <span class="fallback">{{ b.name.charAt(0) }}</span>

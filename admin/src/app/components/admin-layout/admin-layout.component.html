@@ -174,6 +174,7 @@
               }
             </a>
           }
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
           <a [routerLink]="basePath + '/import-products'" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">📥</span>
             @if (!sidebarCollapsed) {
@@ -198,6 +199,7 @@
               <span class="nav-label">Cash Closing</span>
             }
           </a>
+          }
           @if (authService.hasRight('PAGE_CATEGORIES')) {
             <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🗂️</span>
@@ -238,7 +240,7 @@
               }
             </a>
           }
-          @if (authService.hasRight('PAGE_POS')) {
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
             <a [routerLink]="basePath + '/delivery'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🚚</span>
               @if (!sidebarCollapsed) {
@@ -246,7 +248,7 @@
               }
             </a>
           }
-          @if (authService.hasRight('PAGE_POS')) {
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
             <a [routerLink]="basePath + '/payments'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">💳</span>
               @if (!sidebarCollapsed) {
@@ -254,7 +256,7 @@
               }
             </a>
           }
-          @if (authService.hasRight('PAGE_POS')) {
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
             <a [routerLink]="basePath + '/fraud'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🛡️</span>
               @if (!sidebarCollapsed) {
@@ -262,7 +264,7 @@
               }
             </a>
           }
-          @if (authService.hasRight('PAGE_POS')) {
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
             <a [routerLink]="basePath + '/refunds'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">💸</span>
               @if (!sidebarCollapsed) {
@@ -293,7 +295,7 @@
           }
         </button>
         <div class="nav-group-items" [class.expanded]="isGroupExpanded('admin')">
-          @if (authService.hasRight('PAGE_POS')) {
+          @if (authService.hasRight('PAGE_STORE_CONFIG')) {
             <a [routerLink]="basePath + '/customer-accounts'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">👥</span>
               @if (!sidebarCollapsed) {
@@ -308,7 +310,7 @@
                 <span class="nav-label">Activity &amp; Sessions</span>
               }
             </a>
-            }          @if (authService.hasRight('PAGE_REPORTS')) {
+            }          @if (authService.hasRight('PAGE_STORE_CONFIG')) {
             <a [routerLink]="basePath + '/expenses'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">💸</span>
               @if (!sidebarCollapsed) {
@@ -316,7 +318,7 @@
               }
             </a>
           }
-          @if (authService.hasRight('PAGE_REPORTS')) {
+          @if (authService.hasRight('PAGE_STORE_CONFIG')) {
             <a [routerLink]="basePath + '/profit'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">📈</span>
               @if (!sidebarCollapsed) {
@@ -331,6 +333,15 @@
               }
             </a>
           }
+          @if (authService.hasRight('PAGE_REPORTS')) {
+            <a [routerLink]="basePath + '/downloads'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">⬇️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Download Reports</span>
+              }
+            </a>
+          }
+@if (authService.hasRight('PAGE_STORE_CONFIG')) {            <a [routerLink]="basePath + '/loyalty'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">⭐</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Loyalty Points</span>              }            </a>          }
           @if (!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')) {
             <a [routerLink]="basePath + '/users'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">👤</span>

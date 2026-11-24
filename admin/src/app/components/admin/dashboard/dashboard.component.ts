@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth/auth.service';
 import { DashboardService, DashboardStats, SalesChartPoint, TopProduct, RecentOrder } from '../../../services/dashboard/dashboard.service';
 import { CompanyContextService, CompanyOption } from '../../../services/company-context/company-context.service';
-import { Subject, takeUntil, switchMap, forkJoin } from 'rxjs';
+import { Subject, takeUntil, switchMap, forkJoin, of, catchError } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
@@ -20,6 +20,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   stats: DashboardStats | null = null;
+  money: any = null;
   chartData: SalesChartPoint[] = [];
   topProducts: TopProduct[] = [];
   recentOrders: RecentOrder[] = [];
@@ -59,9 +60,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       chart: this.dashboardService.getSalesChart(companyId, this.chartDays),
       topProducts: this.dashboardService.getTopProducts(companyId, 5),
       recentOrders: this.dashboardService.getRecentOrders(companyId, 10),
+      money: this.dashboardService.getMoney().pipe(catchError(() => of(null))),
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.stats = res.stats;
+        this.money = res.money;
         this.chartData = res.chart;
         this.topProducts = res.topProducts;
         this.recentOrders = res.recentOrders;

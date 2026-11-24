@@ -6,6 +6,7 @@ import { PosService, PosProduct } from '../../../services/pos/pos.service';
 import { OfflinePosService, OfflineSale } from '../../../services/pos/offline-pos.service';
 import { BluetoothPrinterService } from '../../../services/pos/bluetooth-printer.service';
 import { LedgerService } from '../../../services/ledger/ledger.service';
+import { LoyaltyService, LoyaltyLookup } from '../../../services/loyalty/loyalty.service';
 import { SettingsService, CompanySetting } from '../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -48,6 +49,9 @@ export class PosManagementComponent implements OnInit {
   creditLimit = 0;
   customerName = '';
   customerPhone = '';
+  loyalty: LoyaltyLookup | null = null;   // the customer's points (only when the shop switched loyalty on)
+  usePoints: number | null = null;
+  private loyaltyApi = inject(LoyaltyService);
   isLoading = false;
   isCheckingOut = false;
   lastReceipt: any = null;
@@ -91,6 +95,20 @@ export class PosManagementComponent implements OnInit {
       next: d => { this.owed = d.balance; this.creditLimit = d.creditLimit; },
       error: () => { this.owed = 0; }       // 404/400: no account yet
     });
+  }
+  lookupLoyalty() {
+    this.loyalty = null; this.usePoints = null;
+    const phone = this.customerPhone.trim();
+    if (phone.length < 11 || !navigator.onLine) return;
+    this.loyaltyApi.lookup(phone).subscribe({ next: l => { this.loyalty = l.enabled && l.balance > 0 ? l : null; }, error: () => { this.loyalty = null; } });
+  }
+  get pointsWorth(): number { return this.loyalty && this.usePoints ? Math.round(this.usePoints * this.loyalty.pointValue * 100) / 100 : 0; }
+  get pointsProblem(): string {
+    if (!this.loyalty || !this.usePoints) return '';
+    if (this.usePoints > this.loyalty.balance) return 'More than the customer has.';
+    if (this.usePoints < this.loyalty.minRedeem) return 'Use at least ' + this.loyalty.minRedeem + ' points.';
+    if (this.pointsWorth + (this.discount || 0) > this.subtotal) return 'Worth more than the bill.';
+    return '';
   }
   onPaymentChange() { this.amountPaid = null; this.lookupOwed(); }
 
@@ -154,12 +172,16 @@ export class PosManagementComponent implements OnInit {
 
   // ── Totals ───────────────────────────────────────────────────
   get subtotal(): number { return this.cart.reduce((s, l) => s + (this.isBargain ? l.price : l.product.price) * l.quantity, 0); }
-  get total(): number { return Math.max(this.subtotal - (this.discount || 0), 0); }
+  get total(): number { return Math.max(this.subtotal - (this.discount || 0) - this.pointsWorth, 0); }
 
   // ── Checkout ─────────────────────────────────────────────────
   checkout() {
     if (this.cart.length === 0) {
       this.notify.notify({ type: 'warning', title: 'Cart empty', message: 'Scan or add a product first.', ttlMs: 3000 });
+      return;
+    }
+    if (this.pointsProblem) {
+      this.notify.notify({ type: 'warning', title: 'Check the points', message: this.pointsProblem, ttlMs: 4000 });
       return;
     }
     this.isCheckingOut = true;
@@ -183,6 +205,7 @@ export class PosManagementComponent implements OnInit {
     const request = {
       items, discount: this.discount || 0, paymentMethod: this.paymentMethod,
       customerName: this.customerName, customerPhone: this.customerPhone,
+      ...(this.usePoints && this.loyalty ? { redeemPoints: this.usePoints } : {}),
       ...(this.isCredit ? { amountPaid: this.amountPaid || 0 } : {})
     };
     // Every sale gets a unique reference. If the answer is lost (signal drops right after paying) the sale can be
@@ -195,7 +218,7 @@ export class PosManagementComponent implements OnInit {
       subtotal: this.subtotal, discount: this.discount || 0, total: this.total
     };
 
-    if (!navigator.onLine) { void this.saveOffline(clientRef, soldAt, request, snapshot); return; }
+    if (!navigator.onLine) { delete (request as any).redeemPoints; void this.saveOffline(clientRef, soldAt, { ...request }, { ...snapshot, discount: this.discount || 0, total: Math.max(this.subtotal - (this.discount || 0), 0) }); return; }
 
     this.posService.checkout({ ...request, clientRef }).subscribe({
       next: (res) => {
@@ -238,6 +261,7 @@ export class PosManagementComponent implements OnInit {
     this.owed = null;
     this.customerName = '';
     this.customerPhone = '';
+    this.loyalty = null; this.usePoints = null;
   }
 
   private rememberReceiptText(r: any) {

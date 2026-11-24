@@ -81,6 +81,8 @@ export class DashboardService {
     this.selectedCompanyId.set(companyId);
   }
 
+  getMoney(): Observable<any> { return this.http.get<any>(`${this.apiUrl}/money`); }
+
   getStats(companyId?: number): Observable<DashboardStats> {
     const cid = companyId ?? this.getActiveCompanyId();
     const params: any = {};
