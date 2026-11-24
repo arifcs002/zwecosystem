@@ -45,6 +45,8 @@ namespace Ecommerce.Api.Infrastructure
             ["Fraud"] = new(M, M),
             ["Inventory"] = new(M, M),
             ["Loyalty"] = new(S, O, ("GET customers", M)),
+            ["Shifts"] = new(S, S, ("GET history", M), ("GET cashiers", M)),
+            ["SmsCampaigns"] = new(O, O),
             ["Ledger"] = new(S, S, ("POST adjustments", O), ("POST remind-all", O)),
             ["Orders"] = new(S, S, ("PUT courier", M), ("POST cancel", M)),
             ["POS"] = new(S, S),

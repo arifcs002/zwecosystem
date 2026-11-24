@@ -342,6 +342,22 @@
             </a>
           }
 @if (authService.hasRight('PAGE_STORE_CONFIG')) {            <a [routerLink]="basePath + '/loyalty'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">⭐</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Loyalty Points</span>              }            </a>          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/shifts'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🕑</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">My Shift</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_STORE_CONFIG')) {
+            <a [routerLink]="basePath + '/sms-campaigns'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📣</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">SMS Campaigns</span>
+              }
+            </a>
+          }
           @if (!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')) {
             <a [routerLink]="basePath + '/users'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">👤</span>

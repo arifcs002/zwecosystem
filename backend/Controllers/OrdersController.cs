@@ -345,6 +345,18 @@ namespace Ecommerce.Api.Controllers
             {
                 await _context.Database.ExecuteSqlRawAsync(
                     "CALL sp_update_order_status({0},{1},{2})", id, dto.Status, dto.Notes ?? "");
+                // Online orders earn loyalty points once they are completed (POS sales earn at the till).
+                // The unique index on (order, EARN) makes a repeated COMPLETED update harmless.
+                if (string.Equals(dto.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase) && orderEntity.SaleType != "POS")
+                {
+                    var lp = PhoneUtil.NormalizeBd(orderEntity.CustomerPhone);
+                    var lc = await Loyalty.ConfigAsync(_context, orderEntity.CompanyId);
+                    if (lp != null && lc.Enabled)
+                    {
+                        var pts = Loyalty.PointsFor(lc, Math.Max(orderEntity.Total - orderEntity.ShippingFee, 0));
+                        if (pts > 0) await Loyalty.AddAsync(_context, orderEntity.CompanyId, lp, "EARN", pts, orderEntity.Id, $"Order {orderEntity.OrderNumber}", _context.CurrentUserId);
+                    }
+                }
             }
 
             // Record the change on the timeline.
