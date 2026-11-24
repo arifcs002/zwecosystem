@@ -59,6 +59,14 @@ jobs:
           npm run build -- --configuration=production
 
       # These logic tests run TypeScript directly, which needs Node 22+ (the job already uses 22).
+      # A bad nginx.conf makes the website container crash on start and takes the whole site down (this happened once).
+      # `nginx -t` with the real file catches that here, before anything is built or deployed.
+      - name: 🧪 nginx configuration is valid
+        run: |
+          docker run --rm --add-host backend:127.0.0.1 \
+            -v "$PWD/admin/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
+            nginx:alpine nginx -t
+
       - name: 🧪 Browser-side logic tests (receipt printing, CSV import)
         working-directory: admin
         run: npm run test:unit
