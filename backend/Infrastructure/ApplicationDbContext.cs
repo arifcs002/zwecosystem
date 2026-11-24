@@ -59,6 +59,12 @@ namespace Ecommerce.Api.Infrastructure
         public DbSet<CreditLedgerEntry> CreditLedger { get; set; }
         public DbSet<OrderReturn> OrderReturns { get; set; }
         public DbSet<OrderReturnItem> OrderReturnItems { get; set; }
+        public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+        public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
+        public DbSet<SupplierLedgerEntry> SupplierLedger { get; set; }
+        public DbSet<CashClosing> CashClosings { get; set; }
+        public DbSet<StockCount> StockCounts { get; set; }
+        public DbSet<StockCountLine> StockCountLines { get; set; }
 
         private void ResolveTenantAndUser()
         {
@@ -191,6 +197,10 @@ namespace Ecommerce.Api.Infrastructure
             modelBuilder.Entity<PhoneOtpRow>().HasQueryFilter(o => !CompanyId.HasValue || o.CompanyId == CompanyId);
             modelBuilder.Entity<CreditLedgerEntry>().HasQueryFilter(e => !CompanyId.HasValue || e.CompanyId == CompanyId);
             modelBuilder.Entity<OrderReturn>().HasQueryFilter(r => !CompanyId.HasValue || r.CompanyId == CompanyId);
+            modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(x => !CompanyId.HasValue || x.CompanyId == CompanyId);
+            modelBuilder.Entity<SupplierLedgerEntry>().HasQueryFilter(x => !CompanyId.HasValue || x.CompanyId == CompanyId);
+            modelBuilder.Entity<CashClosing>().HasQueryFilter(x => !CompanyId.HasValue || x.CompanyId == CompanyId);
+            modelBuilder.Entity<StockCount>().HasQueryFilter(x => !CompanyId.HasValue || x.CompanyId == CompanyId);
             modelBuilder.Entity<CustomerSession>().HasQueryFilter(s => !CompanyId.HasValue || s.CompanyId == CompanyId);
             modelBuilder.Entity<Collection>().HasQueryFilter(c => c.IsDeleted == 0 && (!CompanyId.HasValue || c.CompanyId == CompanyId));
             modelBuilder.Entity<CollectionItem>().HasQueryFilter(i => !CompanyId.HasValue || i.CompanyId == CompanyId);

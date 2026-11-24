@@ -3,11 +3,14 @@ using Ecommerce.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ecommerce.Api.Controllers
 {
     public record LedgerPaymentDto(string Phone, decimal Amount, string Method, string? Note);
     public record LedgerAdjustDto(string Phone, decimal Amount, string Note);
+    public record RemindDto(string Phone);
+    public record RemindAllDto(decimal MinDue = 1);
 
     /// Shared rules for the customer account ("baki"): one balance per shop + customer phone number.
     public static class CreditLedger
@@ -55,9 +58,13 @@ namespace Ecommerce.Api.Controllers
     public class LedgerController : ControllerBase
     {
         private static readonly string[] Methods = { "cash", "bkash", "nagad", "bank", "other" };
+        private static readonly TimeSpan RemindEvery = TimeSpan.FromHours(6);
+        public const string DefaultTemplate = "Dear {name}, you have ৳{due} due at {shop}. Please pay when you can. Thank you. / প্রিয় {name}, {shop}-এ আপনার ৳{due} বাকি আছে। সুবিধামতো পরিশোধ করুন। ধন্যবাদ।";
         private readonly ApplicationDbContext _context;
+        private readonly ISmsSender _sms;
+        private readonly IMemoryCache _cache;
 
-        public LedgerController(ApplicationDbContext context) { _context = context; }
+        public LedgerController(ApplicationDbContext context, ISmsSender sms, IMemoryCache cache) { _context = context; _sms = sms; _cache = cache; }
 
         // One row per customer with a non-zero or recent balance.
         [HttpGet("customers")]
@@ -166,6 +173,89 @@ namespace Ecommerce.Api.Controllers
             await tx.CommitAsync();
             await Audit.LogAsync(_context, HttpContext, "ledger.adjust", $"{phone}: {dto.Amount:+0.##;-0.##} ({dto.Note})");
             return Ok(new { phone, balance = await CreditLedger.BalanceAsync(_context, companyId.Value, phone) });
+        }
+
+        // ── Reminders ────────────────────────────────────────────────────────────
+        // A polite nudge to a customer who owes money: sent by SMS through the shop's own gateway (sms_api_url),
+        // and/or opened in WhatsApp (a ready-made link the owner taps; nothing is sent automatically for WhatsApp).
+        // Each customer can be reminded at most once every 6 hours.
+
+        private async Task<(string Message, string? Gateway)> ReminderContext(int companyId, string name, decimal due)
+        {
+            var settings = await _context.CompanySettings.AsNoTracking()
+                .Where(x => x.CompanyId == companyId && (x.Key == "sms_api_url" || x.Key == "due_reminder_template" || x.Key == "shop_name" || x.Key == "store_name"))
+                .ToDictionaryAsync(x => x.Key, x => x.Value);
+            string? Get(string k) => settings.TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim() : null;
+            var shop = Get("shop_name") ?? Get("store_name") ?? await _context.Companies.AsNoTracking().Where(c => c.Id == companyId).Select(c => c.Name).FirstOrDefaultAsync() ?? "our shop";
+            var template = Get("due_reminder_template") ?? DefaultTemplate;
+            var message = template.Replace("{name}", string.IsNullOrWhiteSpace(name) ? "customer" : name.Trim()).Replace("{due}", Math.Round(due).ToString("0")).Replace("{shop}", shop);
+            return (message.Length > 400 ? message[..400] : message, Get("sms_api_url"));
+        }
+
+        private bool RecentlyReminded(int companyId, string phone, out TimeSpan ago)
+        {
+            ago = TimeSpan.Zero;
+            if (!_cache.TryGetValue($"due-remind:{companyId}:{phone}", out DateTime at)) return false;
+            ago = DateTime.UtcNow - at;
+            return true;
+        }
+
+        [HttpPost("remind")]
+        public async Task<IActionResult> Remind([FromBody] RemindDto dto)
+        {
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return BadRequest(new { message = "Company context is required." });
+            var phone = PhoneUtil.NormalizeBd(dto.Phone);
+            if (phone == null) return BadRequest(new { message = "Enter a valid Bangladeshi mobile number (01XXXXXXXXX)." });
+
+            var balance = await CreditLedger.BalanceAsync(_context, companyId.Value, phone);
+            if (!await _context.CreditLedger.AnyAsync(e => e.CompanyId == companyId.Value && e.Phone == phone)) return NotFound(new { message = "This customer has no account with you." });
+            if (balance <= 0) return BadRequest(new { message = "This customer doesn't owe anything." });
+
+            var name = await _context.CreditLedger.AsNoTracking().Where(e => e.CompanyId == companyId.Value && e.Phone == phone && e.CustomerName != null).OrderByDescending(e => e.Id).Select(e => e.CustomerName).FirstOrDefaultAsync() ?? "";
+            var (message, gateway) = await ReminderContext(companyId.Value, name, balance);
+            var whatsapp = $"https://wa.me/88{phone}?text={Uri.EscapeDataString(message)}";
+
+            // WhatsApp is only a link, so it is always offered; the 6-hour limit applies to the automatic SMS.
+            var sent = false; string? skipped = null;
+            if (string.IsNullOrWhiteSpace(gateway)) skipped = "no_sms_gateway";
+            else if (RecentlyReminded(companyId.Value, phone, out var ago)) skipped = $"reminded_{(int)ago.TotalMinutes}_minutes_ago";
+            else
+            {
+                sent = await _sms.SendAsync(gateway, phone, message);
+                if (sent) _cache.Set($"due-remind:{companyId.Value}:{phone}", DateTime.UtcNow, RemindEvery);
+                else skipped = "sms_failed";
+            }
+            if (sent) await Audit.LogAsync(_context, HttpContext, "ledger.remind", $"{phone}: ৳{Math.Round(balance)} by SMS");
+            return Ok(new { phone, due = balance, message, sent, skipped, whatsappUrl = whatsapp });
+        }
+
+        // Owner only (it can cost real SMS money): remind everyone who owes at least MinDue. At most 100 per click.
+        [HttpPost("remind-all")]
+        public async Task<IActionResult> RemindAll([FromBody] RemindAllDto dto)
+        {
+            if (!User.IsInRole("companyadmin") && !User.IsInRole("superadmin")) return Forbid();
+            var companyId = _context.CompanyId;
+            if (!companyId.HasValue) return BadRequest(new { message = "Company context is required." });
+            var minDue = dto.MinDue < 1 ? 1 : dto.MinDue;
+
+            var gateway = await _context.CompanySettings.AsNoTracking().Where(x => x.CompanyId == companyId.Value && x.Key == "sms_api_url").Select(x => x.Value).FirstOrDefaultAsync();
+            if (string.IsNullOrWhiteSpace(gateway)) return StatusCode(503, new { message = "Set up your SMS gateway first (Messages & Courier settings)." });
+
+            var owing = (await _context.CreditLedger.AsNoTracking().Where(e => e.CompanyId == companyId.Value).GroupBy(e => e.Phone)
+                .Select(g => new { phone = g.Key, balance = g.Sum(e => e.Amount), name = g.Where(e => e.CustomerName != null).OrderByDescending(e => e.Id).Select(e => e.CustomerName).FirstOrDefault() }).ToListAsync())
+                .Where(x => x.balance >= minDue).OrderByDescending(x => x.balance).ToList();
+
+            int sent = 0, tooSoon = 0, failed = 0;
+            foreach (var c in owing.Take(100))
+            {
+                if (RecentlyReminded(companyId.Value, c.phone, out _)) { tooSoon++; continue; }
+                var (message, _) = await ReminderContext(companyId.Value, c.name ?? "", c.balance);
+                if (await _sms.SendAsync(gateway, c.phone, message)) { sent++; _cache.Set($"due-remind:{companyId.Value}:{c.phone}", DateTime.UtcNow, RemindEvery); }
+                else failed++;
+            }
+            await Audit.LogAsync(_context, HttpContext, "ledger.remind_all", $"min ৳{minDue}: {sent} sent, {tooSoon} too soon, {failed} failed");
+            return Ok(new { customersOwing = owing.Count, sent, tooSoon, failed, notAttempted = Math.Max(0, owing.Count - 100) });
         }
 
         private static string? Clip(string? s, int max)

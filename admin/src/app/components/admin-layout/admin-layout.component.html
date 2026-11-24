@@ -180,6 +180,24 @@
               <span class="nav-label">Import Products</span>
             }
           </a>
+          <a [routerLink]="basePath + '/purchases'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🚚</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Purchases</span>
+            }
+          </a>
+          <a [routerLink]="basePath + '/stock-count'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📋</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Stock Count</span>
+            }
+          </a>
+          <a [routerLink]="basePath + '/cash-closing'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">🧮</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Cash Closing</span>
+            }
+          </a>
           @if (authService.hasRight('PAGE_CATEGORIES')) {
             <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🗂️</span>

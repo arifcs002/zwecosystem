@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LedgerCustomer, LedgerDetail, LedgerService, LedgerSummary } from '../../../services/ledger/ledger.service';
+import { LedgerCustomer, LedgerDetail, LedgerService, LedgerSummary, RemindResult } from '../../../services/ledger/ledger.service';
 import { AuthService } from '../../../services/auth/auth.service';
 
 // "Baki" — who owes the shop how much. Money out (credit sales) and in (payments) are listed per customer;
@@ -29,6 +29,14 @@ import { AuthService } from '../../../services/auth/auth.service';
     </div>
   }
 
+  @if (isOwner && summary && summary.totalDue > 0) {
+    <div class="table-card" style="padding:12px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13.5px">Send an SMS reminder to everyone who owes at least ৳</span>
+      <input class="form-input" type="number" min="1" style="width:110px" [(ngModel)]="bulkMin" name="bulk">
+      <button class="btn-secondary" type="button" (click)="remindAll()" [disabled]="busy">🔔 Remind all</button>
+      @if (bulkMsg) { <span role="status" style="font-size:13px;opacity:.85">{{ bulkMsg }}</span> }
+    </div>
+  }
   @if (errorMsg) {
     <div class="alert-error" role="alert">❌ {{ errorMsg }}</div>
   }
@@ -79,6 +87,21 @@ import { AuthService } from '../../../services/auth/auth.service';
           <input class="form-input" style="grid-column:1/-1" [(ngModel)]="payNote" name="note" maxlength="300" placeholder="Note / TrxID (optional)">
           <button class="btn-primary" style="grid-column:1/-1" type="submit" [disabled]="busy || !payAmount || payAmount <= 0">{{ busy ? 'Saving…' : 'Receive payment' }}</button>
         </form>
+        @if (d.balance > 0) {
+          <div style="margin:10px 0;padding:10px;border-radius:10px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25)">
+            <button class="btn-secondary" type="button" (click)="remind()" [disabled]="busy">🔔 Remind about the ৳{{ d.balance | number:'1.0-0' }}</button>
+            @if (reminder; as r) {
+              <div role="status" style="margin-top:8px;font-size:13px">
+                @if (r.sent) { <div style="color:#34d399">✓ SMS sent to {{ r.phone }}.</div> }
+                @if (!r.sent && r.skipped === 'no_sms_gateway') { <div style="opacity:.75">SMS isn't set up for this shop (Messages &amp; Courier), but you can send it by WhatsApp:</div> }
+                @if (!r.sent && r.skipped && r.skipped.startsWith('reminded_')) { <div style="opacity:.75">They were already reminded recently, so no new SMS was sent. WhatsApp:</div> }
+                @if (!r.sent && r.skipped === 'sms_failed') { <div style="color:#f87171">The SMS gateway didn't accept the message. WhatsApp:</div> }
+                <a [href]="r.whatsappUrl" target="_blank" rel="noopener noreferrer" style="color:#34d399;font-weight:700;text-decoration:underline">💬 Open in WhatsApp</a>
+                <div style="opacity:.6;font-size:12px;margin-top:4px">“{{ r.message }}”</div>
+              </div>
+            }
+          </div>
+        }
         @if (isOwner) {
           <details style="margin:8px 0">
             <summary style="cursor:pointer;font-size:13px;opacity:.8">Correct this account (owner only)</summary>
@@ -124,6 +147,26 @@ export class CustomerLedgerComponent implements OnInit {
   errorMsg = ''; okMsg = '';
   payAmount: number | null = null; payMethod = 'cash'; payNote = '';
   adjAmount: number | null = null; adjNote = '';
+  reminder: RemindResult | null = null; bulkMin = 500; bulkMsg = '';
+
+  remind() {
+    if (!this.detail || this.busy) return;
+    this.busy = true; this.errorMsg = ''; this.reminder = null;
+    this.ledger.remind(this.detail.phone).subscribe({
+      next: r => { this.busy = false; this.reminder = r; },
+      error: e => { this.busy = false; this.errorMsg = e?.error?.message || 'Could not prepare the reminder.'; }
+    });
+  }
+
+  remindAll() {
+    if (this.busy || !this.bulkMin || this.bulkMin < 1) return;
+    if (!confirm(`Send an SMS to every customer who owes ৳${this.bulkMin} or more? Your SMS provider will charge for each message.`)) return;
+    this.busy = true; this.errorMsg = ''; this.bulkMsg = '';
+    this.ledger.remindAll(this.bulkMin).subscribe({
+      next: r => { this.busy = false; this.bulkMsg = `${r.sent} sent, ${r.tooSoon} skipped (reminded recently)${r.failed ? ', ' + r.failed + ' failed' : ''}${r.notAttempted ? ', ' + r.notAttempted + ' more not attempted (max 100 per click)' : ''}.`; },
+      error: e => { this.busy = false; this.errorMsg = e?.status === 503 ? 'Set up your SMS gateway first (Messages & Courier).' : (e?.error?.message || 'Could not send the reminders.'); }
+    });
+  }
 
   get isOwner() { return this.auth.isCompanyAdmin() || this.auth.isSuperAdmin(); }
 

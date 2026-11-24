@@ -8,7 +8,7 @@ namespace Ecommerce.Api.Controllers
 {
     public record ReturnLineDto(int OrderItemId, int Quantity, bool Restock = true);
     public record ExchangeLineDto(int ProductId, int Quantity);
-    public record ReturnCreateDto(int OrderId, List<ReturnLineDto> Items, string RefundMethod, string? Reason, List<ExchangeLineDto>? ExchangeItems = null);
+    public record ReturnCreateDto(int OrderId, List<ReturnLineDto> Items, string? RefundMethod, string? Reason, List<ExchangeLineDto>? ExchangeItems = null);
 
     // Customer brings goods back: stock goes back on the shelf (if the item is resellable), the customer is
     // paid back in cash or has it taken off what they owe, or swaps it for other goods.
