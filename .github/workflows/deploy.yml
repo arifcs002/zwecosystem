@@ -91,7 +91,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME_BACKEND }}
+          tags: |
+            ${{ env.IMAGE_NAME_BACKEND }}
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -101,7 +103,9 @@ jobs:
           context: ./admin
           file: ./admin/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME_FRONTEND }}
+          tags: |
+            ${{ env.IMAGE_NAME_FRONTEND }}
+            ghcr.io/${{ github.repository }}/admin-dashboard:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -166,6 +170,7 @@ jobs:
                 - ASPNETCORE_ENVIRONMENT=Production
                 - UPLOADS_DIR=/data/uploads
                 - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+                - STARTUP_STRICT=${STARTUP_STRICT:-false}
               volumes:
                 - /data/apps/textlog:/data/apps/textlog
                 - /data/apps/uploads:/data/uploads
@@ -251,6 +256,15 @@ jobs:
           source: "docker-compose.prod.yml"
           target: "/data/apps/zwecosystem/"
 
+      - name: 📁 Copy operations scripts to VPS (rollback, restore, nightly backup, smoke test)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "scripts/rollback.sh,scripts/restore-db.sh,scripts/nightly-backup.sh,scripts/smoke-test.sh"
+          target: "/data/apps/zwecosystem/"
+
       - name: 🚀 Deploy Containers via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -306,6 +320,9 @@ jobs:
             set +e   # the backup guard above needed -e; nothing below should abort on a harmless non-zero exit
 
             # Pull latest pre-built images and restart containers
+            for img in backend admin-dashboard; do
+              docker tag ghcr.io/${{ github.repository }}/$img:latest ghcr.io/${{ github.repository }}/$img:previous 2>/dev/null && echo "Saved current $img as :previous" || true
+            done
             docker compose pull
             docker compose up -d --remove-orphans
 
@@ -364,3 +381,12 @@ jobs:
             echo "4. Local Host Nginx Configuration:"
             if [ -f /etc/nginx/nginx.conf ]; then cat /etc/nginx/nginx.conf; fi
             if [ -d /etc/nginx/conf.d ]; then ls -la /etc/nginx/conf.d/; fi
+
+      - name: ✅ Smoke test the live site
+        # Checks the real site answers, the API reaches its database, private endpoints stay private and the headers are
+        # right. If this goes red the release is live but broken: on the VPS run `bash scripts/rollback.sh`.
+        run: |
+          bash scripts/smoke-test.sh http://auleco.com zairasworld || {
+            echo "::error::Smoke test failed. To go back to the previous release, SSH to the VPS: cd /data/apps/zwecosystem && bash scripts/rollback.sh"
+            exit 1
+          }

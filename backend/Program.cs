@@ -123,6 +123,17 @@ var jwtSecret =
 Console.WriteLine($"--> DB Host: {connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host"))?.Split('=').LastOrDefault() ?? "unknown"}");
 Console.WriteLine($"--> JWT Secret configured: {(jwtSecret.Length >= 16 ? "YES (" + jwtSecret.Length + " chars)" : "TOO SHORT - minimum 32 chars required")}");
 
+// Configuration safety check. Unsafe settings are printed loudly; with STARTUP_STRICT=true they also stop the server
+// from starting (switch that on once the production secrets have been checked, so a deploy can never boot with a weak key).
+{
+    var (fatal, warnings) = Ecommerce.Api.Infrastructure.StartupChecks.Evaluate(
+        builder.Environment.EnvironmentName, jwtSecret, connectionString, Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING"));
+    foreach (var w in warnings) Console.WriteLine($"--> CONFIG WARNING: {w}");
+    var strict = string.Equals(Environment.GetEnvironmentVariable("STARTUP_STRICT"), "true", StringComparison.OrdinalIgnoreCase);
+    foreach (var f in fatal) Console.WriteLine($"--> CONFIG PROBLEM: {f}{(strict ? "" : " (not blocking: STARTUP_STRICT is not true)")}");
+    if (strict && fatal.Count > 0) throw new InvalidOperationException("Unsafe production configuration: " + string.Join(" | ", fatal));
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString)
            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
@@ -369,6 +380,16 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check for the load balancer, the deploy smoke test and uptime monitors. Public and cheap; reveals nothing but up/down.
+app.MapGet("/api/health", async (ApplicationDbContext db) =>
+{
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    var dbOk = false;
+    try { dbOk = await db.Database.CanConnectAsync(cts.Token); } catch { /* reported as down below */ }
+    var body = new { status = dbOk ? "ok" : "down", database = dbOk, time = DateTime.UtcNow };
+    return dbOk ? Results.Ok(body) : Results.Json(body, statusCode: 503);
+}).AllowAnonymous();
 
 // Apply DB Migrations/Creation and Seeding automatically
 using (var scope = app.Services.CreateScope())

@@ -1,5 +1,7 @@
 # HTTPS and off-server backups — what is ready and what is still needed
 
+> The step-by-step launch guide (checklist, Google Drive backup, HTTPS comparison, rollback/restore scripts) is now in **docs/LAUNCH.md**. This file keeps the background.
+
 Nothing in this file has been run against the production VPS. Do it in a quiet hour and keep the SSH session open.
 
 ## 1. Off-server backup copy (ready, switched off)
