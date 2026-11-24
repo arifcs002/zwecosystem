@@ -141,6 +141,7 @@ namespace Ecommerce.Api.Controllers
                 if (product == null) return BadRequest(new { message = $"Product ID {item.ProductId} not found." });
                 if (!dto.Offline && product.StockQuantity < item.Quantity)
                     return BadRequest(new { message = $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}" });
+if (!dto.Offline)                {                    var expiredUnits = await Batches.ExpiredQtyAsync(_context, companyId.Value, item.ProductId);                    if (expiredUnits > 0 && product.StockQuantity - expiredUnits < item.Quantity)                        return BadRequest(new { message = $"'{product.Name}' has {expiredUnits} expired units on the shelf. Write them off first (Expiry page)." });                }
 
                 var unitPrice = (bargainAllowed && item.Price.HasValue && item.Price.Value > 0) ? item.Price.Value : product.Price;
                 subtotal += unitPrice * item.Quantity;
@@ -166,6 +167,18 @@ namespace Ecommerce.Api.Controllers
                 var worth = Math.Round(redeemPoints * loyalty.PointValue, 2);
                 if (dto.Discount + worth > subtotal) return BadRequest(new { message = "The points are worth more than the bill. Use fewer points." });
                 discount = dto.Discount + worth;
+            }
+
+            // Automatic offers (buy X get Y, bundles, quantity discounts). Not for offline-synced sales: the customer
+            // already paid the price the till showed, so changing it afterwards would break the cash count.
+            var offerLabels = new List<string>();
+            if (!dto.Offline)
+            {
+                var offer = OfferEngine.Compute(await OfferEngine.LoadActiveAsync(_context, companyId.Value),
+                    productIds.Select((pid, i) => new CartLine(pid, quantities[i], prices[i])));
+                var room = Math.Max(subtotal - discount, 0);
+                var applied = Math.Min(offer.Discount, room);
+                if (applied > 0) { discount += applied; offerLabels = offer.Labels; }
             }
 
             if (discount > subtotal)
@@ -197,6 +210,9 @@ namespace Ecommerce.Api.Controllers
                 productIds.ToArray(), quantities.ToArray(), prices.ToArray(), cashierId
             ).ToListAsync()).FirstOrDefault();
 
+for (var bi = 0; bi < productIds.Count; bi++) await Batches.ConsumeAsync(_context, companyId.Value, productIds[bi], quantities[bi]);
+            if (offerLabels.Count > 0)
+                await _context.Database.ExecuteSqlRawAsync("UPDATE orders SET discount_label = {0} WHERE id = {1}", "Offer: " + string.Join(", ", offerLabels), orderId);
             if (clientRef.Length > 0 || dto.SoldAt.HasValue)
             {
                 // Report the sale on the day it really happened (clamped: never in the future, never older than 30 days).

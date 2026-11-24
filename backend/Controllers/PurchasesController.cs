@@ -8,7 +8,7 @@ namespace Ecommerce.Api.Controllers
 {
     public record PoLineDto(int ProductId, int Quantity, decimal UnitCost);
     public record PoCreateDto(int SupplierId, List<PoLineDto> Items, string? Note);
-    public record PoReceiveLineDto(int ItemId, int Quantity);
+    public record PoReceiveLineDto(int ItemId, int Quantity, DateTime? ExpiryDate = null, string? BatchNo = null);
     public record PoReceiveDto(List<PoReceiveLineDto> Lines, decimal? PaidNow, string? Method, bool UpdateCost = false);
     public record SupplierPaymentDto(int SupplierId, decimal Amount, string Method, string? Note);
     public record SupplierAdjustDto(int SupplierId, decimal Amount, string Note);
@@ -123,6 +123,8 @@ namespace Ecommerce.Api.Controllers
                 await _context.Database.SqlQueryRaw<int>("SELECT sp_inventory_move({0},{1},{2},{3},{4},{5},{6},{7})",
                     companyId.Value, item.ProductId, l.Quantity, "PURCHASE", $"Purchase {po.PoNumber}", item.UnitCost, po.PoNumber, _context.CurrentUserId ?? 0).ToListAsync();
                 item.ReceivedQty += l.Quantity;
+                if (l.ExpiryDate != null)
+                    await _context.Database.ExecuteSqlRawAsync("INSERT INTO product_batches (company_id, product_id, batch_no, expiry_date, quantity, received_qty) VALUES ({0},{1},{2}::text,{3}::date,{4},{4})", companyId.Value, item.ProductId, Clip(l.BatchNo, 40) ?? po.PoNumber, l.ExpiryDate.Value.Date.D(), l.Quantity);
                 value += l.Quantity * item.UnitCost;
                 if (dto.UpdateCost && item.UnitCost > 0)      // opt-in: it changes the cost used by profit reports
                     await _context.Database.ExecuteSqlRawAsync("UPDATE products SET wholesale_price = {0} WHERE id = {1} AND company_id = {2}", item.UnitCost, item.ProductId, companyId.Value);

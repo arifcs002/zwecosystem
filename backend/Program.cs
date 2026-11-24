@@ -25,6 +25,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers(o => o.Filters.Add<Ecommerce.Api.Infrastructure.AccessPolicyFilter>());
+if (!builder.Environment.IsEnvironment("Testing")) builder.Services.AddHostedService<Ecommerce.Api.Infrastructure.DailySummaryService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<IFileTextLogger, FileTextLogger>();
 builder.Services.AddHttpClient();

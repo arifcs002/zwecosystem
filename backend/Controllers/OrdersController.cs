@@ -112,6 +112,7 @@ namespace Ecommerce.Api.Controllers
                 if (product == null) return BadRequest(new { message = $"A product in your cart is no longer available." });
                 if (product.StockQuantity < item.Quantity)
                     return BadRequest(new { message = $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}" });
+var expiredUnits = await Batches.ExpiredQtyAsync(_context, companyId.Value, item.ProductId);                if (expiredUnits > 0 && product.StockQuantity - expiredUnits < item.Quantity)                    return BadRequest(new { message = $"'{product.Name}' is currently not available." });
 
                 subtotal += product.Price * item.Quantity;
                 productIds.Add(item.ProductId);
@@ -149,8 +150,12 @@ namespace Ecommerce.Api.Controllers
                 }
             }
 
+            // Automatic offers compete with the group discount and coupon the same way: the shopper gets the largest one.
+            var offerResult = OfferEngine.Compute(await OfferEngine.LoadActiveAsync(_context, companyId.Value),
+                productIds.Select((pid, i) => new CartLine(pid, quantities[i], prices[i])));
             decimal discount = groupDiscount;
             string? discountLabel = groupLabel;
+            if (offerResult.Discount > discount) { discount = offerResult.Discount; discountLabel = "Offer: " + string.Join(", ", offerResult.Labels); groupDiscount = discount; }
             Coupon? coupon = null;      // set only when the coupon is the discount applied (and was redeemed)
             if (!string.IsNullOrWhiteSpace(dto.CouponCode))
             {
@@ -199,6 +204,7 @@ namespace Ecommerce.Api.Controllers
                 throw;
             }
 
+for (var bi = 0; bi < productIds.Count; bi++) await Batches.ConsumeAsync(_context, companyId.Value, productIds[bi], quantities[bi]);
             var couponCodeUsed = coupon?.Code;
             var accountId = account?.Id;
             if (discount > 0 || accountId != null)

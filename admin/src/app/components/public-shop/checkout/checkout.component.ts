@@ -2,6 +2,8 @@
 import { TranslatePipe } from '../../../i18n/translate.pipe';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CartService } from '../../../services/cart/cart.service';
 import { OrderService } from '../../../services/order/order.service';
@@ -33,6 +35,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private storefront = inject(StorefrontService);
   private orderService = inject(OrderService);
   private couponService = inject(CouponService);
+  private http = inject(HttpClient);
   private abandoned = inject(AbandonedCartService);
   account = inject(AccountService);
   private tracking = inject(TrackingService);
@@ -53,6 +56,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   couponInput = '';
   appliedCoupon = '';
   couponDiscount = 0;
+  offerDiscount = 0; offerLabel = '';
   couponMessage = '';
   couponError = false;
   couponBusy = false;
@@ -77,6 +81,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.account.use(data.company.id);
         if (this.cart.cart.length) this.tracking.initiateCheckout(this.trackItems(), this.subtotal);
         this.prefillFromAccount();
+        this.refreshOffers();
         this.scheduleCapture();
       },
       error: () => { /* header/footer just stay empty; the form still works */ }
@@ -116,9 +121,18 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (!g || g.discountPercent <= 0) return 0;
     return Math.min(Math.round(this.subtotal * g.discountPercent) / 100, this.subtotal);
   }
-  get discountApplied(): number { return Math.max(this.couponDiscount, this.memberDiscount); }
+  // Automatic shop offers (buy X get Y, bundles...) compete with the coupon and member discount: the largest wins.
+  refreshOffers() {
+    if (!this.cart.cart.length) { this.offerDiscount = 0; this.offerLabel = ''; return; }
+    this.http.post<{ discount: number; labels: string[] }>(`${environment.apiUrl}/offers/public/preview`, { items: this.cart.cart.map(c => ({ productId: c.product.id, quantity: c.quantity })) }).subscribe({
+      next: r => { this.offerDiscount = r.discount; this.offerLabel = r.labels.join(', '); },
+      error: () => { this.offerDiscount = 0; this.offerLabel = ''; }
+    });
+  }
+  get discountApplied(): number { return Math.max(this.couponDiscount, this.memberDiscount, this.offerDiscount); }
   get discountLabel(): string {
     if (this.discountApplied <= 0) return '';
+    if (this.offerDiscount > 0 && this.offerDiscount >= this.couponDiscount && this.offerDiscount >= this.memberDiscount) return this.offerLabel;
     return this.couponDiscount >= this.memberDiscount && this.appliedCoupon
       ? this.appliedCoupon : (this.account.profile?.group?.name || 'Member');
   }

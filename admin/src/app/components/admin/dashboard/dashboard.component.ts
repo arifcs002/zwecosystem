@@ -5,6 +5,9 @@ import { AuthService } from '../../../services/auth/auth.service';
 import { DashboardService, DashboardStats, SalesChartPoint, TopProduct, RecentOrder } from '../../../services/dashboard/dashboard.service';
 import { CompanyContextService, CompanyOption } from '../../../services/company-context/company-context.service';
 import { Subject, takeUntil, switchMap, forkJoin, of, catchError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+import { SettingsService } from '../../../services/settings/settings.service';
 
 @Component({
     selector: 'app-dashboard',
@@ -21,6 +24,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   stats: DashboardStats | null = null;
   money: any = null;
+  alerts: { level: string; text: string; link: string }[] = [];
+  private http = inject(HttpClient);
+  private settingsApi = inject(SettingsService);
+  sumEnabled = false; sumPhone = ''; sumMsg = '';
+  get isOwner() { return this.authService.hasRight('PAGE_STORE_CONFIG'); }
+  alertName(link: string) { return ({ inventory: 'Inventory', reorder: 'What to Reorder', expiry: 'Expiry Dates', ledger: 'Customer Accounts', 'cash-closing': 'Cash Closing', shifts: 'My Shift' } as Record<string, string>)[link] || ''; }
+  loadSummarySettings() {
+    this.settingsApi.getSettings().subscribe({ next: s => { this.sumEnabled = ['1', 'true'].includes(s.find(x => x.key === 'daily_summary_enabled')?.value || ''); this.sumPhone = s.find(x => x.key === 'daily_summary_phone')?.value || ''; }, error: () => { /* leave defaults */ } });
+  }
+  saveSummary() {
+    this.sumMsg = '';
+    this.settingsApi.updateSettings([{ key: 'daily_summary_enabled', value: this.sumEnabled ? '1' : '0', groupName: 'SUMMARY' }, { key: 'daily_summary_phone', value: this.sumPhone.trim(), groupName: 'SUMMARY' }]).subscribe({ next: () => this.sumMsg = 'Saved.', error: () => this.sumMsg = 'Could not save.' });
+  }
+  testSummary() {
+    this.sumMsg = 'Sending…';
+    this.http.post<{ sent: boolean; message: string }>(`${environment.apiUrl}/alerts/summary/test`, {}).subscribe({ next: r => this.sumMsg = r.sent ? 'Sent: ' + r.message : 'The SMS gateway did not accept it.', error: e => this.sumMsg = e?.error?.message || 'Could not send.' });
+  }
   chartData: SalesChartPoint[] = [];
   topProducts: TopProduct[] = [];
   recentOrders: RecentOrder[] = [];
@@ -32,6 +52,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   maxChartRevenue = 1;
 
   ngOnInit() {
+    if (this.isOwner) this.loadSummarySettings();
     if (this.authService.isSuperAdmin() && !this.companyContext.isLoaded()) {
       this.companyContext.loadCompanies().pipe(takeUntil(this.destroy$)).subscribe({
         next: () => this.loadDashboard(),
@@ -61,10 +82,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       topProducts: this.dashboardService.getTopProducts(companyId, 5),
       recentOrders: this.dashboardService.getRecentOrders(companyId, 10),
       money: this.dashboardService.getMoney().pipe(catchError(() => of(null))),
+      alerts: this.http.get<{ alerts: any[] }>(`${environment.apiUrl}/alerts`).pipe(catchError(() => of(null))),
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.stats = res.stats;
         this.money = res.money;
+        this.alerts = (res as any).alerts?.alerts || [];
         this.chartData = res.chart;
         this.topProducts = res.topProducts;
         this.recentOrders = res.recentOrders;

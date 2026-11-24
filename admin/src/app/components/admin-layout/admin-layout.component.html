@@ -200,6 +200,7 @@
             }
           </a>
           }
+@if (authService.hasRight('PAGE_PRODUCTS')) {            <a [routerLink]="basePath + '/expiry'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">⏳</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Expiry Dates</span>              }            </a>            <a [routerLink]="basePath + '/reorder'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">🛒</span>              @if (!sidebarCollapsed) {                <span class="nav-label">What to Reorder</span>              }            </a>          }
           @if (authService.hasRight('PAGE_CATEGORIES')) {
             <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">🗂️</span>
@@ -358,6 +359,7 @@
               }
             </a>
           }
+@if (authService.hasRight('PAGE_STORE_CONFIG')) {            <a [routerLink]="basePath + '/offers'" routerLinkActive="active" class="nav-item">              <span class="nav-icon">🎁</span>              @if (!sidebarCollapsed) {                <span class="nav-label">Offers</span>              }            </a>          }
           @if (!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')) {
             <a [routerLink]="basePath + '/users'" routerLinkActive="active" class="nav-item">
               <span class="nav-icon">👤</span>

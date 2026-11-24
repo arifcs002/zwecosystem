@@ -139,6 +139,7 @@
           <div class="t-row"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
           <div class="t-row"><span>Discount</span><span>−৳{{ discount || 0 | number:'1.0-0' }}</span></div>
           @if (pointsWorth) { <div class="t-row"><span>Points used</span><span>−৳{{ pointsWorth | number:'1.0-0' }}</span></div> }
+          @if (offerDiscount > 0) { <div class="t-row"><span>Offer: {{ offerLabels.join(", ") }}</span><span>−৳{{ offerDiscount | number:'1.0-0' }}</span></div> }
           <div class="t-row grand"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
         </div>
 

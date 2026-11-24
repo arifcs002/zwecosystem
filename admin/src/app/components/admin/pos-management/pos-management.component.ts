@@ -1,7 +1,8 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DoCheck, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { PosService, PosProduct } from '../../../services/pos/pos.service';
 import { OfflinePosService, OfflineSale } from '../../../services/pos/offline-pos.service';
 import { BluetoothPrinterService } from '../../../services/pos/bluetooth-printer.service';
@@ -28,7 +29,7 @@ const RECEIPT_TEXT_KEY = 'pos_receipt_texts';
     templateUrl: './pos-management.component.html',
     styleUrl: './pos-management.component.css'
 })
-export class PosManagementComponent implements OnInit {
+export class PosManagementComponent implements OnInit, DoCheck {
   private posService = inject(PosService);
   private settingsService = inject(SettingsService);
   private notify = inject(GlobalNotificationService);
@@ -52,6 +53,21 @@ export class PosManagementComponent implements OnInit {
   loyalty: LoyaltyLookup | null = null;   // the customer's points (only when the shop switched loyalty on)
   usePoints: number | null = null;
   private loyaltyApi = inject(LoyaltyService);
+  private http = inject(HttpClient);
+  offerDiscount = 0; offerLabels: string[] = [];
+  private offerSig = '';
+
+  // Shop offers (buy X get Y free, bundles...) are worked out by the server whenever the cart changes.
+  ngDoCheck() {
+    const sig = this.cart.map(l => l.product.id + ':' + l.quantity + ':' + (this.isBargain ? l.price : l.product.price)).join('|');
+    if (sig === this.offerSig) return;
+    this.offerSig = sig;
+    if (!this.cart.length || !navigator.onLine) { this.offerDiscount = 0; this.offerLabels = []; return; }
+    this.http.post<{ discount: number; labels: string[] }>(`${environment.apiUrl}/offers/preview`, { items: this.cart.map(l => ({ productId: l.product.id, quantity: l.quantity, price: this.isBargain ? l.price : null })) }).subscribe({
+      next: r => { if (sig === this.offerSig) { this.offerDiscount = r.discount; this.offerLabels = r.labels; } },
+      error: () => { this.offerDiscount = 0; this.offerLabels = []; }
+    });
+  }
   isLoading = false;
   isCheckingOut = false;
   lastReceipt: any = null;
@@ -172,7 +188,7 @@ export class PosManagementComponent implements OnInit {
 
   // ── Totals ───────────────────────────────────────────────────
   get subtotal(): number { return this.cart.reduce((s, l) => s + (this.isBargain ? l.price : l.product.price) * l.quantity, 0); }
-  get total(): number { return Math.max(this.subtotal - (this.discount || 0) - this.pointsWorth, 0); }
+  get total(): number { return Math.max(this.subtotal - (this.discount || 0) - this.pointsWorth - Math.min(this.offerDiscount, Math.max(this.subtotal - (this.discount || 0) - this.pointsWorth, 0)), 0); }
 
   // ── Checkout ─────────────────────────────────────────────────
   checkout() {
