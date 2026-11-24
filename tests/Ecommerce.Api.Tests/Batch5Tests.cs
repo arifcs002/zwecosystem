@@ -49,9 +49,10 @@ public class Batch5Tests(ApiFixture f)
     [Fact]
     public async Task Upload_IsStoredOnDisk_AndServedFromThere()
     {
-        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(20, 20);
-        using var ms = new MemoryStream();
-        await SixLabors.ImageSharp.ImageExtensions.SaveAsPngAsync(img, ms);
+        using var bmp = new SkiaSharp.SKBitmap(20, 20);
+        using var skImage = SkiaSharp.SKImage.FromBitmap(bmp);
+        using var png = skImage.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        using var ms = new MemoryStream(png.ToArray());
         var form = new MultipartFormDataContent { { new ByteArrayContent(ms.ToArray()), "file", "a.png" } };
         var r = await f.A.Admin.PostAsync("/api/upload?folder=product", form);
         await Shop.Ok(r, "upload");

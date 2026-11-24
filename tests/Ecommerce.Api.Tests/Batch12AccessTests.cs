@@ -26,7 +26,7 @@ public class Batch12AccessTests(ApiFixture f)
 
     private async Task<HttpClient> StaffClient(Shop s, string role)
     {
-        var email = $"{role}-{Guid.NewGuid():N}".Substring(0, 18) + "@t.test";
+        var email = $"{role}-{Guid.NewGuid():N}@t.test";
         var make = await s.Admin.PostAsJsonAsync("/api/users", new { companyId = s.CompanyId, email, password = "Passw0rd!x", firstName = "T", lastName = role, role, isActive = true });
         if (make.StatusCode == HttpStatusCode.Forbidden) throw new InvalidOperationException("create user blocked: " + await make.Content.ReadAsStringAsync());
         await Shop.Ok(make, "create " + role);

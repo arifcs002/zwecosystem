@@ -13,7 +13,7 @@ public class Batch13Tests(ApiFixture f)
 
     private async Task<HttpClient> StaffClient(Shop s, string role)
     {
-        var email = $"{role}-{Guid.NewGuid():N}".Substring(0, 18) + "@t.test";
+        var email = $"{role}-{Guid.NewGuid():N}@t.test";
         await Shop.Ok(await s.Admin.PostAsJsonAsync("/api/users", new { companyId = s.CompanyId, email, password = "Passw0rd!x", firstName = "Cash", lastName = role, role, isActive = true }), "create " + role);
         var c = f.NewClient();
         var r = await c.PostAsJsonAsync("/api/auth/login", new { email, password = "Passw0rd!x", loginContext = s.Slug });
