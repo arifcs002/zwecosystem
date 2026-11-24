@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PosService, PosProduct } from '../../../services/pos/pos.service';
 import { OfflinePosService, OfflineSale } from '../../../services/pos/offline-pos.service';
 import { BluetoothPrinterService } from '../../../services/pos/bluetooth-printer.service';
+import { LedgerService } from '../../../services/ledger/ledger.service';
 import { SettingsService, CompanySetting } from '../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 import { AuthService } from '../../../services/auth/auth.service';
@@ -34,6 +35,7 @@ export class PosManagementComponent implements OnInit {
   authService = inject(AuthService);
   offline = inject(OfflinePosService);
   printer = inject(BluetoothPrinterService);
+  private ledger = inject(LedgerService);
 
   @ViewChild(CameraScannerComponent) scanner?: CameraScannerComponent;
 
@@ -42,6 +44,9 @@ export class PosManagementComponent implements OnInit {
   cart: CartLine[] = [];
   discount = 0;
   paymentMethod = 'CASH';
+  amountPaid: number | null = null;   // credit sales: paid now
+  owed: number | null = null;         // this customer's current balance (looked up by phone)
+  creditLimit = 0;
   customerName = '';
   customerPhone = '';
   isLoading = false;
@@ -74,6 +79,21 @@ export class PosManagementComponent implements OnInit {
   }
 
   get isBargain() { return this.mode === 'BARGAIN'; }
+  get isCredit() { return this.paymentMethod === 'CREDIT'; }
+  /** What the customer will still owe from THIS sale. */
+  get dueNow(): number { return Math.max(this.total - (this.amountPaid || 0), 0); }
+
+  // When the cashier picks credit and types the phone, show what the customer already owes.
+  lookupOwed() {
+    this.owed = null;
+    const phone = this.customerPhone.trim();
+    if (!this.isCredit || phone.length < 11 || !navigator.onLine) return;
+    this.ledger.customer(phone).subscribe({
+      next: d => { this.owed = d.balance; this.creditLimit = d.creditLimit; },
+      error: () => { this.owed = 0; }       // 404/400: no account yet
+    });
+  }
+  onPaymentChange() { this.amountPaid = null; this.lookupOwed(); }
 
   // ── Scan / lookup ────────────────────────────────────────────
   onScanSubmit() {
@@ -149,9 +169,22 @@ export class PosManagementComponent implements OnInit {
       quantity: l.quantity,
       price: this.isBargain ? l.price : null
     }));
+    if (this.isCredit) {
+      if (!this.customerName.trim() || this.customerPhone.trim().length < 11) {
+        this.isCheckingOut = false;
+        this.notify.notify({ type: 'warning', title: 'Customer needed', message: 'A credit (baki) sale needs the customer\'s name and mobile number.', ttlMs: 4500 });
+        return;
+      }
+      if ((this.amountPaid || 0) > this.total) {
+        this.isCheckingOut = false;
+        this.notify.notify({ type: 'warning', title: 'Check the amount', message: 'The amount paid now is more than the total.', ttlMs: 4000 });
+        return;
+      }
+    }
     const request = {
       items, discount: this.discount || 0, paymentMethod: this.paymentMethod,
-      customerName: this.customerName, customerPhone: this.customerPhone
+      customerName: this.customerName, customerPhone: this.customerPhone,
+      ...(this.isCredit ? { amountPaid: this.amountPaid || 0 } : {})
     };
     // Every sale gets a unique reference. If the answer is lost (signal drops right after paying) the sale can be
     // sent again safely: the server recognises the reference and returns the original sale instead of making a second.
@@ -192,7 +225,8 @@ export class PosManagementComponent implements OnInit {
     this.lastReceipt = {
       header: texts.header, footer: texts.footer, orderNumber: saved.localNumber,
       subtotal: snapshot.subtotal, discount: snapshot.discount, total: snapshot.total,
-      paymentMethod: request.paymentMethod, offline: true, lines: snapshot.lines, date: new Date(soldAt)
+      paymentMethod: request.paymentMethod, offline: true, lines: snapshot.lines, date: new Date(soldAt),
+      ...(request.paymentMethod === 'CREDIT' ? { amountPaid: (request as any).amountPaid || 0, due: Math.max(snapshot.total - ((request as any).amountPaid || 0), 0), balance: null } : {})
     };
     this.resetSale();
     this.notify.notify({ type: 'warning', title: 'Saved offline', message: 'No connection. The sale is stored on this device and will be sent automatically.', ttlMs: 6000 });
@@ -201,6 +235,8 @@ export class PosManagementComponent implements OnInit {
   private resetSale() {
     this.cart = [];
     this.discount = 0;
+    this.amountPaid = null;
+    this.owed = null;
     this.customerName = '';
     this.customerPhone = '';
   }
@@ -230,6 +266,7 @@ export class PosManagementComponent implements OnInit {
         header: r.header, footer: r.footer, orderNumber: r.orderNumber,
         lines: (r.lines || []).map((l: any) => ({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice })),
         subtotal: r.subtotal, discount: r.discount, total: r.total, paymentMethod: r.paymentMethod,
+        amountPaid: r.amountPaid, due: r.due, balance: r.balance,
         cashierName: r.cashierName, date: r.date ? new Date(r.date) : new Date(), offline: r.offline
       });
       this.printOk = true; this.printMsg = 'Sent to the printer.';

@@ -158,8 +158,13 @@ namespace Ecommerce.Api.Controllers
                 .Where(e => e.ExpenseDate >= f.Date && e.ExpenseDate <= t.Date)
                 .Select(e => new { e.Category, e.Amount, e.ExpenseDate }).ToListAsync();
 
-            var revenue = orders.Sum(o => o.Total);
-            var cogs = orders.Sum(o => CogsOf(o.Id));
+            // Returns: the refund value comes off revenue, and goods put back on the shelf come off cost of goods.
+            var returns = await _context.OrderReturns.AsNoTracking()
+                .Where(r => r.CreatedDate >= startUtc && r.CreatedDate < endUtc)
+                .Select(r => new { r.RefundAmount, r.RestockedCost, r.CreatedDate }).ToListAsync();
+            var returnedValue = returns.Sum(r => r.RefundAmount);
+            var revenue = orders.Sum(o => o.Total) - returnedValue;
+            var cogs = orders.Sum(o => CogsOf(o.Id)) - returns.Sum(r => r.RestockedCost);
             var expenseTotal = expenses.Sum(e => e.Amount);
             var gross = revenue - cogs;
 
@@ -167,8 +172,9 @@ namespace Ecommerce.Api.Controllers
             for (var d = f.Date; d <= t.Date; d = d.AddDays(1))
             {
                 var dayOrders = orders.Where(o => o.CreatedDate.AddHours(BdOffsetHours).Date == d).ToList();
-                var dayRevenue = dayOrders.Sum(o => o.Total);
-                var dayCogs = dayOrders.Sum(o => CogsOf(o.Id));
+                var dayReturns = returns.Where(r => r.CreatedDate.AddHours(BdOffsetHours).Date == d).ToList();
+                var dayRevenue = dayOrders.Sum(o => o.Total) - dayReturns.Sum(r => r.RefundAmount);
+                var dayCogs = dayOrders.Sum(o => CogsOf(o.Id)) - dayReturns.Sum(r => r.RestockedCost);
                 var dayExpenses = expenses.Where(e => e.ExpenseDate.Date == d).Sum(e => e.Amount);
                 daily.Add(new
                 {
@@ -185,7 +191,7 @@ namespace Ecommerce.Api.Controllers
                 summary = new
                 {
                     orders = orders.Count, cancelledOrders = cancelled,
-                    revenue, discounts = orders.Sum(o => o.Discount), shippingCollected = orders.Sum(o => o.ShippingFee),
+                    revenue, returnsValue = returnedValue, discounts = orders.Sum(o => o.Discount), shippingCollected = orders.Sum(o => o.ShippingFee),
                     cogs, grossProfit = gross,
                     grossMarginPercent = revenue > 0 ? Math.Round(gross / revenue * 100, 1) : 0m,
                     expenses = expenseTotal, netProfit = gross - expenseTotal

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "test:escpos": "node --experimental-strip-types tests/escpos.test.mts",
+    "test:unit": "node --experimental-strip-types tests/escpos.test.mts && node --experimental-strip-types tests/csv.test.mts",
     "ng": "ng",
     "start": "ng serve --port 3800",
     "build": "ng build",

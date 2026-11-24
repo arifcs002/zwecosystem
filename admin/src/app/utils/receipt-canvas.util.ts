@@ -12,6 +12,9 @@ export interface ReceiptData {
   discount: number;
   total: number;
   paymentMethod?: string;
+  amountPaid?: number | null;   // credit sales
+  due?: number | null;          // credit sales: still owed on this sale
+  balance?: number | null;      // credit sales: customer's total owed after this sale
   cashierName?: string;
   date?: Date;
   offline?: boolean;
@@ -69,7 +72,11 @@ export function renderReceipt(data: ReceiptData, widthDots: number = PAPER_WIDTH
   ops.push({ kind: 'row', left: 'Subtotal', right: money(data.subtotal), size: 21 });
   if (data.discount > 0) ops.push({ kind: 'row', left: 'Discount', right: '-' + money(data.discount), size: 21 });
   ops.push({ kind: 'row', left: 'TOTAL', right: money(data.total), size: 28, bold: true });
-  if (data.paymentMethod) text(`Paid via ${data.paymentMethod}`, 19, false, 'center');
+  if (data.paymentMethod === 'CREDIT') {
+    ops.push({ kind: 'row', left: 'Paid now', right: money(data.amountPaid ?? 0), size: 21 });
+    ops.push({ kind: 'row', left: 'DUE (BAKI)', right: money(data.due ?? 0), size: 26, bold: true });
+    if (data.balance != null && data.balance !== data.due) ops.push({ kind: 'row', left: 'Total owed', right: money(data.balance), size: 20 });
+  } else if (data.paymentMethod) text(`Paid via ${data.paymentMethod}`, 19, false, 'center');
   ops.push({ kind: 'rule' });
   if (data.footer) text(data.footer, 20, false, 'center');
   ops.push({ kind: 'gap', h: 14 });

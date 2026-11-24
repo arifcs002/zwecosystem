@@ -336,8 +336,16 @@ namespace Ecommerce.Api.Controllers
             var orderEntity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
             if (orderEntity == null) return NotFound();
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "CALL sp_update_order_status({0},{1},{2})", id, dto.Status, dto.Notes ?? "");
+            if (string.Equals(dto.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase))
+            {
+                var (cancelled, error) = await CancelAsync(orderEntity);
+                if (!cancelled) return Conflict(new { message = error });
+            }
+            else
+            {
+                await _context.Database.ExecuteSqlRawAsync(
+                    "CALL sp_update_order_status({0},{1},{2})", id, dto.Status, dto.Notes ?? "");
+            }
 
             // Record the change on the timeline.
             _context.OrderStatusHistory.Add(new OrderStatusHistory
@@ -440,10 +448,30 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id}/cancel")]
         public async Task<IActionResult> CancelOrder(int id)
         {
-            if (!await _context.Orders.AnyAsync(o => o.Id == id)) return NotFound();
-            await _context.Database.ExecuteSqlRawAsync("CALL sp_cancel_order({0})", id);
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) return NotFound();
+            var (ok, error) = await CancelAsync(order);
+            if (!ok) return Conflict(new { message = error });
             await Audit.LogAsync(_context, HttpContext, "order.cancel", $"order id {id}");
             return Ok(new { message = "Order cancelled." });
+        }
+
+        // Cancelling puts the stock back and writes off any unpaid credit — and must only ever happen ONCE,
+        // otherwise stock is added twice. Orders that already had items returned can't be cancelled (the
+        // returned items are already back in stock): the rest of such an order is handled with another return.
+        private async Task<(bool Ok, string? Error)> CancelAsync(Order order)
+        {
+            if (order.Status == "CANCELLED") return (false, "This order is already cancelled.");
+            if (await _context.OrderReturns.AnyAsync(r => r.OrderId == order.Id))
+                return (false, "Some items of this order were already returned, so it can't be cancelled. Return the remaining items instead.");
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            await _context.Database.ExecuteSqlRawAsync("CALL sp_cancel_order({0})", order.Id);
+            if (string.Equals(order.PaymentMethod, "CREDIT", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(order.CustomerPhone))
+                await CreditLedger.ReverseOrderAsync(_context, order.CompanyId, order.Id, order.CustomerPhone, order.CustomerName, _context.CurrentUserId, $"Order {order.OrderNumber} cancelled");
+            await tx.CommitAsync();
+            order.Status = "CANCELLED";
+            return (true, null);
         }
     }
 }

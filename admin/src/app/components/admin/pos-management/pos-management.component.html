@@ -83,16 +83,24 @@
       </div>
       <div class="fg">
         <label>Customer Phone (optional)</label>
-        <input class="inp" [(ngModel)]="customerPhone">
+        <input class="inp" [(ngModel)]="customerPhone" (ngModelChange)="lookupOwed()" inputmode="tel" [placeholder]="isCredit ? 'Required for credit: 01XXXXXXXXX' : ''">
       </div>
       <div class="fg">
         <label>Payment Method</label>
-        <select class="inp" [(ngModel)]="paymentMethod">
+        <select class="inp" [(ngModel)]="paymentMethod" (ngModelChange)="onPaymentChange()">
           <option value="CASH">Cash</option>
+          <option value="CREDIT">Credit (baki)</option>
           <option value="BKASH">bKash</option>
           <option value="NAGAD">Nagad</option>
           <option value="CARD">Card</option>
         </select>
+      </div>
+      <div class="fg credit-box" *ngIf="isCredit">
+        <label>Paid now (BDT) <span style="opacity:.6">— the rest becomes baki</span></label>
+        <input type="number" class="inp" [(ngModel)]="amountPaid" min="0" [max]="total" placeholder="0">
+        <p class="credit-note" *ngIf="owed !== null && owed > 0">This customer already owes ৳{{ owed | number:'1.0-0' }}.</p>
+        <p class="credit-note warn" *ngIf="creditLimit > 0 && owed !== null && (owed + dueNow) > creditLimit">Over the credit limit of ৳{{ creditLimit | number:'1.0-0' }} — the sale will be refused.</p>
+        <p class="credit-note"><b>Goes on account: ৳{{ dueNow | number:'1.0-0' }}</b></p>
       </div>
       <div class="fg">
         <label>Discount (BDT)</label>
@@ -123,7 +131,12 @@
     <div class="r-row"><span>Subtotal</span><span>৳{{ lastReceipt.subtotal | number:'1.0-0' }}</span></div>
     <div class="r-row"><span>Discount</span><span>৳{{ lastReceipt.discount | number:'1.0-0' }}</span></div>
     <div class="r-row grand"><span>Total</span><span>৳{{ lastReceipt.total | number:'1.0-0' }}</span></div>
-    <p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p>
+    <ng-container *ngIf="lastReceipt.paymentMethod === 'CREDIT'; else paidVia">
+      <div class="r-row"><span>Paid now</span><span>৳{{ lastReceipt.amountPaid || 0 | number:'1.0-0' }}</span></div>
+      <div class="r-row grand"><span>Due (baki)</span><span>৳{{ lastReceipt.due || 0 | number:'1.0-0' }}</span></div>
+      <p class="r-pay" *ngIf="lastReceipt.balance != null && lastReceipt.balance !== lastReceipt.due">Total owed by this customer: ৳{{ lastReceipt.balance | number:'1.0-0' }}</p>
+    </ng-container>
+    <ng-template #paidVia><p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p></ng-template>
     <p class="r-footer">{{ lastReceipt.footer }}</p>
     <div class="r-print" *ngIf="printer.supported">
       <button class="btn-mini" (click)="printReceipt()" [disabled]="(printer.status$ | async) === 'printing' || (printer.status$ | async) === 'connecting'">

@@ -10,7 +10,7 @@ namespace Ecommerce.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class ProductsController : ControllerBase
+    public partial class ProductsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IFileTextLogger _fileLogger;

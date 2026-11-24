@@ -15,6 +15,7 @@ namespace Ecommerce.Api.Controllers
         public decimal Discount { get; set; }
         public decimal Total { get; set; }
         public string? PaymentMethod { get; set; }
+        public decimal Due { get; set; }
     }
 
     [ApiController]
@@ -22,7 +23,7 @@ namespace Ecommerce.Api.Controllers
     [Authorize]
     public class POSController : ControllerBase
     {
-        private async Task<object> ReceiptFor(int companyId, string orderNumber, decimal subtotal, decimal discount, decimal total, string? method)
+        private async Task<object> ReceiptFor(int companyId, string orderNumber, decimal subtotal, decimal discount, decimal total, string? method, decimal due = 0)
         {
             var settings = await _context.CompanySettings.AsNoTracking()
                 .Where(s => s.CompanyId == companyId && s.GroupName == "POS")
@@ -32,6 +33,7 @@ namespace Ecommerce.Api.Controllers
                 header = settings.GetValueOrDefault("receipt_header", "Thank you!"),
                 footer = settings.GetValueOrDefault("receipt_footer", "Please visit again."),
                 orderNumber, subtotal, discount, total, paymentMethod = method,
+                due = string.Equals(method, "CREDIT", StringComparison.OrdinalIgnoreCase) ? due : (decimal?)null,
                 cashierName = User.FindFirst("name")?.Value ?? "Cashier"
             };
         }
@@ -101,22 +103,36 @@ namespace Ecommerce.Api.Controllers
             if (dto.Discount < 0)
                 return BadRequest(new { message = "Discount cannot be negative." });
 
+            // Credit ("baki") sale: the customer takes the goods and owes the shop. Needs a real phone number to
+            // be chased later, and may pay part of it now.
+            var isCredit = string.Equals(dto.PaymentMethod, "CREDIT", StringComparison.OrdinalIgnoreCase);
+            string? creditPhone = null;
+            if (isCredit)
+            {
+                creditPhone = PhoneUtil.NormalizeBd(dto.CustomerPhone);
+                if (creditPhone == null) return BadRequest(new { message = "A credit (baki) sale needs the customer's mobile number (01XXXXXXXXX)." });
+                if (string.IsNullOrWhiteSpace(dto.CustomerName) || dto.CustomerName.Trim() == "Walk-in Customer")
+                    return BadRequest(new { message = "A credit (baki) sale needs the customer's name." });
+                if (dto.AmountPaid.HasValue && dto.AmountPaid.Value < 0) return BadRequest(new { message = "Amount paid cannot be negative." });
+            }
+
             // Offline sales carry a client reference. A retry of the same sale must return the first result:
             // an advisory lock (per shop + reference) serialises concurrent retries, and the unique index on
             // orders(company_id, client_ref) is the backstop.
             var clientRef = (dto.ClientRef ?? "").Trim();
             if (clientRef.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(clientRef, "^[A-Za-z0-9_-]{8,64}$"))
                 return BadRequest(new { message = "Invalid sale reference." });
-            await using var tx = clientRef.Length > 0 ? await _context.Database.BeginTransactionAsync() : null;
+            await using var tx = (clientRef.Length > 0 || isCredit) ? await _context.Database.BeginTransactionAsync() : null;
             if (clientRef.Length > 0)
             {
                 await _context.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(hashtext({0}))", $"{companyId.Value}:{clientRef}");
                 var existing = (await _context.Database.SqlQueryRaw<ExistingSale>(
-                    @"SELECT id AS ""Id"", order_number AS ""OrderNumber"", subtotal AS ""Subtotal"", discount AS ""Discount"", total AS ""Total"", payment_method AS ""PaymentMethod""
+                    @"SELECT id AS ""Id"", order_number AS ""OrderNumber"", subtotal AS ""Subtotal"", discount AS ""Discount"", total AS ""Total"", payment_method AS ""PaymentMethod"",
+                      (SELECT COALESCE(SUM(l.amount),0) FROM credit_ledger l WHERE l.company_id = orders.company_id AND l.order_id = orders.id) AS ""Due""
                       FROM orders WHERE company_id = {0} AND client_ref = {1} LIMIT 1", companyId.Value, clientRef).ToListAsync()).FirstOrDefault();
                 if (existing != null)
                     return Ok(new { message = "This sale was already recorded.", duplicate = true, orderId = existing.Id, orderNumber = existing.OrderNumber,
-                        receipt = await ReceiptFor(companyId.Value, existing.OrderNumber, existing.Subtotal, existing.Discount, existing.Total, existing.PaymentMethod) });
+                        receipt = await ReceiptFor(companyId.Value, existing.OrderNumber, existing.Subtotal, existing.Discount, existing.Total, existing.PaymentMethod, existing.Due) });
             }
 
             foreach (var item in dto.Items)
@@ -138,14 +154,27 @@ namespace Ecommerce.Api.Controllers
 
             var total = Math.Max(subtotal - dto.Discount, 0);
             var orderNumber   = $"POS-{DateTime.UtcNow.Ticks}";
-            var paymentStatus = dto.PaymentMethod == "CASH" ? "PAID" : "PENDING";
+            decimal paidNow = 0, due = 0, previousBalance = 0;
+            if (isCredit)
+            {
+                paidNow = dto.AmountPaid ?? 0;
+                if (paidNow > total) return BadRequest(new { message = "The amount paid now cannot be more than the total." });
+                due = total - paidNow;
+                // Serialise this customer's account so two tills can't both pass the limit check.
+                await CreditLedger.LockAsync(_context, companyId.Value, creditPhone!);
+                previousBalance = await CreditLedger.BalanceAsync(_context, companyId.Value, creditPhone!);
+                var limit = await CreditLedger.CreditLimitAsync(_context, companyId.Value);
+                if (limit > 0 && previousBalance + due > limit)
+                    return BadRequest(new { message = $"Credit limit exceeded: this customer already owes ৳{previousBalance:0} and the limit is ৳{limit:0}." });
+            }
+            var paymentStatus = isCredit ? (due == 0 ? "PAID" : "PENDING") : (dto.PaymentMethod == "CASH" ? "PAID" : "PENDING");
 
             var orderId = (await _context.Database.SqlQueryRaw<int>(
                 "SELECT sp_checkout_order({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15})",
                 companyId.Value, orderNumber, "POS", cashierId,
-                dto.CustomerName ?? "Walk-in Customer", dto.CustomerPhone ?? "",
+                dto.CustomerName ?? "Walk-in Customer", isCredit ? creditPhone! : (dto.CustomerPhone ?? ""),
                 "COMPLETED", subtotal, dto.Discount, total,
-                dto.PaymentMethod, paymentStatus,
+                isCredit ? "CREDIT" : dto.PaymentMethod, paymentStatus,
                 productIds.ToArray(), quantities.ToArray(), prices.ToArray(), cashierId
             ).ToListAsync()).FirstOrDefault();
 
@@ -161,9 +190,17 @@ namespace Ecommerce.Api.Controllers
                     clientRef.Length > 0 ? clientRef : (string?)null, soldAt,
                     dto.Offline ? "Sold offline; synced later." : (string?)null, orderId);
             }
+            if (isCredit)
+            {
+                var by = cashierId > 0 ? cashierId : (int?)null;
+                _context.CreditLedger.Add(CreditLedger.Entry(companyId.Value, creditPhone!, dto.CustomerName!.Trim(), "SALE", total, orderId, "CREDIT", $"Sale {orderNumber}", by));
+                if (paidNow > 0)
+                    _context.CreditLedger.Add(CreditLedger.Entry(companyId.Value, creditPhone!, dto.CustomerName!.Trim(), "PAYMENT", -paidNow, orderId, "cash", "Paid at the time of sale", by));
+                await _context.SaveChangesAsync();
+            }
             if (tx != null) await tx.CommitAsync();
 
-            if (dto.PaymentMethod != "CASH" && !string.IsNullOrEmpty(dto.TransactionId))
+            if (!isCredit && dto.PaymentMethod != "CASH" && !string.IsNullOrEmpty(dto.TransactionId))
             {
                 await _context.Database.SqlQueryRaw<int>(
                     "SELECT sp_verify_payment({0},{1},{2},{3},{4},{5},{6},{7},{8})",
@@ -189,7 +226,11 @@ namespace Ecommerce.Api.Controllers
                     subtotal,
                     discount    = dto.Discount,
                     total,
-                    paymentMethod = dto.PaymentMethod,
+                    paymentMethod = isCredit ? "CREDIT" : dto.PaymentMethod,
+                    amountPaid = isCredit ? paidNow : (decimal?)null,
+                    due = isCredit ? due : (decimal?)null,
+                    previousBalance = isCredit ? previousBalance : (decimal?)null,
+                    balance = isCredit ? previousBalance + due : (decimal?)null,
                     cashierName = User.FindFirst("name")?.Value ?? "Cashier"
                 }
             });

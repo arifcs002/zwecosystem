@@ -23,6 +23,7 @@ export interface PosCheckoutRequest {
   transactionId?: string;
   clientRef?: string;   // unique per sale: a resend returns the original sale instead of a second one
   soldAt?: string;
+  amountPaid?: number;   // credit (baki) sales: what the customer pays now
   offline?: boolean;
 }
 

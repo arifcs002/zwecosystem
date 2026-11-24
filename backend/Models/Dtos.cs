@@ -100,7 +100,8 @@
     public record POSCheckoutDto(
         List<POSItemDto> Items, decimal Discount, string PaymentMethod,
         string? CustomerName, string? CustomerPhone, string? TransactionId,
-        string? ClientRef = null, DateTime? SoldAt = null, bool Offline = false);
+        string? ClientRef = null, DateTime? SoldAt = null, bool Offline = false,
+        decimal? AmountPaid = null);
 
     // Storefront guest checkout — no auth; tenant comes from the X-Tenant-ID header.
     public record PublicCheckoutDto(

@@ -87,6 +87,14 @@
         <span class="nav-icon">🛒</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
       </a>
+      <a [routerLink]="basePath + '/ledger'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📒</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Customer Accounts</span>
+      </a>
+      <a [routerLink]="basePath + '/returns'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">↩️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Returns</span>
+      </a>
 
       <!-- ===== CATALOG & SALES (merged collapsible group) ===== -->
       <div class="nav-group">
@@ -103,6 +111,10 @@
           <a [routerLink]="basePath + '/add-product'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">➕</span>
             <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
+          </a>
+          <a [routerLink]="basePath + '/import-products'" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📥</span>
+            <span class="nav-label" *ngIf="!sidebarCollapsed">Import Products</span>
           </a>
           <a [routerLink]="basePath + '/categories'" *ngIf="authService.hasRight('PAGE_CATEGORIES')" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🗂️</span>

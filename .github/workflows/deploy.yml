@@ -58,15 +58,15 @@ jobs:
           npm ci --legacy-peer-deps
           npm run build -- --configuration=production
 
-      # The receipt-printing maths test runs TypeScript directly, which needs Node 22+.
-      - name: ⚙️ Set up Node 22 for the printer-logic test
+      # These logic tests run TypeScript directly, which needs Node 22+.
+      - name: ⚙️ Set up Node 22 for the logic tests
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 🖨️ Receipt printing (ESC/POS) logic test
+      - name: 🧪 Browser-side logic tests (receipt printing, CSV import)
         working-directory: admin
-        run: npm run test:escpos
+        run: npm run test:unit
 
   build-and-push:
     name: Build & Push Docker Images
