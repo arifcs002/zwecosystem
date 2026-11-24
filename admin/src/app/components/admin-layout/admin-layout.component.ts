@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
@@ -19,11 +19,10 @@ const GROUP_ROUTES: Record<string, string[]> = {
 };
 
 @Component({
-  selector: 'app-admin-layout',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ConfirmDialogComponent, CompanySelectorComponent],
-  templateUrl: './admin-layout.component.html',
-  styleUrl: './admin-layout.component.css'
+    selector: 'app-admin-layout',
+    imports: [RouterModule, ConfirmDialogComponent, CompanySelectorComponent],
+    templateUrl: './admin-layout.component.html',
+    styleUrl: './admin-layout.component.css'
 })
 export class AdminLayoutComponent implements OnInit {
   authService = inject(AuthService);

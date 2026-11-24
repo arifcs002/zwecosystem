@@ -1,16 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { SettingsService, CompanySetting } from '../../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../../services/global-notification/global-notification.service';
 import { buildProductIdPreview, toSecretCode, DEFAULT_SECRET_MAP } from '../../../../utils/secret-code.util';
 
 @Component({
-  selector: 'app-product-codes',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './product-codes.component.html',
-  styleUrl: '../ecommerce-config.css'
+    selector: 'app-product-codes',
+    imports: [FormsModule],
+    templateUrl: './product-codes.component.html',
+    styleUrl: '../ecommerce-config.css'
 })
 export class ProductCodesComponent implements OnInit {
   private settingsService = inject(SettingsService);

@@ -1,11 +1,17 @@
-<div class="toast-stack" *ngIf="notifications$ | async as notifications">
-  <div *ngFor="let note of notifications" class="toast" [ngClass]="tone(note.type)">
-    <div class="toast-icon">{{ icon(note.type) }}</div>
-    <div class="toast-body">
-      <div class="toast-title">{{ note.title }}</div>
-      <div class="toast-message">{{ note.message }}</div>
-      <div *ngIf="note.detail" class="toast-detail">{{ note.detail }}</div>
-    </div>
-    <button type="button" class="toast-close" (click)="dismiss(note.id)">×</button>
+@if (notifications$ | async; as notifications) {
+  <div class="toast-stack">
+    @for (note of notifications; track note) {
+      <div class="toast" [ngClass]="tone(note.type)">
+        <div class="toast-icon">{{ icon(note.type) }}</div>
+        <div class="toast-body">
+          <div class="toast-title">{{ note.title }}</div>
+          <div class="toast-message">{{ note.message }}</div>
+          @if (note.detail) {
+            <div class="toast-detail">{{ note.detail }}</div>
+          }
+        </div>
+        <button type="button" class="toast-close" (click)="dismiss(note.id)">×</button>
+      </div>
+    }
   </div>
-</div>
+}

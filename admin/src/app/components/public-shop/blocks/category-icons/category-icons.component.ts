@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export interface IconCategory { id: number; name: string; }
 
@@ -7,21 +7,26 @@ export interface IconCategory { id: number; name: string; }
 // owns navigation. Purely presentational — parent passes the already-filtered,
 // already-ordered category list.
 @Component({
-  selector: 'app-category-icons',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="cat-block" *ngIf="categories.length">
-      <h2 class="sec-title" *ngIf="title">{{ title }}</h2>
-      <div class="row">
-        <button *ngFor="let c of categories" class="cat" (click)="select.emit(c.id)">
-          <span class="circle">{{ emojiFor(c.name) }}</span>
-          <span class="label">{{ c.name }}</span>
-        </button>
+    selector: 'app-category-icons',
+    imports: [],
+    template: `
+    @if (categories.length) {
+      <div class="cat-block">
+        @if (title) {
+          <h2 class="sec-title">{{ title }}</h2>
+        }
+        <div class="row">
+          @for (c of categories; track c) {
+            <button class="cat" (click)="select.emit(c.id)">
+              <span class="circle">{{ emojiFor(c.name) }}</span>
+              <span class="label">{{ c.name }}</span>
+            </button>
+          }
+        </div>
       </div>
-    </div>
-  `,
-  styles: [`
+    }
+    `,
+    styles: [`
     :host { display: block; }
     .sec-title { font-size: 18px; font-weight: 800; color: #1f2430; margin: 0 0 14px; }
     .row { display: flex; gap: 18px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }

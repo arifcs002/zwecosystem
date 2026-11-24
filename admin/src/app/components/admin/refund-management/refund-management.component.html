@@ -7,8 +7,12 @@
     <button class="btn-primary" (click)="openCreate()">+ Request Refund</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showCreateModal && !showRejectModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showCreateModal && !showRejectModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="tab-row">
     <button [class.active]="filterStatus === 'ALL'" (click)="filterStatus='ALL'; applyFilter()" class="tab-btn">All</button>
@@ -23,94 +27,114 @@
   </div>
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading refunds...</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr>
-          <th>Refund #</th>
-          <th>Order #</th>
-          <th>Amount</th>
-          <th>Reason</th>
-          <th>Status</th>
-          <th>Requested</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of filteredRefunds">
-          <td><strong>#{{ r.id }}</strong></td>
-          <td>{{ r.orderNumber }}</td>
-          <td><strong>৳{{ r.amount | number:'1.0-0' }}</strong></td>
-          <td><small>{{ r.reason || '—' }}</small></td>
-          <td><span [class]="getStatusClass(r.status)">{{ r.status }}</span></td>
-          <td>{{ r.createdDate | date:'dd MMM, HH:mm' }}</td>
-          <td class="actions-cell">
-            <ng-container *ngIf="r.status === 'REQUESTED'">
-              <button class="btn-primary btn-sm" (click)="approve(r)">✔ Approve</button>
-              <button class="btn-secondary btn-sm" (click)="openReject(r)">✖ Reject</button>
-            </ng-container>
-            <button class="btn-primary btn-sm" *ngIf="r.status === 'APPROVED'" (click)="complete(r)">💸 Mark Completed</button>
-            <span class="done-badge" *ngIf="r.status === 'COMPLETED'">✅ Done</span>
-          </td>
-        </tr>
-        <tr *ngIf="filteredRefunds.length === 0">
-          <td colspan="7" class="empty-row">No refunds found.</td>
-        </tr>
-      </tbody>
-    </table>
+    @if (isLoading) {
+      <div class="loading">Loading refunds...</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Refund #</th>
+            <th>Order #</th>
+            <th>Amount</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Requested</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of filteredRefunds; track r) {
+            <tr>
+              <td><strong>#{{ r.id }}</strong></td>
+              <td>{{ r.orderNumber }}</td>
+              <td><strong>৳{{ r.amount | number:'1.0-0' }}</strong></td>
+              <td><small>{{ r.reason || '—' }}</small></td>
+              <td><span [class]="getStatusClass(r.status)">{{ r.status }}</span></td>
+              <td>{{ r.createdDate | date:'dd MMM, HH:mm' }}</td>
+              <td class="actions-cell">
+                @if (r.status === 'REQUESTED') {
+                  <button class="btn-primary btn-sm" (click)="approve(r)">✔ Approve</button>
+                  <button class="btn-secondary btn-sm" (click)="openReject(r)">✖ Reject</button>
+                }
+                @if (r.status === 'APPROVED') {
+                  <button class="btn-primary btn-sm" (click)="complete(r)">💸 Mark Completed</button>
+                }
+                @if (r.status === 'COMPLETED') {
+                  <span class="done-badge">✅ Done</span>
+                }
+              </td>
+            </tr>
+          }
+          @if (filteredRefunds.length === 0) {
+            <tr>
+              <td colspan="7" class="empty-row">No refunds found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
 
   <!-- Create Refund Modal -->
-  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Request Refund</h2>
-        <button class="close-btn" (click)="closeCreateModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-        <div class="form-group">
-          <label>Payment *</label>
-          <select [(ngModel)]="createForm.paymentId" (change)="onPaymentSelected()" class="form-input">
-            <option [ngValue]="0">Select a successful payment...</option>
-            <option *ngFor="let p of eligiblePayments" [ngValue]="p.id">
-              {{ p.orderNumber }} — {{ p.provider }} — ৳{{ p.amount }} ({{ p.transactionId }})
-            </option>
-          </select>
+  @if (showCreateModal) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Request Refund</h2>
+          <button class="close-btn" (click)="closeCreateModal()">✕</button>
         </div>
-        <div class="form-group">
-          <label>Amount (৳)</label>
-          <input type="number" [(ngModel)]="createForm.amount" class="form-input" />
+        <div class="modal-body">
+          @if (errorMsg) {
+            <div class="alert-error">❌ {{ errorMsg }}</div>
+          }
+          <div class="form-group">
+            <label>Payment *</label>
+            <select [(ngModel)]="createForm.paymentId" (change)="onPaymentSelected()" class="form-input">
+              <option [ngValue]="0">Select a successful payment...</option>
+              @for (p of eligiblePayments; track p) {
+                <option [ngValue]="p.id">
+                  {{ p.orderNumber }} — {{ p.provider }} — ৳{{ p.amount }} ({{ p.transactionId }})
+                </option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Amount (৳)</label>
+            <input type="number" [(ngModel)]="createForm.amount" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <input type="text" [(ngModel)]="createForm.reason" class="form-input" placeholder="Why is this being refunded?" />
+          </div>
         </div>
-        <div class="form-group">
-          <label>Reason</label>
-          <input type="text" [(ngModel)]="createForm.reason" class="form-input" placeholder="Why is this being refunded?" />
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeCreateModal()">Cancel</button>
+          <button class="btn-primary" (click)="submitCreate()">Submit Request</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeCreateModal()">Cancel</button>
-        <button class="btn-primary" (click)="submitCreate()">Submit Request</button>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Reject Modal -->
-  <div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Reject Refund #{{ selectedRefund?.id }}</h2>
-        <button class="close-btn" (click)="closeRejectModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Reason</label>
-          <input type="text" [(ngModel)]="rejectReason" class="form-input" placeholder="Optional reason" />
+  @if (showRejectModal) {
+    <div class="modal-overlay" (click)="closeRejectModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Reject Refund #{{ selectedRefund?.id }}</h2>
+          <button class="close-btn" (click)="closeRejectModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Reason</label>
+            <input type="text" [(ngModel)]="rejectReason" class="form-input" placeholder="Optional reason" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
+          <button class="btn-danger" (click)="submitReject()">Reject</button>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
-        <button class="btn-danger" (click)="submitReject()">Reject</button>
-      </div>
     </div>
-  </div>
+  }
 </div>

@@ -5,38 +5,54 @@
     <div class="mode-badge" [ngClass]="isBargain ? 'bargain' : 'fixed'">
       {{ isBargain ? '💬 Manual / Bargaining Mode' : '🔒 Fixed Price Mode' }}
     </div>
-    <button *ngIf="authService.isCompanyAdmin() || authService.isSuperAdmin()" class="btn-mini" (click)="showSettings = !showSettings">
-      ⚙ Mode Settings
-    </button>
+    @if (authService.isCompanyAdmin() || authService.isSuperAdmin()) {
+      <button class="btn-mini" (click)="showSettings = !showSettings">
+        ⚙ Mode Settings
+      </button>
+    }
   </div>
 
   <!-- Connection / offline sales status -->
   <div class="net-bar" [class.is-off]="(offline.online$ | async) === false" role="status">
     <span class="net-state">{{ (offline.online$ | async) ? '🟢 Online' : '🔴 Offline — sales are kept on this device' }}</span>
-    <span *ngIf="(offline.pending$ | async) as n" class="net-pending">⏳ {{ n }} sale{{ n === 1 ? '' : 's' }} waiting to send</span>
-    <span *ngIf="offline.syncing$ | async" class="net-sync">Sending…</span>
+    @if ((offline.pending$ | async); as n) {
+      <span class="net-pending">⏳ {{ n }} sale{{ n === 1 ? '' : 's' }} waiting to send</span>
+    }
+    @if (offline.syncing$ | async) {
+      <span class="net-sync">Sending…</span>
+    }
     <span class="net-cat" title="Products available for scanning without a connection">📦 {{ offline.catalogCount$ | async }} on device</span>
-    <span *ngIf="(offline.storageOk$ | async) === false" class="net-warn">⚠ This browser blocks local storage: offline sales cannot be saved.</span>
+    @if ((offline.storageOk$ | async) === false) {
+      <span class="net-warn">⚠ This browser blocks local storage: offline sales cannot be saved.</span>
+    }
   </div>
 
-  <div class="net-failed" *ngIf="(offline.failed$ | async) as failed">
-    <div *ngIf="failed.length" class="nf-box">
-      <strong>{{ failed.length }} offline sale{{ failed.length === 1 ? ' was' : 's were' }} not accepted by the server</strong>
-      <div class="nf-row" *ngFor="let s of failed; trackBy: trackRef">
-        <span>{{ s.localNumber }} · ৳{{ s.total | number:'1.0-0' }} · {{ s.soldAt | date:'d MMM, h:mm a' }} — {{ s.error }}</span>
-        <button class="btn-mini" (click)="offline.retry(s.clientRef)">Retry</button>
-        <button class="btn-mini" (click)="offline.discard(s.clientRef)">Discard</button>
+  @if ((offline.failed$ | async); as failed) {
+    <div class="net-failed">
+      @if (failed.length) {
+        <div class="nf-box">
+          <strong>{{ failed.length }} offline sale{{ failed.length === 1 ? ' was' : 's were' }} not accepted by the server</strong>
+          @for (s of failed; track trackRef($index, s)) {
+            <div class="nf-row">
+              <span>{{ s.localNumber }} · ৳{{ s.total | number:'1.0-0' }} · {{ s.soldAt | date:'d MMM, h:mm a' }} — {{ s.error }}</span>
+              <button class="btn-mini" (click)="offline.retry(s.clientRef)">Retry</button>
+              <button class="btn-mini" (click)="offline.discard(s.clientRef)">Discard</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (showSettings) {
+    <div class="settings-panel">
+      <p class="panel-hint">Fixed Price: cashiers cannot edit the sale price. Manual/Bargaining: cashiers can set their own sale price per item.</p>
+      <div class="seg">
+        <button [class.on]="mode==='FIXED'" (click)="saveMode('FIXED')" [disabled]="savingSettings">Fixed Price</button>
+        <button [class.on]="mode==='BARGAIN'" (click)="saveMode('BARGAIN')" [disabled]="savingSettings">Manual / Bargaining</button>
       </div>
     </div>
-  </div>
-
-  <div class="settings-panel" *ngIf="showSettings">
-    <p class="panel-hint">Fixed Price: cashiers cannot edit the sale price. Manual/Bargaining: cashiers can set their own sale price per item.</p>
-    <div class="seg">
-      <button [class.on]="mode==='FIXED'" (click)="saveMode('FIXED')" [disabled]="savingSettings">Fixed Price</button>
-      <button [class.on]="mode==='BARGAIN'" (click)="saveMode('BARGAIN')" [disabled]="savingSettings">Manual / Bargaining</button>
-    </div>
-  </div>
+  }
 
   <div class="pos-body">
     <!-- Left: scan + cart -->
@@ -44,107 +60,131 @@
       <div class="scan-row">
         <input class="scan-inp" [(ngModel)]="barcodeInput" (keyup.enter)="onScanSubmit()"
           placeholder="Scan or type barcode / product ID, then Enter…" [disabled]="isLoading" autofocus>
-        <button class="btn-cam" (click)="openCamera()" title="Scan with camera">📷</button>
-      </div>
+          <button class="btn-cam" (click)="openCamera()" title="Scan with camera">📷</button>
+        </div>
 
-      <div class="cart-list">
-        <div class="cart-empty" *ngIf="cart.length === 0">🛒 Cart is empty — scan a product to begin.</div>
+        <div class="cart-list">
+          @if (cart.length === 0) {
+            <div class="cart-empty">🛒 Cart is empty — scan a product to begin.</div>
+          }
 
-        <div class="cart-row" *ngFor="let line of cart">
-          <div class="cr-info">
-            <div class="cr-name">{{ line.product.name }}</div>
-            <div class="cr-sub">{{ line.product.barcode }} · Stock: {{ line.product.stockQuantity }}</div>
-          </div>
-
-          <div class="cr-price">
-            <ng-container *ngIf="!isBargain">৳{{ line.product.price | number:'1.0-0' }}</ng-container>
-            <input *ngIf="isBargain" type="number" class="price-inp" [(ngModel)]="line.price" min="0">
-          </div>
-
-          <div class="cr-qty">
-            <button (click)="changeQty(line, -1)">−</button>
-            <span>{{ line.quantity }}</span>
-            <button (click)="changeQty(line, 1)">+</button>
-          </div>
-
-          <div class="cr-total">৳{{ ((isBargain ? line.price : line.product.price) * line.quantity) | number:'1.0-0' }}</div>
-          <button class="cr-del" (click)="removeLine(line)">✕</button>
+          @for (line of cart; track line) {
+            <div class="cart-row">
+              <div class="cr-info">
+                <div class="cr-name">{{ line.product.name }}</div>
+                <div class="cr-sub">{{ line.product.barcode }} · Stock: {{ line.product.stockQuantity }}</div>
+              </div>
+              <div class="cr-price">
+                @if (!isBargain) {
+                  ৳{{ line.product.price | number:'1.0-0' }}
+                }
+                @if (isBargain) {
+                  <input type="number" class="price-inp" [(ngModel)]="line.price" min="0">
+                }
+              </div>
+              <div class="cr-qty">
+                <button (click)="changeQty(line, -1)">−</button>
+                <span>{{ line.quantity }}</span>
+                <button (click)="changeQty(line, 1)">+</button>
+              </div>
+              <div class="cr-total">৳{{ ((isBargain ? line.price : line.product.price) * line.quantity) | number:'1.0-0' }}</div>
+              <button class="cr-del" (click)="removeLine(line)">✕</button>
+            </div>
+          }
         </div>
       </div>
-    </div>
 
-    <!-- Right: checkout -->
-    <div class="pos-side">
-      <h3 class="side-title">Checkout</h3>
+      <!-- Right: checkout -->
+      <div class="pos-side">
+        <h3 class="side-title">Checkout</h3>
 
-      <div class="fg">
-        <label>Customer Name (optional)</label>
-        <input class="inp" [(ngModel)]="customerName" placeholder="Walk-in Customer">
-      </div>
-      <div class="fg">
-        <label>Customer Phone (optional)</label>
-        <input class="inp" [(ngModel)]="customerPhone" (ngModelChange)="lookupOwed()" inputmode="tel" [placeholder]="isCredit ? 'Required for credit: 01XXXXXXXXX' : ''">
-      </div>
-      <div class="fg">
-        <label>Payment Method</label>
-        <select class="inp" [(ngModel)]="paymentMethod" (ngModelChange)="onPaymentChange()">
-          <option value="CASH">Cash</option>
-          <option value="CREDIT">Credit (baki)</option>
-          <option value="BKASH">bKash</option>
-          <option value="NAGAD">Nagad</option>
-          <option value="CARD">Card</option>
-        </select>
-      </div>
-      <div class="fg credit-box" *ngIf="isCredit">
-        <label>Paid now (BDT) <span style="opacity:.6">— the rest becomes baki</span></label>
-        <input type="number" class="inp" [(ngModel)]="amountPaid" min="0" [max]="total" placeholder="0">
-        <p class="credit-note" *ngIf="owed !== null && owed > 0">This customer already owes ৳{{ owed | number:'1.0-0' }}.</p>
-        <p class="credit-note warn" *ngIf="creditLimit > 0 && owed !== null && (owed + dueNow) > creditLimit">Over the credit limit of ৳{{ creditLimit | number:'1.0-0' }} — the sale will be refused.</p>
-        <p class="credit-note"><b>Goes on account: ৳{{ dueNow | number:'1.0-0' }}</b></p>
-      </div>
-      <div class="fg">
-        <label>Discount (BDT)</label>
-        <input type="number" class="inp" [(ngModel)]="discount" min="0">
-      </div>
+        <div class="fg">
+          <label>Customer Name (optional)</label>
+          <input class="inp" [(ngModel)]="customerName" placeholder="Walk-in Customer">
+        </div>
+        <div class="fg">
+          <label>Customer Phone (optional)</label>
+          <input class="inp" [(ngModel)]="customerPhone" (ngModelChange)="lookupOwed()" inputmode="tel" [placeholder]="isCredit ? 'Required for credit: 01XXXXXXXXX' : ''">
+        </div>
+        <div class="fg">
+          <label>Payment Method</label>
+          <select class="inp" [(ngModel)]="paymentMethod" (ngModelChange)="onPaymentChange()">
+            <option value="CASH">Cash</option>
+            <option value="CREDIT">Credit (baki)</option>
+            <option value="BKASH">bKash</option>
+            <option value="NAGAD">Nagad</option>
+            <option value="CARD">Card</option>
+          </select>
+        </div>
+        @if (isCredit) {
+          <div class="fg credit-box">
+            <label>Paid now (BDT) <span style="opacity:.6">— the rest becomes baki</span></label>
+            <input type="number" class="inp" [(ngModel)]="amountPaid" min="0" [max]="total" placeholder="0">
+            @if (owed !== null && owed > 0) {
+              <p class="credit-note">This customer already owes ৳{{ owed | number:'1.0-0' }}.</p>
+            }
+            @if (creditLimit > 0 && owed !== null && (owed + dueNow) > creditLimit) {
+              <p class="credit-note warn">Over the credit limit of ৳{{ creditLimit | number:'1.0-0' }} — the sale will be refused.</p>
+            }
+            <p class="credit-note"><b>Goes on account: ৳{{ dueNow | number:'1.0-0' }}</b></p>
+          </div>
+        }
+        <div class="fg">
+          <label>Discount (BDT)</label>
+          <input type="number" class="inp" [(ngModel)]="discount" min="0">
+        </div>
 
-      <div class="totals">
-        <div class="t-row"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
-        <div class="t-row"><span>Discount</span><span>−৳{{ discount || 0 | number:'1.0-0' }}</span></div>
-        <div class="t-row grand"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
-      </div>
+        <div class="totals">
+          <div class="t-row"><span>Subtotal</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
+          <div class="t-row"><span>Discount</span><span>−৳{{ discount || 0 | number:'1.0-0' }}</span></div>
+          <div class="t-row grand"><span>Total</span><span>৳{{ total | number:'1.0-0' }}</span></div>
+        </div>
 
-      <button class="btn-pay" (click)="checkout()" [disabled]="isCheckingOut || cart.length===0">
-        {{ isCheckingOut ? 'Processing…' : '✅ Complete Sale' }}
-      </button>
+        <button class="btn-pay" (click)="checkout()" [disabled]="isCheckingOut || cart.length===0">
+          {{ isCheckingOut ? 'Processing…' : '✅ Complete Sale' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-<app-camera-scanner (scanned)="onCameraScanned($event)"></app-camera-scanner>
+  <app-camera-scanner (scanned)="onCameraScanned($event)"></app-camera-scanner>
 
-<!-- Receipt -->
-<div class="receipt-back" *ngIf="lastReceipt" (click)="closeReceipt()">
-  <div class="receipt" (click)="$event.stopPropagation()">
-    <h3>{{ lastReceipt.header }}</h3>
-    <p class="r-order">Order: {{ lastReceipt.orderNumber }}</p>
-    <p *ngIf="lastReceipt.offline" class="r-offline">Saved offline &mdash; it will be sent to the server automatically when you are back online.</p>
-    <div class="r-row"><span>Subtotal</span><span>৳{{ lastReceipt.subtotal | number:'1.0-0' }}</span></div>
-    <div class="r-row"><span>Discount</span><span>৳{{ lastReceipt.discount | number:'1.0-0' }}</span></div>
-    <div class="r-row grand"><span>Total</span><span>৳{{ lastReceipt.total | number:'1.0-0' }}</span></div>
-    <ng-container *ngIf="lastReceipt.paymentMethod === 'CREDIT'; else paidVia">
-      <div class="r-row"><span>Paid now</span><span>৳{{ lastReceipt.amountPaid || 0 | number:'1.0-0' }}</span></div>
-      <div class="r-row grand"><span>Due (baki)</span><span>৳{{ lastReceipt.due || 0 | number:'1.0-0' }}</span></div>
-      <p class="r-pay" *ngIf="lastReceipt.balance != null && lastReceipt.balance !== lastReceipt.due">Total owed by this customer: ৳{{ lastReceipt.balance | number:'1.0-0' }}</p>
-    </ng-container>
-    <ng-template #paidVia><p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p></ng-template>
-    <p class="r-footer">{{ lastReceipt.footer }}</p>
-    <div class="r-print" *ngIf="printer.supported">
-      <button class="btn-mini" (click)="printReceipt()" [disabled]="(printer.status$ | async) === 'printing' || (printer.status$ | async) === 'connecting'">
-        🖨 {{ (printer.status$ | async) === 'printing' ? 'Printing…' : (printer.status$ | async) === 'connecting' ? 'Connecting…' : (printer.deviceName$ | async) ? 'Print to ' + (printer.deviceName$ | async) : 'Print (Bluetooth)' }}
-      </button>
-      <p *ngIf="printMsg" role="status" class="r-print-msg" [class.ok]="printOk">{{ printMsg }}</p>
+  <!-- Receipt -->
+  @if (lastReceipt) {
+    <div class="receipt-back" (click)="closeReceipt()">
+      <div class="receipt" (click)="$event.stopPropagation()">
+        <h3>{{ lastReceipt.header }}</h3>
+        <p class="r-order">Order: {{ lastReceipt.orderNumber }}</p>
+        @if (lastReceipt.offline) {
+          <p class="r-offline">Saved offline &mdash; it will be sent to the server automatically when you are back online.</p>
+        }
+        <div class="r-row"><span>Subtotal</span><span>৳{{ lastReceipt.subtotal | number:'1.0-0' }}</span></div>
+        <div class="r-row"><span>Discount</span><span>৳{{ lastReceipt.discount | number:'1.0-0' }}</span></div>
+        <div class="r-row grand"><span>Total</span><span>৳{{ lastReceipt.total | number:'1.0-0' }}</span></div>
+        @if (lastReceipt.paymentMethod === 'CREDIT') {
+          <div class="r-row"><span>Paid now</span><span>৳{{ lastReceipt.amountPaid || 0 | number:'1.0-0' }}</span></div>
+          <div class="r-row grand"><span>Due (baki)</span><span>৳{{ lastReceipt.due || 0 | number:'1.0-0' }}</span></div>
+          @if (lastReceipt.balance != null && lastReceipt.balance !== lastReceipt.due) {
+            <p class="r-pay">Total owed by this customer: ৳{{ lastReceipt.balance | number:'1.0-0' }}</p>
+          }
+        } @else {
+          <p class="r-pay">Paid via {{ lastReceipt.paymentMethod }}</p>
+        }
+        <p class="r-footer">{{ lastReceipt.footer }}</p>
+        @if (printer.supported) {
+          <div class="r-print">
+            <button class="btn-mini" (click)="printReceipt()" [disabled]="(printer.status$ | async) === 'printing' || (printer.status$ | async) === 'connecting'">
+              🖨 {{ (printer.status$ | async) === 'printing' ? 'Printing…' : (printer.status$ | async) === 'connecting' ? 'Connecting…' : (printer.deviceName$ | async) ? 'Print to ' + (printer.deviceName$ | async) : 'Print (Bluetooth)' }}
+            </button>
+            @if (printMsg) {
+              <p role="status" class="r-print-msg" [class.ok]="printOk">{{ printMsg }}</p>
+            }
+          </div>
+        }
+        @if (!printer.supported) {
+          <p class="r-print-hint">Bluetooth printing needs Chrome, Edge or the Auleco app.</p>
+        }
+        <button class="btn-mini" (click)="closeReceipt()">Close</button>
+      </div>
     </div>
-    <p class="r-print-hint" *ngIf="!printer.supported">Bluetooth printing needs Chrome, Edge or the Auleco app.</p>
-    <button class="btn-mini" (click)="closeReceipt()">Close</button>
-  </div>
-</div>
+  }

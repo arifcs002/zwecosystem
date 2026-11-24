@@ -8,10 +8,9 @@ import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-d
 export const bdToday = () => new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
 
 @Component({
-  selector: 'app-expense-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-expense-management',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -21,50 +20,69 @@ export const bdToday = () => new Date(Date.now() + 6 * 3600_000).toISOString().s
     <button class="btn-primary" (click)="openAdd()">+ Add Expense</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px">
     <div class="form-group" style="margin:0"><label>From</label><input class="form-input" type="date" [(ngModel)]="from" (change)="load()" /></div>
     <div class="form-group" style="margin:0"><label>To</label><input class="form-input" type="date" [(ngModel)]="to" (change)="load()" /></div>
     <div class="form-group" style="margin:0"><label>Category</label>
-      <select class="form-input" [(ngModel)]="categoryFilter" (change)="load()">
-        <option value="">All</option><option *ngFor="let c of categories" [value]="c">{{ c }}</option>
-      </select>
-    </div>
-    <div style="margin-left:auto;font-size:15px">Total: <b>৳{{ total | number:'1.0-0' }}</b> <span style="opacity:.6">({{ rows.length }})</span></div>
-  </div>
+    <select class="form-input" [(ngModel)]="categoryFilter" (change)="load()">
+      <option value="">All</option>@for (c of categories; track c) {
+      <option [value]="c">{{ c }}</option>
+    }
+  </select>
+</div>
+<div style="margin-left:auto;font-size:15px">Total: <b>৳{{ total | number:'1.0-0' }}</b> <span style="opacity:.6">({{ rows.length }})</span></div>
+</div>
 
-  <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading…</div>
-    <table class="data-table" *ngIf="!isLoading">
+<div class="table-card">
+  @if (isLoading) {
+    <div class="loading">Loading…</div>
+  }
+  @if (!isLoading) {
+    <table class="data-table">
       <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Paid to</th><th>Note</th><th>Actions</th></tr></thead>
       <tbody>
-        <tr *ngFor="let e of rows">
-          <td>{{ e.expenseDate }}</td>
-          <td><span class="name-badge">{{ e.category }}</span></td>
-          <td><b>৳{{ e.amount | number:'1.0-2' }}</b></td>
-          <td>{{ e.payee || '—' }}</td>
-          <td style="max-width:280px">{{ e.note || '—' }}</td>
-          <td class="actions">
-            <button class="btn-edit" (click)="openEdit(e)">✏️ Edit</button>
-            <button class="btn-delete" (click)="remove(e)">🗑️ Delete</button>
-          </td>
-        </tr>
-        <tr *ngIf="rows.length === 0"><td colspan="6" class="empty-row">No expenses in this range.</td></tr>
+        @for (e of rows; track e) {
+          <tr>
+            <td>{{ e.expenseDate }}</td>
+            <td><span class="name-badge">{{ e.category }}</span></td>
+            <td><b>৳{{ e.amount | number:'1.0-2' }}</b></td>
+            <td>{{ e.payee || '—' }}</td>
+            <td style="max-width:280px">{{ e.note || '—' }}</td>
+            <td class="actions">
+              <button class="btn-edit" (click)="openEdit(e)">✏️ Edit</button>
+              <button class="btn-delete" (click)="remove(e)">🗑️ Delete</button>
+            </td>
+          </tr>
+        }
+        @if (rows.length === 0) {
+          <tr><td colspan="6" class="empty-row">No expenses in this range.</td></tr>
+        }
       </tbody>
     </table>
-  </div>
+  }
+</div>
 
-  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+@if (showModal) {
+  <div class="modal-overlay" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header"><h2>{{ form.id ? 'Edit Expense' : 'Add Expense' }}</h2><button class="close-btn" (click)="closeModal()">✕</button></div>
       <div class="modal-body">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        @if (errorMsg) {
+          <div class="alert-error">❌ {{ errorMsg }}</div>
+        }
         <div class="form-group">
           <label>Category *</label>
           <input class="form-input" list="expense-cats" [(ngModel)]="form.category" name="category" maxlength="60" placeholder="Choose or type a new one" />
-          <datalist id="expense-cats"><option *ngFor="let c of categories" [value]="c"></option></datalist>
+          <datalist id="expense-cats">@for (c of categories; track c) {
+            <option [value]="c"></option>
+          }</datalist>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group"><label>Amount (৳) *</label><input class="form-input" type="number" min="0" step="0.01" [(ngModel)]="form.amount" name="amount" /></div>
@@ -79,6 +97,7 @@ export const bdToday = () => new Date(Date.now() + 6 * 3600_000).toISOString().s
       </div>
     </div>
   </div>
+}
 </div>`
 })
 export class ExpenseManagementComponent implements OnInit {

@@ -5,11 +5,10 @@ import { RefundService } from '../../../services/refund/refund.service';
 import { PaymentService } from '../../../services/payment/payment.service';
 
 @Component({
-  selector: 'app-refund-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './refund-management.component.html',
-  styleUrl: './refund-management.component.css'
+    selector: 'app-refund-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './refund-management.component.html',
+    styleUrl: './refund-management.component.css'
 })
 export class RefundManagementComponent implements OnInit {
   private refundService = inject(RefundService);

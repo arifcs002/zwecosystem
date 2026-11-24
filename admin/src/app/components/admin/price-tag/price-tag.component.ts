@@ -11,11 +11,10 @@ interface TagRow {
 }
 
 @Component({
-  selector: 'app-price-tag',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './price-tag.component.html',
-  styleUrl: './price-tag.component.css'
+    selector: 'app-price-tag',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './price-tag.component.html',
+    styleUrl: './price-tag.component.css'
 })
 export class PriceTagComponent implements OnInit {
   private productService = inject(ProductService);

@@ -12,10 +12,9 @@ interface Pick { key: string; name: string; category: string; price: number; }
 const keyOf = (g: ProductGroup) => `${g.baseName}::${g.categoryId ?? ''}`;
 
 @Component({
-  selector: 'app-collection-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-collection-management',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -25,57 +24,76 @@ const keyOf = (g: ProductGroup) => `${g.baseName}::${g.categoryId ?? ''}`;
     <button class="btn-primary" (click)="openAdd()">+ New Collection</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading…</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead><tr><th>Collection</th><th>Products</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let c of rows">
-          <td><b>{{ c.name }}</b><div style="font-size:12.5px;opacity:.65">/collection/{{ c.slug }}</div></td>
-          <td>{{ c.productKeys.length }}</td>
-          <td>{{ c.sortOrder }}</td>
-          <td><span class="name-badge" [style.opacity]="c.isActive ? 1 : .6">{{ c.isActive ? 'Visible' : 'Hidden' }}</span></td>
-          <td class="actions">
-            <button class="btn-edit" (click)="openEdit(c)">✏️ Edit</button>
-            <button class="btn-delete" (click)="remove(c)">🗑️ Delete</button>
-          </td>
-        </tr>
-        <tr *ngIf="rows.length === 0"><td colspan="5" class="empty-row">No collections yet.</td></tr>
-      </tbody>
-    </table>
+    @if (isLoading) {
+      <div class="loading">Loading…</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead><tr><th>Collection</th><th>Products</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          @for (c of rows; track c) {
+            <tr>
+              <td><b>{{ c.name }}</b><div style="font-size:12.5px;opacity:.65">/collection/{{ c.slug }}</div></td>
+              <td>{{ c.productKeys.length }}</td>
+              <td>{{ c.sortOrder }}</td>
+              <td><span class="name-badge" [style.opacity]="c.isActive ? 1 : .6">{{ c.isActive ? 'Visible' : 'Hidden' }}</span></td>
+              <td class="actions">
+                <button class="btn-edit" (click)="openEdit(c)">✏️ Edit</button>
+                <button class="btn-delete" (click)="remove(c)">🗑️ Delete</button>
+              </td>
+            </tr>
+          }
+          @if (rows.length === 0) {
+            <tr><td colspan="5" class="empty-row">No collections yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
 
-  <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
-    <div class="modal" style="max-width:640px" (click)="$event.stopPropagation()">
-      <div class="modal-header"><h2>{{ form.id ? 'Edit Collection' : 'New Collection' }}</h2><button class="close-btn" (click)="showModal = false">✕</button></div>
-      <div class="modal-body">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-        <div class="form-group"><label>Name *</label><input class="form-input" [(ngModel)]="form.name" name="cname" maxlength="80" placeholder="Eid Collection" /></div>
-        <div class="form-group"><label>Description</label><textarea class="form-input" rows="2" [(ngModel)]="form.description" name="cdesc" maxlength="500"></textarea></div>
-        <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap">
-          <div class="form-group" style="margin:0"><label>Display order</label><input class="form-input" type="number" [(ngModel)]="form.sortOrder" name="corder" style="width:110px" /></div>
-          <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" [(ngModel)]="form.isActive" name="cactive" /> Visible on the store</label>
-        </div>
-
-        <div class="form-group" style="margin-top:12px">
-          <label>Products ({{ selected.size }} selected)</label>
-          <input class="form-input" [(ngModel)]="pickSearch" name="psearch" placeholder="🔍 Filter products" />
-          <div style="max-height:260px;overflow:auto;margin-top:8px;border:1px solid rgba(255,255,255,.1);border-radius:10px">
-            <label *ngFor="let p of filteredPicks()" style="display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
-              <input type="checkbox" [checked]="selected.has(p.key)" (change)="toggle(p.key)" />
-              <span style="flex:1">{{ p.name }}<small style="opacity:.6"> · {{ p.category }}</small></span>
-              <span style="opacity:.8">৳{{ p.price | number:'1.0-0' }}</span>
-            </label>
-            <div *ngIf="filteredPicks().length === 0" style="padding:14px;opacity:.6;text-align:center">No products match.</div>
+  @if (showModal) {
+    <div class="modal-overlay" (click)="showModal = false">
+      <div class="modal" style="max-width:640px" (click)="$event.stopPropagation()">
+        <div class="modal-header"><h2>{{ form.id ? 'Edit Collection' : 'New Collection' }}</h2><button class="close-btn" (click)="showModal = false">✕</button></div>
+        <div class="modal-body">
+          @if (errorMsg) {
+            <div class="alert-error">❌ {{ errorMsg }}</div>
+          }
+          <div class="form-group"><label>Name *</label><input class="form-input" [(ngModel)]="form.name" name="cname" maxlength="80" placeholder="Eid Collection" /></div>
+          <div class="form-group"><label>Description</label><textarea class="form-input" rows="2" [(ngModel)]="form.description" name="cdesc" maxlength="500"></textarea></div>
+          <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap">
+            <div class="form-group" style="margin:0"><label>Display order</label><input class="form-input" type="number" [(ngModel)]="form.sortOrder" name="corder" style="width:110px" /></div>
+            <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" [(ngModel)]="form.isActive" name="cactive" /> Visible on the store</label>
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Products ({{ selected.size }} selected)</label>
+            <input class="form-input" [(ngModel)]="pickSearch" name="psearch" placeholder="🔍 Filter products" />
+            <div style="max-height:260px;overflow:auto;margin-top:8px;border:1px solid rgba(255,255,255,.1);border-radius:10px">
+              @for (p of filteredPicks(); track p) {
+                <label style="display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+                  <input type="checkbox" [checked]="selected.has(p.key)" (change)="toggle(p.key)" />
+                  <span style="flex:1">{{ p.name }}<small style="opacity:.6"> · {{ p.category }}</small></span>
+                  <span style="opacity:.8">৳{{ p.price | number:'1.0-0' }}</span>
+                </label>
+              }
+              @if (filteredPicks().length === 0) {
+                <div style="padding:14px;opacity:.6;text-align:center">No products match.</div>
+              }
+            </div>
           </div>
         </div>
+        <div class="modal-footer"><button class="btn-secondary" (click)="showModal = false">Cancel</button><button class="btn-primary" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button></div>
       </div>
-      <div class="modal-footer"><button class="btn-secondary" (click)="showModal = false">Cancel</button><button class="btn-primary" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button></div>
     </div>
-  </div>
+  }
 </div>`
 })
 export class CollectionManagementComponent implements OnInit {

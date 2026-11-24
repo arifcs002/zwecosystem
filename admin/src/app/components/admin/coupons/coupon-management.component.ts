@@ -19,10 +19,9 @@ const toLocalInput = (iso?: string | null) => {
 };
 
 @Component({
-  selector: 'app-coupon-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-coupon-management',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -32,29 +31,53 @@ const toLocalInput = (iso?: string | null) => {
     <button class="btn-primary" (click)="openAdd()">+ New Coupon</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading coupons...</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr><th>Code</th><th>Discount</th><th>Min. order</th><th>Used</th><th>Validity</th><th>Status</th><th>Actions</th></tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of coupons">
-          <td><span class="name-badge">{{ c.code }}</span><div *ngIf="c.description" style="font-size:12px;opacity:.65;margin-top:4px">{{ c.description }}</div></td>
-          <td>
-            <ng-container *ngIf="c.discountType === 'PERCENT'">{{ c.discountValue }}% off<span *ngIf="c.maxDiscountAmount" style="opacity:.65"> (max ৳{{ c.maxDiscountAmount }})</span></ng-container>
-            <ng-container *ngIf="c.discountType === 'FIXED'">৳{{ c.discountValue }} off</ng-container>
+    @if (isLoading) {
+      <div class="loading">Loading coupons...</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead>
+          <tr><th>Code</th><th>Discount</th><th>Min. order</th><th>Used</th><th>Validity</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          @for (c of coupons; track c) {
+            <tr>
+              <td><span class="name-badge">{{ c.code }}</span>@if (c.description) {
+              <div style="font-size:12px;opacity:.65;margin-top:4px">{{ c.description }}</div>
+            }</td>
+            <td>
+              @if (c.discountType === 'PERCENT') {
+                {{ c.discountValue }}% off@if (c.maxDiscountAmount) {
+                <span style="opacity:.65"> (max ৳{{ c.maxDiscountAmount }})</span>
+              }
+            }
+            @if (c.discountType === 'FIXED') {
+              ৳{{ c.discountValue }} off
+            }
           </td>
           <td>{{ c.minOrderAmount ? '৳' + c.minOrderAmount : '—' }}</td>
           <td>{{ c.usedCount }}{{ c.usageLimit ? ' / ' + c.usageLimit : '' }}</td>
           <td style="font-size:13px">
-            <span *ngIf="!c.startsAt && !c.expiresAt">Always</span>
-            <span *ngIf="c.startsAt">From {{ c.startsAt | date:'mediumDate' }}</span>
-            <span *ngIf="c.startsAt && c.expiresAt"> · </span>
-            <span *ngIf="c.expiresAt">Until {{ c.expiresAt | date:'mediumDate' }}</span>
+            @if (!c.startsAt && !c.expiresAt) {
+              <span>Always</span>
+            }
+            @if (c.startsAt) {
+              <span>From {{ c.startsAt | date:'mediumDate' }}</span>
+            }
+            @if (c.startsAt && c.expiresAt) {
+              <span> · </span>
+            }
+            @if (c.expiresAt) {
+              <span>Until {{ c.expiresAt | date:'mediumDate' }}</span>
+            }
           </td>
           <td>
             <span class="name-badge" [style.opacity]="state(c) === 'Active' ? 1 : .6">{{ state(c) }}</span>
@@ -65,19 +88,26 @@ const toLocalInput = (iso?: string | null) => {
             <button class="btn-delete" (click)="remove(c)">🗑️ Delete</button>
           </td>
         </tr>
-        <tr *ngIf="coupons.length === 0"><td colspan="7" class="empty-row">No coupons yet. Create one to run a promotion.</td></tr>
-      </tbody>
-    </table>
-  </div>
+      }
+      @if (coupons.length === 0) {
+        <tr><td colspan="7" class="empty-row">No coupons yet. Create one to run a promotion.</td></tr>
+      }
+    </tbody>
+  </table>
+}
+</div>
 
-  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+@if (showModal) {
+  <div class="modal-overlay" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>{{ form.id ? 'Edit Coupon' : 'New Coupon' }}</h2>
         <button class="close-btn" (click)="closeModal()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        @if (errorMsg) {
+          <div class="alert-error">❌ {{ errorMsg }}</div>
+        }
         <div class="form-group">
           <label>Code *</label>
           <input class="form-input" [(ngModel)]="form.code" name="code" maxlength="32" placeholder="EID100" style="text-transform:uppercase" />
@@ -103,10 +133,12 @@ const toLocalInput = (iso?: string | null) => {
             <label>Minimum order (৳)</label>
             <input class="form-input" type="number" min="0" [(ngModel)]="form.minOrderAmount" name="min" placeholder="0" />
           </div>
-          <div class="form-group" *ngIf="form.discountType === 'PERCENT'">
-            <label>Max discount (৳)</label>
-            <input class="form-input" type="number" min="0" [(ngModel)]="form.maxDiscountAmount" name="max" placeholder="No cap" />
-          </div>
+          @if (form.discountType === 'PERCENT') {
+            <div class="form-group">
+              <label>Max discount (৳)</label>
+              <input class="form-input" type="number" min="0" [(ngModel)]="form.maxDiscountAmount" name="max" placeholder="No cap" />
+            </div>
+          }
           <div class="form-group">
             <label>Total usage limit</label>
             <input class="form-input" type="number" min="1" [(ngModel)]="form.usageLimit" name="limit" placeholder="Unlimited" />
@@ -128,6 +160,7 @@ const toLocalInput = (iso?: string | null) => {
       </div>
     </div>
   </div>
+}
 </div>`
 })
 export class CouponManagementComponent implements OnInit {

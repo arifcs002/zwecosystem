@@ -11,10 +11,9 @@ interface ImportReport { message?: string; summary?: { total: number; valid: num
 // Load many products at once from a spreadsheet saved as CSV. Nothing is saved until the check passes, and a
 // single bad row stops the whole import so the catalogue is never left half-loaded.
 @Component({
-  selector: 'app-product-import',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-product-import',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -35,52 +34,74 @@ interface ImportReport { message?: string; summary?: { total: number; valid: num
       Optional: barcode (to keep one already printed on your stock), description, compare_at_price, unit.
     </div>
     <input type="file" accept=".csv,text/csv" (change)="onFile($event)" aria-label="Choose a CSV file">
-    <p *ngIf="fileName" style="margin:8px 0 0;font-size:13px">{{ fileName }} — {{ rows.length }} row{{ rows.length === 1 ? '' : 's' }}</p>
-    <p *ngIf="problem" role="alert" style="color:#f87171;margin:8px 0 0;font-size:13.5px">❌ {{ problem }}</p>
+    @if (fileName) {
+      <p style="margin:8px 0 0;font-size:13px">{{ fileName }} — {{ rows.length }} row{{ rows.length === 1 ? '' : 's' }}</p>
+    }
+    @if (problem) {
+      <p role="alert" style="color:#f87171;margin:8px 0 0;font-size:13.5px">❌ {{ problem }}</p>
+    }
   </div>
 
-  <div class="table-card" *ngIf="rows.length && !done" style="padding:16px">
-    <label style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin-bottom:10px">
-      <input type="checkbox" [(ngModel)]="createCategories" (ngModelChange)="check()"> Create categories that don't exist yet
-    </label>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn-secondary" (click)="check()" [disabled]="busy">{{ busy && !importing ? 'Checking…' : 'Check file' }}</button>
-      <button class="btn-primary" (click)="runImport()" [disabled]="busy || !canImport">{{ importing ? 'Importing…' : 'Import ' + (report?.summary?.valid || 0) + ' products' }}</button>
+  @if (rows.length && !done) {
+    <div class="table-card" style="padding:16px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin-bottom:10px">
+        <input type="checkbox" [(ngModel)]="createCategories" (ngModelChange)="check()"> Create categories that don't exist yet
+      </label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn-secondary" (click)="check()" [disabled]="busy">{{ busy && !importing ? 'Checking…' : 'Check file' }}</button>
+        <button class="btn-primary" (click)="runImport()" [disabled]="busy || !canImport">{{ importing ? 'Importing…' : 'Import ' + (report?.summary?.valid || 0) + ' products' }}</button>
+      </div>
+      @if (report?.summary; as s) {
+        <p style="font-size:13.5px;margin:0 0 8px">
+          <b [style.color]="s.withErrors ? '#f87171' : '#34d399'">{{ s.withErrors ? s.withErrors + ' row(s) need fixing — nothing will be imported until they are fixed.' : 'All ' + s.total + ' rows look good.' }}</b>
+          @if (s.newCategories.length) {
+            <span> New categories: {{ s.newCategories.join(', ') }}.</span>
+          }
+        </p>
+      }
+      @if (report?.message && !report?.summary) {
+        <p style="color:#f87171">{{ report?.message }}</p>
+      }
+      <div style="overflow-x:auto">
+        <table class="data-table" style="width:100%;min-width:0;font-size:13px">
+          <thead><tr><th>#</th><th>Name</th><th>Category</th><th style="text-align:right">Price</th><th style="text-align:right">Buy</th><th>Stock</th><th>Check</th></tr></thead>
+          <tbody>
+            @for (r of rows | slice:0:200; track r; let i = $index) {
+              <tr>
+                <td>{{ i + 1 }}</td><td>{{ r.name }}</td><td>{{ r.category }}</td>
+                <td style="text-align:right">{{ r.price }}</td><td style="text-align:right">{{ r.wholesalePrice }}</td>
+                <td>{{ r.sizes || r.quantity }}</td>
+                <td>
+                  @if (report?.rows?.[i]; as rr) {
+                    @for (e of rr.errors; track e) {
+                      <span style="display:block;color:#f87171">✕ {{ e }}</span>
+                    }
+                    @for (w of rr.warnings; track w) {
+                      <span style="display:block;color:#fbbf24">⚠ {{ w }}</span>
+                    }
+                    @if (!rr.errors.length && !rr.warnings.length) {
+                      <span style="color:#34d399">✓</span>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (rows.length > 200) {
+          <p style="opacity:.6;font-size:12.5px">Showing the first 200 rows; all {{ rows.length }} are checked.</p>
+        }
+      </div>
     </div>
+  }
 
-    <p *ngIf="report?.summary as s" style="font-size:13.5px;margin:0 0 8px">
-      <b [style.color]="s.withErrors ? '#f87171' : '#34d399'">{{ s.withErrors ? s.withErrors + ' row(s) need fixing — nothing will be imported until they are fixed.' : 'All ' + s.total + ' rows look good.' }}</b>
-      <span *ngIf="s.newCategories.length"> New categories: {{ s.newCategories.join(', ') }}.</span>
-    </p>
-    <p *ngIf="report?.message && !report?.summary" style="color:#f87171">{{ report?.message }}</p>
-
-    <div style="overflow-x:auto">
-      <table class="data-table" style="width:100%;min-width:0;font-size:13px">
-        <thead><tr><th>#</th><th>Name</th><th>Category</th><th style="text-align:right">Price</th><th style="text-align:right">Buy</th><th>Stock</th><th>Check</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let r of rows | slice:0:200; let i = index">
-            <td>{{ i + 1 }}</td><td>{{ r.name }}</td><td>{{ r.category }}</td>
-            <td style="text-align:right">{{ r.price }}</td><td style="text-align:right">{{ r.wholesalePrice }}</td>
-            <td>{{ r.sizes || r.quantity }}</td>
-            <td>
-              <ng-container *ngIf="report?.rows?.[i] as rr">
-                <span *ngFor="let e of rr.errors" style="display:block;color:#f87171">✕ {{ e }}</span>
-                <span *ngFor="let w of rr.warnings" style="display:block;color:#fbbf24">⚠ {{ w }}</span>
-                <span *ngIf="!rr.errors.length && !rr.warnings.length" style="color:#34d399">✓</span>
-              </ng-container>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p *ngIf="rows.length > 200" style="opacity:.6;font-size:12.5px">Showing the first 200 rows; all {{ rows.length }} are checked.</p>
+  @if (done) {
+    <div class="table-card" role="status" style="padding:16px;border:1px solid rgba(52,211,153,.4)">
+      <h3 style="margin:0 0 6px;color:#34d399">✅ Imported {{ report?.imported }} products</h3>
+      <div style="font-size:13.5px">{{ report?.rowsCreated }} items were added to your stock (each size is its own item). Print barcodes from the Barcodes page when you are ready.</div>
+      <button class="btn-secondary" style="margin-top:12px" (click)="reset()">Import another file</button>
     </div>
-  </div>
-
-  <div class="table-card" *ngIf="done" role="status" style="padding:16px;border:1px solid rgba(52,211,153,.4)">
-    <h3 style="margin:0 0 6px;color:#34d399">✅ Imported {{ report?.imported }} products</h3>
-    <div style="font-size:13.5px">{{ report?.rowsCreated }} items were added to your stock (each size is its own item). Print barcodes from the Barcodes page when you are ready.</div>
-    <button class="btn-secondary" style="margin-top:12px" (click)="reset()">Import another file</button>
-  </div>
+  }
 </div>`
 })
 export class ProductImportComponent {

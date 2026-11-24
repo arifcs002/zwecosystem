@@ -3,5 +3,9 @@
   <button [class.active]="activeTab === 'tags'" (click)="activeTab = 'tags'" class="tab-btn">🖨️ Price Tags (with copies)</button>
 </div>
 
-<app-barcode-management *ngIf="activeTab === 'barcodes'"></app-barcode-management>
-<app-price-tag *ngIf="activeTab === 'tags'"></app-price-tag>
+@if (activeTab === 'barcodes') {
+  <app-barcode-management></app-barcode-management>
+}
+@if (activeTab === 'tags') {
+  <app-price-tag></app-price-tag>
+}

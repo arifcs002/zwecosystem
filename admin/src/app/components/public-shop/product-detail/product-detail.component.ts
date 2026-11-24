@@ -20,10 +20,9 @@ import { ShopFooterComponent } from '../shared/shop-footer.component';
 import { ShopCardComponent, groupKey } from '../shared/shop-card.component';
 
 @Component({
-  selector: 'app-product-detail',
-  standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgUrlPipe, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
-  templateUrl: './product-detail.component.html'
+    selector: 'app-product-detail',
+    imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgUrlPipe, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
+    templateUrl: './product-detail.component.html'
 })
 export class ProductDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);

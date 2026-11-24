@@ -9,10 +9,9 @@ const TABS: { value: ReviewStatus | ''; label: string }[] = [
 ];
 
 @Component({
-  selector: 'app-review-management',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-review-management',
+    imports: [CommonModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -22,34 +21,52 @@ const TABS: { value: ReviewStatus | ''; label: string }[] = [
     <button class="btn-secondary" (click)="load()">↻ Refresh</button>
   </div>
 
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-    <button *ngFor="let t of tabs" (click)="select(t.value)" [class]="status === t.value ? 'btn-primary' : 'btn-secondary'">{{ t.label }}</button>
+    @for (t of tabs; track t) {
+      <button (click)="select(t.value)" [class]="status === t.value ? 'btn-primary' : 'btn-secondary'">{{ t.label }}</button>
+    }
   </div>
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading…</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead><tr><th>Product</th><th>Rating</th><th>Review</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let r of rows">
-          <td><b>{{ r.productName }}</b><div style="font-size:12px;opacity:.65">{{ r.date | date:'mediumDate' }}</div></td>
-          <td style="white-space:nowrap;color:#fbbf24">{{ stars(r.rating) }}</td>
-          <td style="max-width:360px">
-            <div><b>{{ r.reviewerName }}</b> <span *ngIf="r.isVerified" class="name-badge" style="margin-left:4px">✓ Verified buyer</span></div>
-            <div style="opacity:.85;margin-top:3px;white-space:pre-line">{{ r.comment || '—' }}</div>
-          </td>
-          <td><span class="name-badge">{{ r.status === 'PENDING' ? 'Waiting' : r.status === 'APPROVED' ? 'Published' : 'Rejected' }}</span></td>
-          <td class="actions">
-            <button class="btn-edit" *ngIf="r.status !== 'APPROVED'" (click)="setStatus(r, 'APPROVED')">✓ Approve</button>
-            <button class="btn-edit" *ngIf="r.status !== 'REJECTED'" (click)="setStatus(r, 'REJECTED')">✕ Reject</button>
-            <button class="btn-delete" (click)="remove(r)">🗑️</button>
-          </td>
-        </tr>
-        <tr *ngIf="rows.length === 0"><td colspan="5" class="empty-row">No reviews here yet.</td></tr>
+    @if (isLoading) {
+      <div class="loading">Loading…</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead><tr><th>Product</th><th>Rating</th><th>Review</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          @for (r of rows; track r) {
+            <tr>
+              <td><b>{{ r.productName }}</b><div style="font-size:12px;opacity:.65">{{ r.date | date:'mediumDate' }}</div></td>
+              <td style="white-space:nowrap;color:#fbbf24">{{ stars(r.rating) }}</td>
+              <td style="max-width:360px">
+                <div><b>{{ r.reviewerName }}</b> @if (r.isVerified) {
+                <span class="name-badge" style="margin-left:4px">✓ Verified buyer</span>
+              }</div>
+              <div style="opacity:.85;margin-top:3px;white-space:pre-line">{{ r.comment || '—' }}</div>
+            </td>
+            <td><span class="name-badge">{{ r.status === 'PENDING' ? 'Waiting' : r.status === 'APPROVED' ? 'Published' : 'Rejected' }}</span></td>
+            <td class="actions">
+              @if (r.status !== 'APPROVED') {
+                <button class="btn-edit" (click)="setStatus(r, 'APPROVED')">✓ Approve</button>
+              }
+              @if (r.status !== 'REJECTED') {
+                <button class="btn-edit" (click)="setStatus(r, 'REJECTED')">✕ Reject</button>
+              }
+              <button class="btn-delete" (click)="remove(r)">🗑️</button>
+            </td>
+          </tr>
+        }
+        @if (rows.length === 0) {
+          <tr><td colspan="5" class="empty-row">No reviews here yet.</td></tr>
+        }
       </tbody>
     </table>
-  </div>
+  }
+</div>
 </div>`
 })
 export class ReviewManagementComponent implements OnInit {

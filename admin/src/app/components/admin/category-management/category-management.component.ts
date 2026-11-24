@@ -7,11 +7,10 @@ import { buildIndentedList, FlatCategory, categoryPath } from '../../../utils/ca
 import { CategoryTreePickerComponent } from '../../shared/category-tree-picker/category-tree-picker.component';
 
 @Component({
-  selector: 'app-category-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule, CategoryTreePickerComponent],
-  templateUrl: './category-management.component.html',
-  styleUrl: './category-management.component.css'
+    selector: 'app-category-management',
+    imports: [CommonModule, FormsModule, CategoryTreePickerComponent],
+    templateUrl: './category-management.component.html',
+    styleUrl: './category-management.component.css'
 })
 export class CategoryManagementComponent implements OnInit {
   private categoryService = inject(CategoryService);

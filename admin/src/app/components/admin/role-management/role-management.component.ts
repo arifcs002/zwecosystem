@@ -18,11 +18,10 @@ interface Role {
 }
 
 @Component({
-  selector: 'app-role-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './role-management.component.html',
-  styleUrl: './role-management.component.css'
+    selector: 'app-role-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './role-management.component.html',
+    styleUrl: './role-management.component.css'
 })
 export class RoleManagementComponent {
   private confirmSvc = inject(ConfirmDialogService);

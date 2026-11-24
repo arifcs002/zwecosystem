@@ -11,10 +11,9 @@ const TABS: { value: AbandonedStatus | ''; label: string }[] = [
 // Carts where the shopper typed a valid phone number at checkout but never placed the order.
 // The owner calls / WhatsApps them; placing an order later auto-marks the cart Recovered.
 @Component({
-  selector: 'app-abandoned-carts',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-abandoned-carts',
+    imports: [CommonModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -24,50 +23,72 @@ const TABS: { value: AbandonedStatus | ''; label: string }[] = [
     <button class="btn-secondary" (click)="load()">↻ Refresh</button>
   </div>
 
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-    <button *ngFor="let t of tabs" (click)="select(t.value)" [class]="status === t.value ? 'btn-primary' : 'btn-secondary'">{{ t.label }}</button>
+    @for (t of tabs; track t) {
+      <button (click)="select(t.value)" [class]="status === t.value ? 'btn-primary' : 'btn-secondary'">{{ t.label }}</button>
+    }
   </div>
 
-  <div *ngIf="status === 'OPEN' && rows.length" style="margin-bottom:14px;opacity:.85;font-size:14px">
-    {{ rows.length }} cart{{ rows.length === 1 ? '' : 's' }} waiting · potential sales <b>৳{{ potential | number:'1.0-0' }}</b>
-  </div>
+  @if (status === 'OPEN' && rows.length) {
+    <div style="margin-bottom:14px;opacity:.85;font-size:14px">
+      {{ rows.length }} cart{{ rows.length === 1 ? '' : 's' }} waiting · potential sales <b>৳{{ potential | number:'1.0-0' }}</b>
+    </div>
+  }
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading…</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead><tr><th>Customer</th><th>Cart</th><th>Value</th><th>Last activity</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-        <ng-container *ngFor="let r of rows">
-          <tr>
-            <td><b>{{ r.customerName || 'Unknown' }}</b><div style="font-size:13px;opacity:.75">{{ r.customerPhone }}</div></td>
-            <td>
-              <button class="btn-edit" (click)="open = open === r.id ? null : r.id">{{ r.itemCount }} item{{ r.itemCount === 1 ? '' : 's' }} {{ open === r.id ? '▴' : '▾' }}</button>
-            </td>
-            <td>৳{{ r.subtotal | number:'1.0-0' }}</td>
-            <td style="font-size:13px">{{ ago(r.lastActivity) }}</td>
-            <td><span class="name-badge">{{ label(r.status) }}</span></td>
-            <td class="actions">
-              <a class="btn-edit" [href]="'tel:' + r.customerPhone">📞 Call</a>
-              <a class="btn-edit" [href]="whatsapp(r)" target="_blank" rel="noopener">💬 WhatsApp</a>
-              <button class="btn-edit" *ngIf="r.status === 'OPEN'" (click)="setStatus(r, 'CONTACTED')">✓ Contacted</button>
-              <button class="btn-edit" *ngIf="r.status === 'OPEN' || r.status === 'CONTACTED'" (click)="setStatus(r, 'DISMISSED')">✕ Dismiss</button>
-              <button class="btn-delete" (click)="remove(r)">🗑️</button>
-            </td>
-          </tr>
-          <tr *ngIf="open === r.id">
-            <td colspan="6" style="background:rgba(255,255,255,.03)">
-              <div *ngFor="let it of r.items" style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:14px">
-                <span>{{ it.name }} × {{ it.quantity }}</span><span>৳{{ it.price * it.quantity | number:'1.0-0' }}</span>
-              </div>
-              <div *ngIf="r.shippingAddress" style="font-size:13px;opacity:.7;margin-top:6px">📍 {{ r.shippingAddress }}</div>
-            </td>
-          </tr>
-        </ng-container>
-        <tr *ngIf="rows.length === 0"><td colspan="6" class="empty-row">Nothing here. Carts appear once a shopper enters a valid mobile number at checkout.</td></tr>
-      </tbody>
-    </table>
+    @if (isLoading) {
+      <div class="loading">Loading…</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead><tr><th>Customer</th><th>Cart</th><th>Value</th><th>Last activity</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          @for (r of rows; track r) {
+            <tr>
+              <td><b>{{ r.customerName || 'Unknown' }}</b><div style="font-size:13px;opacity:.75">{{ r.customerPhone }}</div></td>
+              <td>
+                <button class="btn-edit" (click)="open = open === r.id ? null : r.id">{{ r.itemCount }} item{{ r.itemCount === 1 ? '' : 's' }} {{ open === r.id ? '▴' : '▾' }}</button>
+              </td>
+              <td>৳{{ r.subtotal | number:'1.0-0' }}</td>
+              <td style="font-size:13px">{{ ago(r.lastActivity) }}</td>
+              <td><span class="name-badge">{{ label(r.status) }}</span></td>
+              <td class="actions">
+                <a class="btn-edit" [href]="'tel:' + r.customerPhone">📞 Call</a>
+                <a class="btn-edit" [href]="whatsapp(r)" target="_blank" rel="noopener">💬 WhatsApp</a>
+                @if (r.status === 'OPEN') {
+                  <button class="btn-edit" (click)="setStatus(r, 'CONTACTED')">✓ Contacted</button>
+                }
+                @if (r.status === 'OPEN' || r.status === 'CONTACTED') {
+                  <button class="btn-edit" (click)="setStatus(r, 'DISMISSED')">✕ Dismiss</button>
+                }
+                <button class="btn-delete" (click)="remove(r)">🗑️</button>
+              </td>
+            </tr>
+            @if (open === r.id) {
+              <tr>
+                <td colspan="6" style="background:rgba(255,255,255,.03)">
+                  @for (it of r.items; track it) {
+                    <div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:14px">
+                      <span>{{ it.name }} × {{ it.quantity }}</span><span>৳{{ it.price * it.quantity | number:'1.0-0' }}</span>
+                    </div>
+                  }
+                  @if (r.shippingAddress) {
+                    <div style="font-size:13px;opacity:.7;margin-top:6px">📍 {{ r.shippingAddress }}</div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+          @if (rows.length === 0) {
+            <tr><td colspan="6" class="empty-row">Nothing here. Carts appear once a shopper enters a valid mobile number at checkout.</td></tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
 </div>`
 })

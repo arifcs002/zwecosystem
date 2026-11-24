@@ -37,11 +37,10 @@ export const DASHBOARD_THEMES: Record<string, { bg: string; accent: string; navB
 // setting) for hero/category/product blocks, and the nav_categories /
 // store_name / logo_url settings for the nav bar and header replica.
 @Component({
-  selector: 'app-storefront-inline-builder',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
-  templateUrl: './storefront-inline-builder.component.html',
-  styleUrl: './storefront-inline-builder.component.css'
+    selector: 'app-storefront-inline-builder',
+    imports: [CommonModule, FormsModule, ImgUrlPipe],
+    templateUrl: './storefront-inline-builder.component.html',
+    styleUrl: './storefront-inline-builder.component.css'
 })
 export class StorefrontInlineBuilderComponent implements OnInit {
   private settingsService = inject(SettingsService);

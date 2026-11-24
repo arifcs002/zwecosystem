@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CompanyService, Company } from '../../../services/company/company.service';
 
@@ -11,19 +11,22 @@ const TENANT_NAME_KEY = 'tenant_company_name';
 // clears it so the backend returns the global (all-tenant) view. Changing the
 // selection reloads so every page refetches in the new context.
 @Component({
-  selector: 'app-company-selector',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="cs-wrap" *ngIf="companies.length">
-      <span class="cs-icon">🏢</span>
-      <select class="cs-select" [(ngModel)]="selectedId" (ngModelChange)="onChange($event)">
-        <option [ngValue]="null">All Companies</option>
-        <option *ngFor="let c of companies" [ngValue]="c.id">{{ c.name }}</option>
-      </select>
-    </div>
-  `,
-  styles: [`
+    selector: 'app-company-selector',
+    imports: [FormsModule],
+    template: `
+    @if (companies.length) {
+      <div class="cs-wrap">
+        <span class="cs-icon">🏢</span>
+        <select class="cs-select" [(ngModel)]="selectedId" (ngModelChange)="onChange($event)">
+          <option [ngValue]="null">All Companies</option>
+          @for (c of companies; track c) {
+            <option [ngValue]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </div>
+    }
+    `,
+    styles: [`
     .cs-wrap { display: inline-flex; align-items: center; gap: 6px; background: #f3f0ff; border: 1px solid #ddd6fe;
       border-radius: 10px; padding: 4px 10px; }
     .cs-icon { font-size: 14px; }

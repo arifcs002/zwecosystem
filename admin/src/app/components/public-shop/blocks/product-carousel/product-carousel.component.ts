@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ProductCardComponent } from '../product-card/product-card.component';
 import { ProductGroup } from '../../../../utils/product-group.util';
 
@@ -7,11 +7,10 @@ import { ProductGroup } from '../../../../utils/product-group.util';
 // otherwise cards scroll horizontally (GhorerBazar-style). Highlight paints a
 // soft tinted background for campaign/deal sections.
 @Component({
-  selector: 'app-product-carousel',
-  standalone: true,
-  imports: [CommonModule, ProductCardComponent],
-  templateUrl: './product-carousel.component.html',
-  styleUrl: './product-carousel.component.css'
+    selector: 'app-product-carousel',
+    imports: [ProductCardComponent],
+    templateUrl: './product-carousel.component.html',
+    styleUrl: './product-carousel.component.css'
 })
 export class ProductCarouselComponent {
   @Input() title = '';

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CompanyService } from '../../services/company/company.service';
@@ -9,10 +9,9 @@ import { TenantService } from '../../services/tenant/tenant.service';
 // inline on the home page). On success, forwards to the existing
 // :companySlug/login route (which login.component already themes for company context).
 @Component({
-  selector: 'app-company-code-entry',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  template: `
+    selector: 'app-company-code-entry',
+    imports: [FormsModule, RouterLink],
+    template: `
     <div class="wrap">
       <div class="glow-a"></div>
       <div class="glow-b"></div>
@@ -21,7 +20,7 @@ import { TenantService } from '../../services/tenant/tenant.service';
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
           Back to Home
         </a>
-
+    
         <div class="head">
           <div class="icon">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
@@ -30,18 +29,20 @@ import { TenantService } from '../../services/tenant/tenant.service';
           <h2>Find your store</h2>
           <p class="sub">Enter your store code to continue</p>
         </div>
-
-        <p *ngIf="error" class="error">{{ error }}</p>
-
+    
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+    
         <label class="label">Store Code</label>
         <input class="input" [(ngModel)]="code" placeholder="e.g. A1B2C3" (keyup.enter)="submit()" [disabled]="checking" style="text-transform:uppercase; letter-spacing:.05em;">
         <button class="btn" (click)="submit()" [disabled]="checking || !code.trim()">{{ checking ? 'Checking…' : 'Continue' }}</button>
-
+    
         <p class="alt"><a routerLink="/admin/login">Are you an admin? Go to Admin Login</a></p>
       </div>
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 90px 20px 40px; position: relative;
       background: radial-gradient(circle at 50% 0%, rgba(244,63,94,.15), transparent 55%), #0a0808; font-family: Inter, system-ui, sans-serif; overflow: hidden; }
     .glow-a { position: absolute; top: 20%; left: 8%; width: 340px; height: 340px; border-radius: 999px; background: rgba(244,63,94,.12); filter: blur(100px); }

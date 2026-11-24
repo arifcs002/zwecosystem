@@ -20,7 +20,9 @@
       <button (click)="cancel()" class="btn-secondary text-sm px-4 py-1.5">Cancel</button>
       <button (click)="saveCompany()" [disabled]="saving"
         class="btn-primary flex items-center gap-2 px-5 py-1.5 text-sm">
-        <svg *ngIf="saving" class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        @if (saving) {
+          <svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        }
         {{ saving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Company') }}
       </button>
     </div>
@@ -31,13 +33,15 @@
 <div class="max-w-5xl mx-auto px-4 py-6">
 
   <!-- Error Banner -->
-  <div *ngIf="errorMsg" class="alert-error mb-5 flex items-start gap-3">
-    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    <div>
-      <p class="font-semibold">Error</p>
-      <p class="text-sm opacity-80 mt-0.5">{{ errorMsg }}</p>
+  @if (errorMsg) {
+    <div class="alert-error mb-5 flex items-start gap-3">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div>
+        <p class="font-semibold">Error</p>
+        <p class="text-sm opacity-80 mt-0.5">{{ errorMsg }}</p>
+      </div>
     </div>
-  </div>
+  }
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -48,13 +52,17 @@
       <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
         <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Company Logo</h3>
         <div class="w-full aspect-square max-w-[150px] mx-auto rounded-2xl border-2 border-dashed border-white/15 bg-black/20 flex items-center justify-center overflow-hidden mb-4">
-          <img *ngIf="currentCompany.logoUrl" [src]="currentCompany.logoUrl" class="w-full h-full object-contain" alt="Logo">
-          <div *ngIf="!currentCompany.logoUrl" class="text-center px-4">
-            <div class="w-12 h-12 rounded-xl bg-violet-900/30 border border-violet-700/30 flex items-center justify-center mx-auto mb-2">
-              <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          @if (currentCompany.logoUrl) {
+            <img [src]="currentCompany.logoUrl" class="w-full h-full object-contain" alt="Logo">
+          }
+          @if (!currentCompany.logoUrl) {
+            <div class="text-center px-4">
+              <div class="w-12 h-12 rounded-xl bg-violet-900/30 border border-violet-700/30 flex items-center justify-center mx-auto mb-2">
+                <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <p class="text-[11px] text-gray-600">No logo</p>
             </div>
-            <p class="text-[11px] text-gray-600">No logo</p>
-          </div>
+          }
         </div>
         <label class="block w-full cursor-pointer">
           <span class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-violet-900/20 border border-violet-800/30 text-violet-400 text-xs font-semibold hover:bg-violet-900/30 transition">
@@ -133,10 +141,12 @@
             <input [(ngModel)]="currentCompany.name" name="companyName" type="text"
               class="form-input" [ngClass]="{'border-rose-500 focus:border-rose-500 focus:shadow-none': submitted && !currentCompany.name.trim()}"
               placeholder="e.g. Super Store BD">
-            <p *ngIf="submitted && !currentCompany.name.trim()" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Company name is required
-            </p>
+            @if (submitted && !currentCompany.name.trim()) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Company name is required
+              </p>
+            }
           </div>
 
           <div class="form-group sm:col-span-2">
@@ -149,13 +159,17 @@
                 (input)="sanitizeSubdomain($event)">
               <span class="h-[38px] px-3 bg-violet-900/20 border border-violet-700/30 rounded-r-lg text-[11px] text-violet-400 font-mono flex items-center whitespace-nowrap">.auleco.com</span>
             </div>
-            <p *ngIf="submitted && !currentCompany.subdomain.trim()" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Subdomain is required
-            </p>
-            <p *ngIf="currentCompany.subdomain" class="text-[11px] text-gray-600 mt-1">
-              URL: <span class="text-violet-400 font-mono">{{ currentCompany.subdomain }}.auleco.com</span>
-            </p>
+            @if (submitted && !currentCompany.subdomain.trim()) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Subdomain is required
+              </p>
+            }
+            @if (currentCompany.subdomain) {
+              <p class="text-[11px] text-gray-600 mt-1">
+                URL: <span class="text-violet-400 font-mono">{{ currentCompany.subdomain }}.auleco.com</span>
+              </p>
+            }
           </div>
 
           <div class="form-group">
@@ -163,10 +177,12 @@
             <input [(ngModel)]="currentCompany.ownerName" name="ownerName" type="text"
               class="form-input" [ngClass]="{'border-rose-500': submitted && !currentCompany.ownerName?.trim()}"
               placeholder="Full name">
-            <p *ngIf="submitted && !currentCompany.ownerName?.trim()" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Owner name is required
-            </p>
+            @if (submitted && !currentCompany.ownerName?.trim()) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Owner name is required
+              </p>
+            }
           </div>
 
           <div class="form-group">
@@ -174,10 +190,12 @@
             <input [(ngModel)]="currentCompany.ownerMobile" name="ownerMobile" type="text"
               class="form-input" [ngClass]="{'border-rose-500': submitted && !currentCompany.ownerMobile?.trim()}"
               placeholder="01XXXXXXXXX">
-            <p *ngIf="submitted && !currentCompany.ownerMobile?.trim()" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Owner mobile is required
-            </p>
+            @if (submitted && !currentCompany.ownerMobile?.trim()) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Owner mobile is required
+              </p>
+            }
           </div>
 
           <div class="form-group">
@@ -215,19 +233,29 @@
                 <span [ngClass]="currentCompany.division ? 'text-gray-200' : 'text-gray-500'" class="text-sm truncate">{{ currentCompany.division || 'Select' }}</span>
                 <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
               </div>
-              <div *ngIf="divOpen" class="searchable-dropdown-menu">
-                <input type="text" class="searchable-dropdown-search" [(ngModel)]="divSearch" placeholder="Search division…" (click)="$event.stopPropagation()" autofocus>
-                <div class="searchable-dropdown-list">
-                  <div *ngIf="currentCompany.division" class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="selectDivision('')">✕ Clear</div>
-                  <div *ngFor="let d of divisions | searchFilter:divSearch" class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.division===d}" (click)="selectDivision(d)">{{ d }}</div>
-                  <div *ngIf="!(divisions | searchFilter:divSearch).length" class="searchable-dropdown-empty">No results</div>
+              @if (divOpen) {
+                <div class="searchable-dropdown-menu">
+                  <input type="text" class="searchable-dropdown-search" [(ngModel)]="divSearch" placeholder="Search division…" (click)="$event.stopPropagation()" autofocus>
+                  <div class="searchable-dropdown-list">
+                    @if (currentCompany.division) {
+                      <div class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="selectDivision('')">✕ Clear</div>
+                    }
+                    @for (d of divisions | searchFilter:divSearch; track d) {
+                      <div class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.division===d}" (click)="selectDivision(d)">{{ d }}</div>
+                    }
+                    @if (!(divisions | searchFilter:divSearch).length) {
+                      <div class="searchable-dropdown-empty">No results</div>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
             </div>
-            <p *ngIf="submitted && !currentCompany.division" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Division is required
-            </p>
+            @if (submitted && !currentCompany.division) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Division is required
+              </p>
+            }
           </div>
 
           <!-- District -->
@@ -240,19 +268,29 @@
                 <span [ngClass]="currentCompany.district ? 'text-gray-200' : 'text-gray-500'" class="text-sm truncate">{{ currentCompany.district || 'Select' }}</span>
                 <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
               </div>
-              <div *ngIf="distOpen" class="searchable-dropdown-menu">
-                <input type="text" class="searchable-dropdown-search" [(ngModel)]="distSearch" placeholder="Search district…" (click)="$event.stopPropagation()" autofocus>
-                <div class="searchable-dropdown-list">
-                  <div *ngIf="currentCompany.district" class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="selectDistrict('')">✕ Clear</div>
-                  <div *ngFor="let d of availableDistricts | searchFilter:distSearch" class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.district===d}" (click)="selectDistrict(d)">{{ d }}</div>
-                  <div *ngIf="!(availableDistricts | searchFilter:distSearch).length" class="searchable-dropdown-empty">No results</div>
+              @if (distOpen) {
+                <div class="searchable-dropdown-menu">
+                  <input type="text" class="searchable-dropdown-search" [(ngModel)]="distSearch" placeholder="Search district…" (click)="$event.stopPropagation()" autofocus>
+                  <div class="searchable-dropdown-list">
+                    @if (currentCompany.district) {
+                      <div class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="selectDistrict('')">✕ Clear</div>
+                    }
+                    @for (d of availableDistricts | searchFilter:distSearch; track d) {
+                      <div class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.district===d}" (click)="selectDistrict(d)">{{ d }}</div>
+                    }
+                    @if (!(availableDistricts | searchFilter:distSearch).length) {
+                      <div class="searchable-dropdown-empty">No results</div>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
             </div>
-            <p *ngIf="submitted && !currentCompany.district" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              District is required
-            </p>
+            @if (submitted && !currentCompany.district) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                District is required
+              </p>
+            }
           </div>
 
           <!-- Thana -->
@@ -265,23 +303,37 @@
                 <span [ngClass]="currentCompany.thana ? 'text-gray-200' : 'text-gray-500'" class="text-sm truncate">{{ currentCompany.thana || 'Select' }}</span>
                 <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
               </div>
-              <div *ngIf="thanaOpen" class="searchable-dropdown-menu">
-                <input type="text" class="searchable-dropdown-search" [(ngModel)]="thanaSearch" placeholder="Type to search or enter…" (click)="$event.stopPropagation()" autofocus>
-                <div class="searchable-dropdown-list">
-                  <div *ngIf="thanaSearch && !(availableThanas | searchFilter:thanaSearch).includes(thanaSearch)"
-                    class="searchable-dropdown-item text-violet-300 font-medium"
-                    (click)="currentCompany.thana=thanaSearch; thanaOpen=false; thanaSearch=''">＋ Use "{{ thanaSearch }}"</div>
-                  <div *ngIf="currentCompany.thana" class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="currentCompany.thana=''; thanaOpen=false">✕ Clear</div>
-                  <div *ngFor="let t of availableThanas | searchFilter:thanaSearch" class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.thana===t}" (click)="currentCompany.thana=t; thanaOpen=false; thanaSearch=''">{{ t }}</div>
-                  <div *ngIf="availableThanas.length===0 && !thanaSearch" class="searchable-dropdown-empty">Select district first</div>
-                  <div *ngIf="availableThanas.length>0 && !(availableThanas | searchFilter:thanaSearch).length && thanaSearch" class="searchable-dropdown-item text-violet-300 font-medium" (click)="currentCompany.thana=thanaSearch; thanaOpen=false; thanaSearch=''">＋ Use "{{ thanaSearch }}"</div>
+              @if (thanaOpen) {
+                <div class="searchable-dropdown-menu">
+                  <input type="text" class="searchable-dropdown-search" [(ngModel)]="thanaSearch" placeholder="Type to search or enter…" (click)="$event.stopPropagation()" autofocus>
+                  <div class="searchable-dropdown-list">
+                    @if (thanaSearch && !(availableThanas | searchFilter:thanaSearch).includes(thanaSearch)) {
+                      <div
+                        class="searchable-dropdown-item text-violet-300 font-medium"
+                      (click)="currentCompany.thana=thanaSearch; thanaOpen=false; thanaSearch=''">＋ Use "{{ thanaSearch }}"</div>
+                    }
+                    @if (currentCompany.thana) {
+                      <div class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="currentCompany.thana=''; thanaOpen=false">✕ Clear</div>
+                    }
+                    @for (t of availableThanas | searchFilter:thanaSearch; track t) {
+                      <div class="searchable-dropdown-item" [ngClass]="{'active': currentCompany.thana===t}" (click)="currentCompany.thana=t; thanaOpen=false; thanaSearch=''">{{ t }}</div>
+                    }
+                    @if (availableThanas.length===0 && !thanaSearch) {
+                      <div class="searchable-dropdown-empty">Select district first</div>
+                    }
+                    @if (availableThanas.length>0 && !(availableThanas | searchFilter:thanaSearch).length && thanaSearch) {
+                      <div class="searchable-dropdown-item text-violet-300 font-medium" (click)="currentCompany.thana=thanaSearch; thanaOpen=false; thanaSearch=''">＋ Use "{{ thanaSearch }}"</div>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
             </div>
-            <p *ngIf="submitted && !currentCompany.thana" class="text-rose-400 text-xs mt-1 flex items-center gap-1">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-              Thana / Upazila is required
-            </p>
+            @if (submitted && !currentCompany.thana) {
+              <p class="text-rose-400 text-xs mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                Thana / Upazila is required
+              </p>
+            }
           </div>
 
           <!-- Union (optional dropdown) -->
@@ -294,23 +346,31 @@
                 <span [ngClass]="currentCompany.unionName ? 'text-gray-200' : 'text-gray-500'" class="text-sm truncate">{{ currentCompany.unionName || 'Select or type…' }}</span>
                 <svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
               </div>
-              <div *ngIf="unionOpen" class="searchable-dropdown-menu">
-                <input type="text" class="searchable-dropdown-search" [(ngModel)]="unionSearch" placeholder="Type union / ward name…" (click)="$event.stopPropagation()" autofocus>
-                <div class="searchable-dropdown-list">
-                  <div *ngIf="unionSearch"
-                    class="searchable-dropdown-item text-violet-300 font-medium"
-                    (click)="currentCompany.unionName=unionSearch; unionOpen=false; unionSearch=''">＋ Use "{{ unionSearch }}"</div>
-                  <div *ngIf="currentCompany.unionName" class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="currentCompany.unionName=''; unionOpen=false">✕ Clear</div>
-                  <div *ngIf="!unionSearch" class="searchable-dropdown-empty">Type to enter union / ward name</div>
+              @if (unionOpen) {
+                <div class="searchable-dropdown-menu">
+                  <input type="text" class="searchable-dropdown-search" [(ngModel)]="unionSearch" placeholder="Type union / ward name…" (click)="$event.stopPropagation()" autofocus>
+                  <div class="searchable-dropdown-list">
+                    @if (unionSearch) {
+                      <div
+                        class="searchable-dropdown-item text-violet-300 font-medium"
+                      (click)="currentCompany.unionName=unionSearch; unionOpen=false; unionSearch=''">＋ Use "{{ unionSearch }}"</div>
+                    }
+                    @if (currentCompany.unionName) {
+                      <div class="searchable-dropdown-item text-gray-500 italic text-xs" (click)="currentCompany.unionName=''; unionOpen=false">✕ Clear</div>
+                    }
+                    @if (!unionSearch) {
+                      <div class="searchable-dropdown-empty">Type to enter union / ward name</div>
+                    }
+                  </div>
                 </div>
-              </div>
+              }
             </div>
           </div>
 
           <div class="form-group col-span-2 sm:col-span-4">
             <label>Detailed Address</label>
             <textarea [(ngModel)]="currentCompany.address" name="address" rows="2"
-              class="form-input resize-none" placeholder="House no, Road, Area, City…"></textarea>
+            class="form-input resize-none" placeholder="House no, Road, Area, City…"></textarea>
           </div>
 
         </div>

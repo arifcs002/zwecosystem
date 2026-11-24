@@ -22,11 +22,10 @@ interface CartLine {
 const RECEIPT_TEXT_KEY = 'pos_receipt_texts';
 
 @Component({
-  selector: 'app-pos-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule, CameraScannerComponent],
-  templateUrl: './pos-management.component.html',
-  styleUrl: './pos-management.component.css'
+    selector: 'app-pos-management',
+    imports: [CommonModule, FormsModule, CameraScannerComponent],
+    templateUrl: './pos-management.component.html',
+    styleUrl: './pos-management.component.css'
 })
 export class PosManagementComponent implements OnInit {
   private posService = inject(PosService);

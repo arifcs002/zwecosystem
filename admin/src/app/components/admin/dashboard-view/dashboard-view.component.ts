@@ -11,11 +11,10 @@ import { ProductGroup, groupProducts, groupForProductId } from '../../../utils/p
 import { StorefrontInlineBuilderComponent } from './storefront-inline-builder/storefront-inline-builder.component';
 
 @Component({
-  selector: 'app-dashboard-view',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe, StorefrontInlineBuilderComponent],
-  templateUrl: './dashboard-view.component.html',
-  styleUrl: './dashboard-view.component.css'
+    selector: 'app-dashboard-view',
+    imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe, StorefrontInlineBuilderComponent],
+    templateUrl: './dashboard-view.component.html',
+    styleUrl: './dashboard-view.component.css'
 })
 export class DashboardViewComponent implements OnInit {
   private settingsService = inject(SettingsService);

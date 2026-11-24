@@ -6,194 +6,224 @@
     </div>
 
     <!-- Custom Select2-like Context Switcher -->
-    <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-lg border border-white/10" *ngIf="authService.isSuperAdmin()">
-      <label class="text-sm font-semibold text-gray-400">Context:</label>
-      <div class="relative">
-        <button (click)="toggleDropdown()" class="w-full min-w-[250px] p-2 bg-[#0d0d1a] border border-white/10 rounded text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-violet-500 font-medium text-violet-400 relative z-20">
-          {{ getSelectedCompanyName() }}
-          <svg class="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
-
-        <!-- Invisible Backdrop for click-outside -->
-        <div *ngIf="isDropdownOpen" (click)="isDropdownOpen = false" class="fixed inset-0 z-10 cursor-default"></div>
-
-        <!-- Dropdown Menu -->
-        <div *ngIf="isDropdownOpen" class="absolute z-20 w-full mt-1 bg-[#161630] border border-white/10 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          <!-- Search Box -->
-          <div class="sticky top-0 p-2 bg-[#161630] border-b border-white/10">
-            <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" 
-                   placeholder="Search company..." 
-                   class="w-full p-2 bg-[#0d0d1a] border border-white/10 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                   autofocus>
-          </div>
-          <!-- Options -->
-          <ul class="py-1">
-            <li *ngFor="let comp of filteredCompanies" 
-                (click)="selectCompany(comp.id)"
-                class="px-4 py-2 hover:bg-white/5 cursor-pointer text-sm font-medium text-gray-300"
-                [ngClass]="{'bg-violet-900/40 text-violet-300': selectedCompanyContext === comp.id}">
-              {{ comp.name }}
-            </li>
-            <li *ngIf="filteredCompanies.length === 0" class="px-4 py-2 text-sm text-gray-500 text-center">
-              No results found
-            </li>
-          </ul>
+    @if (authService.isSuperAdmin()) {
+      <div class="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+        <label class="text-sm font-semibold text-gray-400">Context:</label>
+        <div class="relative">
+          <button (click)="toggleDropdown()" class="w-full min-w-[250px] p-2 bg-[#0d0d1a] border border-white/10 rounded text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-violet-500 font-medium text-violet-400 relative z-20">
+            {{ getSelectedCompanyName() }}
+            <svg class="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <!-- Invisible Backdrop for click-outside -->
+          @if (isDropdownOpen) {
+            <div (click)="isDropdownOpen = false" class="fixed inset-0 z-10 cursor-default"></div>
+          }
+          <!-- Dropdown Menu -->
+          @if (isDropdownOpen) {
+            <div class="absolute z-20 w-full mt-1 bg-[#161630] border border-white/10 rounded-md shadow-lg max-h-60 overflow-y-auto">
+              <!-- Search Box -->
+              <div class="sticky top-0 p-2 bg-[#161630] border-b border-white/10">
+                <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()"
+                  placeholder="Search company..."
+                  class="w-full p-2 bg-[#0d0d1a] border border-white/10 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  autofocus>
+              </div>
+              <!-- Options -->
+              <ul class="py-1">
+                @for (comp of filteredCompanies; track comp) {
+                  <li
+                    (click)="selectCompany(comp.id)"
+                    class="px-4 py-2 hover:bg-white/5 cursor-pointer text-sm font-medium text-gray-300"
+                    [ngClass]="{'bg-violet-900/40 text-violet-300': selectedCompanyContext === comp.id}">
+                    {{ comp.name }}
+                  </li>
+                }
+                @if (filteredCompanies.length === 0) {
+                  <li class="px-4 py-2 text-sm text-gray-500 text-center">
+                    No results found
+                  </li>
+                }
+              </ul>
+            </div>
+          }
         </div>
       </div>
-    </div>
+    }
 
     <button (click)="openAddModal()" class="btn-primary">
       + Add User
     </button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="table-card mt-4">
     <table class="data-table">
       <thead>
         <tr>
           <th class="text-left align-middle">User Info</th>
-          <th class="text-left align-middle" *ngIf="authService.isSuperAdmin()">Company</th>
+          @if (authService.isSuperAdmin()) {
+            <th class="text-left align-middle">Company</th>
+          }
           <th class="text-center align-middle">Role</th>
           <th class="text-center align-middle">Status</th>
           <th class="text-center align-middle">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of filteredUsers">
-          <td class="align-middle">
-            <div class="font-semibold text-gray-200">{{ user.firstName }} {{ user.lastName }}</div>
-            <div class="text-xs text-gray-500">{{ user.email }}</div>
-            <div class="text-xs text-gray-500">{{ user.phoneNumber || '—' }}</div>
-          </td>
-          <td class="align-middle" *ngIf="authService.isSuperAdmin()">
-            <span class="text-sm text-gray-300">{{ getCompanyName(user.companyId) }}</span>
-          </td>
-          <td class="text-center align-middle">
-            <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
-              {{ getRoleDisplay(user.roles?.[0] || user.role) }}
-            </span>
-          </td>
-          <td class="text-center align-middle">
-            <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="text-xs px-2.5 py-1 rounded-full font-semibold border">
-              {{ user.isActive ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td class="text-center align-middle">
-            <div class="flex justify-center gap-2 flex-wrap">
-              <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
-                {{ user.isActive ? 'Deactivate' : 'Activate' }}
-              </button>
-              <button (click)="openResetPasswordModal(user)" class="text-violet-400 hover:text-violet-300 font-medium text-sm transition mr-3">Reset Password</button>
-              <button (click)="editUser(user)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
-              <button (click)="deleteUser(user)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="filteredUsers.length === 0">
-          <td [attr.colspan]="authService.isSuperAdmin() ? 5 : 4" class="empty-row">
-            No users found for the selected company.
-          </td>
-        </tr>
+        @for (user of filteredUsers; track user) {
+          <tr>
+            <td class="align-middle">
+              <div class="font-semibold text-gray-200">{{ user.firstName }} {{ user.lastName }}</div>
+              <div class="text-xs text-gray-500">{{ user.email }}</div>
+              <div class="text-xs text-gray-500">{{ user.phoneNumber || '—' }}</div>
+            </td>
+            @if (authService.isSuperAdmin()) {
+              <td class="align-middle">
+                <span class="text-sm text-gray-300">{{ getCompanyName(user.companyId) }}</span>
+              </td>
+            }
+            <td class="text-center align-middle">
+              <span class="inline-block bg-violet-900/40 text-violet-300 text-xs px-2.5 py-1 rounded-full font-semibold border border-violet-800/30">
+                {{ getRoleDisplay(user.roles?.[0] || user.role) }}
+              </span>
+            </td>
+            <td class="text-center align-middle">
+              <span [ngClass]="user.isActive ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/30' : 'bg-rose-900/40 text-rose-300 border-rose-800/30'" class="text-xs px-2.5 py-1 rounded-full font-semibold border">
+                {{ user.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="text-center align-middle">
+              <div class="flex justify-center gap-2 flex-wrap">
+                <button (click)="toggleStatus(user)" [ngClass]="user.isActive ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'" class="font-medium text-sm transition mr-3">
+                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button (click)="openResetPasswordModal(user)" class="text-violet-400 hover:text-violet-300 font-medium text-sm transition mr-3">Reset Password</button>
+                <button (click)="editUser(user)" class="text-sky-400 hover:text-sky-300 font-medium text-sm transition mr-3">Edit</button>
+                <button (click)="deleteUser(user)" class="text-rose-400 hover:text-rose-300 font-medium text-sm transition">Delete</button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (filteredUsers.length === 0) {
+          <tr>
+            <td [attr.colspan]="authService.isSuperAdmin() ? 5 : 4" class="empty-row">
+              No users found for the selected company.
+            </td>
+          </tr>
+        }
       </tbody>
     </table>
   </div>
 
   <!-- User Modal (Add/Edit) -->
-  <div *ngIf="showModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>{{ isEditMode ? 'Edit User' : 'Add New User' }}</h2>
-        <button (click)="closeModal()" class="close-btn">&times;</button>
-      </div>
-      <div class="modal-body space-y-4">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-        
-        <!-- Company Dropdown (disabled if editing or company context is set) -->
-        <div class="form-group" *ngIf="authService.isSuperAdmin()">
-          <label>Company</label>
-          <select [(ngModel)]="currentUser.companyId" [disabled]="selectedCompanyContext !== 'all' || isEditMode" class="form-input">
-            <option value="">-- Select Company --</option>
-            <option *ngFor="let c of companies" [value]="c.id">{{ c.name }}</option>
-          </select>
+  @if (showModal) {
+    <div class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>{{ isEditMode ? 'Edit User' : 'Add New User' }}</h2>
+          <button (click)="closeModal()" class="close-btn">&times;</button>
         </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" [(ngModel)]="currentUser.firstName" class="form-input" placeholder="e.g. John">
+        <div class="modal-body space-y-4">
+          @if (errorMsg) {
+            <div class="alert-error">❌ {{ errorMsg }}</div>
+          }
+          <!-- Company Dropdown (disabled if editing or company context is set) -->
+          @if (authService.isSuperAdmin()) {
+            <div class="form-group">
+              <label>Company</label>
+              <select [(ngModel)]="currentUser.companyId" [disabled]="selectedCompanyContext !== 'all' || isEditMode" class="form-input">
+                <option value="">-- Select Company --</option>
+                @for (c of companies; track c) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+          }
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" [(ngModel)]="currentUser.firstName" class="form-input" placeholder="e.g. John">
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" [(ngModel)]="currentUser.lastName" class="form-input" placeholder="e.g. Doe">
+            </div>
           </div>
           <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" [(ngModel)]="currentUser.lastName" class="form-input" placeholder="e.g. Doe">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="currentUser.email" class="form-input" placeholder="e.g. admin@domain.com">
+          </div>
+          <div class="form-group">
+            <label>Mobile</label>
+            <input type="text" [(ngModel)]="currentUser.phoneNumber" class="form-input" placeholder="e.g. 01711223344">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="relative" style="position: relative;">
+              <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="currentUser.password" class="form-input" style="width: 100%; padding-right: 2.75rem;" [placeholder]="isEditMode ? 'Leave blank to keep current' : 'Enter password'">
+              <button type="button" (click)="showPassword = !showPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;" class="text-gray-500 hover:text-gray-300">
+                @if (!showPassword) {
+                  <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                }
+                @if (showPassword) {
+                  <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select [(ngModel)]="currentUser.role" class="form-input">
+              <option value="">-- Select Role --</option>
+              @for (role of filteredRoles; track role) {
+                <option [value]="role.name">{{ role.value }}</option>
+              }
+            </select>
           </div>
         </div>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" [(ngModel)]="currentUser.email" class="form-input" placeholder="e.g. admin@domain.com">
+        <div class="modal-footer">
+          <button (click)="closeModal()" class="btn-secondary">Cancel</button>
+          <button (click)="saveUser()" class="btn-primary">Save User</button>
         </div>
-
-        <div class="form-group">
-          <label>Mobile</label>
-          <input type="text" [(ngModel)]="currentUser.phoneNumber" class="form-input" placeholder="e.g. 01711223344">
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <div class="relative" style="position: relative;">
-            <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="currentUser.password" class="form-input" style="width: 100%; padding-right: 2.75rem;" [placeholder]="isEditMode ? 'Leave blank to keep current' : 'Enter password'">
-            <button type="button" (click)="showPassword = !showPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;" class="text-gray-500 hover:text-gray-300">
-              <svg *ngIf="!showPassword" style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg *ngIf="showPassword" style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-              </svg>
-            </button>
+      </div>
+      <!-- Reset Password Modal -->
+      @if (showResetPasswordModal) {
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-header">
+              <h2>Reset Password for {{ selectedUserForReset?.email }}</h2>
+              <button (click)="closeResetPasswordModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body space-y-4">
+              @if (resetPasswordErrorMsg) {
+                <div class="alert-error">❌ {{ resetPasswordErrorMsg }}</div>
+              }
+              <div class="form-group">
+                <label>New Password</label>
+                <input type="password" [(ngModel)]="newPassword" class="form-input" placeholder="Enter new password">
+              </div>
+              <div class="form-group">
+                <label>Re-type Password</label>
+                <input type="password" [(ngModel)]="confirmPassword" class="form-input" placeholder="Confirm new password">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button (click)="closeResetPasswordModal()" class="btn-secondary">Cancel</button>
+              <button (click)="submitResetPassword()" class="btn-primary">Confirm & Update</button>
+            </div>
           </div>
         </div>
-
-        <div class="form-group">
-          <label>Role</label>
-          <select [(ngModel)]="currentUser.role" class="form-input">
-            <option value="">-- Select Role --</option>
-            <option *ngFor="let role of filteredRoles" [value]="role.name">{{ role.value }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button (click)="closeModal()" class="btn-secondary">Cancel</button>
-        <button (click)="saveUser()" class="btn-primary">Save User</button>
-      </div>
+      }
     </div>
-  <!-- Reset Password Modal -->
-  <div *ngIf="showResetPasswordModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Reset Password for {{ selectedUserForReset?.email }}</h2>
-        <button (click)="closeResetPasswordModal()" class="close-btn">&times;</button>
-      </div>
-      <div class="modal-body space-y-4">
-        <div class="alert-error" *ngIf="resetPasswordErrorMsg">❌ {{ resetPasswordErrorMsg }}</div>
-        
-        <div class="form-group">
-          <label>New Password</label>
-          <input type="password" [(ngModel)]="newPassword" class="form-input" placeholder="Enter new password">
-        </div>
-
-        <div class="form-group">
-          <label>Re-type Password</label>
-          <input type="password" [(ngModel)]="confirmPassword" class="form-input" placeholder="Confirm new password">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button (click)="closeResetPasswordModal()" class="btn-secondary">Cancel</button>
-        <button (click)="submitResetPassword()" class="btn-primary">Confirm & Update</button>
-      </div>
-    </div>
-  </div>
-</div>
+  }

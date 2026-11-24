@@ -7,11 +7,10 @@ import { SettingsService } from '../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 @Component({
-  selector: 'app-pricing-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './pricing-management.component.html',
-  styleUrl: './pricing-management.component.css'
+    selector: 'app-pricing-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './pricing-management.component.html',
+    styleUrl: './pricing-management.component.css'
 })
 export class PricingManagementComponent implements OnInit {
   private pricingTagService = inject(PricingTagService);

@@ -5,7 +5,9 @@
 <div class="zw-layout">
 
   <!-- Mobile overlay (click to close drawer) -->
-  <div class="zw-mobile-overlay" *ngIf="mobileSidebarOpen" (click)="closeMobileSidebar()"></div>
+  @if (mobileSidebarOpen) {
+    <div class="zw-mobile-overlay" (click)="closeMobileSidebar()"></div>
+  }
 
   <!-- Sidebar -->
   <aside class="zw-sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileSidebarOpen" (click)="closeMobileSidebar()">
@@ -15,147 +17,249 @@
         <div class="brand-icon-badge">
           <img src="assets/auleco-mark.png" alt="Auleco" class="brand-icon-img">
         </div>
-        <span class="brand-text" *ngIf="!sidebarCollapsed">Auleco</span>
+        @if (!sidebarCollapsed) {
+          <span class="brand-text">Auleco</span>
+        }
       </div>
     </div>
 
     <!-- User Info -->
-    <div class="sidebar-user" *ngIf="!sidebarCollapsed">
-      <div class="user-avatar">{{ (authService.currentUserValue?.fullName || 'A')[0].toUpperCase() }}</div>
-      <div class="user-info">
-        <span class="user-name">{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
-        <span class="user-role" *ngIf="authService.isSuperAdmin()">Super Admin</span>
-        <span class="user-role" *ngIf="!authService.isSuperAdmin()">Company Admin</span>
+    @if (!sidebarCollapsed) {
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ (authService.currentUserValue?.fullName || 'A')[0].toUpperCase() }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
+          @if (authService.isSuperAdmin()) {
+            <span class="user-role">Super Admin</span>
+          }
+          @if (!authService.isSuperAdmin()) {
+            <span class="user-role">Company Admin</span>
+          }
+        </div>
       </div>
-    </div>
+    }
 
     <!-- Navigation -->
     <nav class="sidebar-nav">
 
       <!-- ===== SUPER ADMIN MODULE ===== -->
-      <ng-container *ngIf="authService.isSuperAdmin()">
-        <div class="nav-section-title" *ngIf="!sidebarCollapsed">⚙️ Super Admin</div>
-
+      @if (authService.isSuperAdmin()) {
+        @if (!sidebarCollapsed) {
+          <div class="nav-section-title">⚙️ Super Admin</div>
+        }
         <a [routerLink]="'/admin/dashboard'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">📊</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Dashboard</span>
+          }
         </a>
         <a [routerLink]="'/admin/companies'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">🏢</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Companies</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Companies</span>
+          }
         </a>
         <a [routerLink]="'/admin/users'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">👥</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">User Management</span>
+          }
         </a>
         <a [routerLink]="'/admin/roles'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">🔐</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Role Management</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Role Management</span>
+          }
         </a>
         <a [routerLink]="'/admin/theme'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">🎨</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Theme & Settings</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Theme & Settings</span>
+          }
         </a>
         <a [routerLink]="'/admin/subscription-plans'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">💎</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Subscription Plans</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Subscription Plans</span>
+          }
         </a>
         <a [routerLink]="'/admin/app-releases'" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">📱</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Mobile App Releases</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Mobile App Releases</span>
+          }
         </a>
-
         <div class="nav-divider"></div>
-        <div class="nav-section-title" *ngIf="!sidebarCollapsed">🏢 Company Module</div>
-      </ng-container>
+        @if (!sidebarCollapsed) {
+          <div class="nav-section-title">🏢 Company Module</div>
+        }
+      }
 
       <!-- ===== COMPANY / TENANT MODULE ===== -->
       <!-- These show for both Super Admin (company-filtered) and Company Admins -->
-      <a [routerLink]="basePath + '/dashboard-view'" *ngIf="authService.hasRight('PAGE_DASHBOARD_VIEW')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🛍️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Store Preview</span>
-      </a>
-      <a [routerLink]="basePath + '/dashboard'" *ngIf="authService.hasRight('PAGE_SHOP_DASHBOARD')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📈</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
-      </a>
-      <a [routerLink]="basePath + '/pos'" *ngIf="authService.hasRight('PAGE_POS') && billing?.modules?.pos !== false" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🧾</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">POS</span>
-      </a>
-      <a [routerLink]="basePath + '/orders'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">🛒</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Orders</span>
-      </a>
-      <a [routerLink]="basePath + '/ledger'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">📒</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Customer Accounts</span>
-      </a>
-      <a [routerLink]="basePath + '/returns'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">↩️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Returns</span>
-      </a>
+      @if (authService.hasRight('PAGE_DASHBOARD_VIEW')) {
+        <a [routerLink]="basePath + '/dashboard-view'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🛍️</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Store Preview</span>
+          }
+        </a>
+      }
+      @if (authService.hasRight('PAGE_SHOP_DASHBOARD')) {
+        <a [routerLink]="basePath + '/dashboard'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📈</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">{{ authService.isSuperAdmin() ? 'Company Dashboard' : 'Dashboard' }}</span>
+          }
+        </a>
+      }
+      @if (authService.hasRight('PAGE_POS') && billing?.modules?.pos !== false) {
+        <a [routerLink]="basePath + '/pos'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🧾</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">POS</span>
+          }
+        </a>
+      }
+      @if (authService.hasRight('PAGE_POS')) {
+        <a [routerLink]="basePath + '/orders'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🛒</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Orders</span>
+          }
+        </a>
+      }
+      @if (authService.hasRight('PAGE_POS')) {
+        <a [routerLink]="basePath + '/ledger'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📒</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Customer Accounts</span>
+          }
+        </a>
+      }
+      @if (authService.hasRight('PAGE_POS')) {
+        <a [routerLink]="basePath + '/returns'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">↩️</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Returns</span>
+          }
+        </a>
+      }
 
       <!-- ===== CATALOG & SALES (merged collapsible group) ===== -->
       <div class="nav-group">
         <button type="button" class="nav-group-header" (click)="toggleGroup('catalog')">
           <span class="nav-icon">📦</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Catalog &amp; Sales</span>
-          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('catalog')">▸</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Catalog &amp; Sales</span>
+          }
+          @if (!sidebarCollapsed) {
+            <span class="chevron" [class.expanded]="isGroupExpanded('catalog')">▸</span>
+          }
         </button>
         <div class="nav-group-items" [class.expanded]="isGroupExpanded('catalog')">
-          <a [routerLink]="basePath + '/products'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📦</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Product List</span>
-          </a>
-          <a [routerLink]="basePath + '/add-product'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">➕</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Add Product</span>
-          </a>
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
+            <a [routerLink]="basePath + '/products'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📦</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Product List</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
+            <a [routerLink]="basePath + '/add-product'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">➕</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Add Product</span>
+              }
+            </a>
+          }
           <a [routerLink]="basePath + '/import-products'" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">📥</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Import Products</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Import Products</span>
+            }
           </a>
-          <a [routerLink]="basePath + '/categories'" *ngIf="authService.hasRight('PAGE_CATEGORIES')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🗂️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Categories</span>
-          </a>
-          <a [routerLink]="basePath + '/product-labels'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🏷️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Barcodes &amp; Price Tags</span>
-          </a>
-          <a [routerLink]="basePath + '/suppliers'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🏭</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Suppliers</span>
-          </a>
-          <a [routerLink]="basePath + '/inventory'" *ngIf="authService.hasRight('PAGE_PRODUCTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📦</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Inventory</span>
-          </a>
-          <a [routerLink]="basePath + '/customers'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">👥</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Customers</span>
-          </a>
-          <a [routerLink]="basePath + '/delivery'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🚚</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Delivery</span>
-          </a>
-          <a [routerLink]="basePath + '/payments'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">💳</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Payments</span>
-          </a>
-          <a [routerLink]="basePath + '/fraud'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🛡️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Fraud Review</span>
-          </a>
-          <a [routerLink]="basePath + '/refunds'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">💸</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Refunds</span>
-          </a>
-          <a [routerLink]="basePath + '/pricing'" *ngIf="authService.hasRight('PAGE_PRICING')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">💰</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Pricing</span>
-          </a>
+          @if (authService.hasRight('PAGE_CATEGORIES')) {
+            <a [routerLink]="basePath + '/categories'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🗂️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Categories</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
+            <a [routerLink]="basePath + '/product-labels'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🏷️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Barcodes &amp; Price Tags</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
+            <a [routerLink]="basePath + '/suppliers'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🏭</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Suppliers</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_PRODUCTS')) {
+            <a [routerLink]="basePath + '/inventory'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📦</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Inventory</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/customers'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">👥</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Customers</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/delivery'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🚚</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Delivery</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/payments'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">💳</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Payments</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/fraud'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🛡️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Fraud Review</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/refunds'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">💸</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Refunds</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_PRICING')) {
+            <a [routerLink]="basePath + '/pricing'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">💰</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Pricing</span>
+              }
+            </a>
+          }
         </div>
       </div>
 
@@ -163,146 +267,218 @@
       <div class="nav-group">
         <button type="button" class="nav-group-header" (click)="toggleGroup('admin')">
           <span class="nav-icon">📊</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Admin &amp; Reports</span>
-          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('admin')">▸</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Admin &amp; Reports</span>
+          }
+          @if (!sidebarCollapsed) {
+            <span class="chevron" [class.expanded]="isGroupExpanded('admin')">▸</span>
+          }
         </button>
         <div class="nav-group-items" [class.expanded]="isGroupExpanded('admin')">
-          <a [routerLink]="basePath + '/customer-accounts'" *ngIf="authService.hasRight('PAGE_POS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">👥</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Customer Accounts</span>
-          </a>
-          <a [routerLink]="basePath + '/activity'" *ngIf="authService.hasRight('PAGE_USER_MANAGEMENT') || authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🕵️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Activity &amp; Sessions</span>
-          </a>          <a [routerLink]="basePath + '/expenses'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">💸</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Expenses</span>
-          </a>
-          <a [routerLink]="basePath + '/profit'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📈</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Profit &amp; Loss</span>
-          </a>          <a [routerLink]="basePath + '/reports'" *ngIf="authService.hasRight('PAGE_REPORTS')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Reports</span>
-          </a>
-          <a [routerLink]="basePath + '/users'" *ngIf="!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">👤</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">User Management</span>
-          </a>
-          <a [routerLink]="basePath + '/config'" *ngIf="authService.hasRight('PAGE_STORE_CONFIG')" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
-          </a>
+          @if (authService.hasRight('PAGE_POS')) {
+            <a [routerLink]="basePath + '/customer-accounts'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">👥</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Customer Accounts</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_USER_MANAGEMENT') || authService.hasRight('PAGE_STORE_CONFIG')) {
+            <a [routerLink]="basePath + '/activity'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🕵️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Activity &amp; Sessions</span>
+              }
+            </a>
+            }          @if (authService.hasRight('PAGE_REPORTS')) {
+            <a [routerLink]="basePath + '/expenses'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">💸</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Expenses</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_REPORTS')) {
+            <a [routerLink]="basePath + '/profit'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📈</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Profit &amp; Loss</span>
+              }
+            </a>
+            }          @if (authService.hasRight('PAGE_REPORTS')) {
+            <a [routerLink]="basePath + '/reports'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📊</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Reports</span>
+              }
+            </a>
+          }
+          @if (!authService.isSuperAdmin() && authService.hasRight('PAGE_USER_MANAGEMENT')) {
+            <a [routerLink]="basePath + '/users'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">👤</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">User Management</span>
+              }
+            </a>
+          }
+          @if (authService.hasRight('PAGE_STORE_CONFIG')) {
+            <a [routerLink]="basePath + '/config'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">⚙️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Settings</span>
+              }
+            </a>
+          }
         </div>
       </div>
 
       <!-- ===== ECOMMERCE (storefront configuration, collapsible group) ===== -->
-      <div class="nav-group" *ngIf="authService.hasRight('PAGE_STORE_CONFIG') && billing?.modules?.ecommerce !== false">
-        <button type="button" class="nav-group-header" (click)="toggleGroup('ecommerce')">
-          <span class="nav-icon">🛒</span>
-          <span class="nav-label" *ngIf="!sidebarCollapsed">Ecommerce</span>
-          <span class="chevron" *ngIf="!sidebarCollapsed" [class.expanded]="isGroupExpanded('ecommerce')">▸</span>
-        </button>
-        <div class="nav-group-items" [class.expanded]="isGroupExpanded('ecommerce')">
-          <a [routerLink]="basePath + '/ecommerce/builder'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🧱</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Storefront Builder</span>
-          </a>
-          <a [routerLink]="basePath + '/ecommerce/navigation'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🧭</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Header &amp; Navigation</span>
-          </a>
-          <a [routerLink]="basePath + '/ecommerce/products'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🏷️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Product Display</span>
-          </a>
-          <a [routerLink]="basePath + '/ecommerce/checkout'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">💳</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Checkout &amp; Payment</span>
-          </a>
-          <a [routerLink]="basePath + '/ecommerce/pages'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📄</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Pages &amp; Policies</span>
-          </a>
-          <a [routerLink]="basePath + '/ecommerce/product-codes'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🔢</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Product ID &amp; Codes</span>
-          </a>
-          <a [routerLink]="basePath + '/marketing'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📣</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Marketing &amp; SEO</span>
-          </a>          <a [routerLink]="basePath + '/collections'" routerLinkActive="active" class="nav-item">
+      @if (authService.hasRight('PAGE_STORE_CONFIG') && billing?.modules?.ecommerce !== false) {
+        <div class="nav-group">
+          <button type="button" class="nav-group-header" (click)="toggleGroup('ecommerce')">
+            <span class="nav-icon">🛒</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Ecommerce</span>
+            }
+            @if (!sidebarCollapsed) {
+              <span class="chevron" [class.expanded]="isGroupExpanded('ecommerce')">▸</span>
+            }
+          </button>
+          <div class="nav-group-items" [class.expanded]="isGroupExpanded('ecommerce')">
+            <a [routerLink]="basePath + '/ecommerce/builder'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🧱</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Storefront Builder</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/ecommerce/navigation'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🧭</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Header &amp; Navigation</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/ecommerce/products'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🏷️</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Product Display</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/ecommerce/checkout'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">💳</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Checkout &amp; Payment</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/ecommerce/pages'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📄</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Pages &amp; Policies</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/ecommerce/product-codes'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">🔢</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Product ID &amp; Codes</span>
+              }
+            </a>
+            <a [routerLink]="basePath + '/marketing'" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">📣</span>
+              @if (!sidebarCollapsed) {
+                <span class="nav-label">Marketing &amp; SEO</span>
+              }
+            </a>          <a [routerLink]="basePath + '/collections'" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🗂️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Collections</span>
+            @if (!sidebarCollapsed) {
+              <span class="nav-label">Collections</span>
+            }
           </a>          <a [routerLink]="basePath + '/reviews'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">⭐</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Reviews</span>
-          </a>
-          <a [routerLink]="basePath + '/messages'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">✉️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Messages &amp; Courier</span>
-          </a>          <a [routerLink]="basePath + '/coupons'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🎟️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Coupons</span>
-          </a>
-          <a [routerLink]="basePath + '/abandoned-carts'" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🛍️</span>
-            <span class="nav-label" *ngIf="!sidebarCollapsed">Abandoned Carts</span>
-          </a>
-        </div>
-      </div>
-
-    </nav>
-
-    <!-- My Plan (shops only) -->
-    <div class="nav-section" *ngIf="!authService.isSuperAdmin()" style="padding:0 8px 6px">
-      <a [routerLink]="basePath + '/my-plan'" routerLinkActive="active" class="nav-item">
-        <span class="nav-icon">💎</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">My Plan</span>
+          <span class="nav-icon">⭐</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Reviews</span>
+          }
+        </a>
+        <a [routerLink]="basePath + '/messages'" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">✉️</span>
+          @if (!sidebarCollapsed) {
+            <span class="nav-label">Messages &amp; Courier</span>
+          }
+        </a>          <a [routerLink]="basePath + '/coupons'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🎟️</span>
+        @if (!sidebarCollapsed) {
+          <span class="nav-label">Coupons</span>
+        }
+      </a>
+      <a [routerLink]="basePath + '/abandoned-carts'" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🛍️</span>
+        @if (!sidebarCollapsed) {
+          <span class="nav-label">Abandoned Carts</span>
+        }
       </a>
     </div>
+  </div>
+}
 
-    <!-- Logout -->
-    <div class="sidebar-footer">
-      <button class="logout-btn" (click)="logout()">
-        <span class="nav-icon">🚪</span>
-        <span *ngIf="!sidebarCollapsed">Logout</span>
+</nav>
+
+<!-- My Plan (shops only) -->
+@if (!authService.isSuperAdmin()) {
+  <div class="nav-section" style="padding:0 8px 6px">
+    <a [routerLink]="basePath + '/my-plan'" routerLinkActive="active" class="nav-item">
+      <span class="nav-icon">💎</span>
+      @if (!sidebarCollapsed) {
+        <span class="nav-label">My Plan</span>
+      }
+    </a>
+  </div>
+}
+
+<!-- Logout -->
+<div class="sidebar-footer">
+  <button class="logout-btn" (click)="logout()">
+    <span class="nav-icon">🚪</span>
+    @if (!sidebarCollapsed) {
+      <span>Logout</span>
+    }
+  </button>
+</div>
+</aside>
+
+<!-- Main Content -->
+<main class="zw-main">
+  <!-- Topbar -->
+  <header class="zw-topbar">
+    <div class="topbar-left">
+      <button class="hamburger-btn" [class.active]="mobileSidebarOpen || !sidebarCollapsed" (click)="toggleNav()" aria-label="Toggle menu">
+        <span class="ham-bar"></span><span class="ham-bar"></span><span class="ham-bar"></span>
       </button>
+      <span class="topbar-logo">⚡</span>
+      <h2 class="page-breadcrumb">
+        {{ authService.isSuperAdmin() ? 'Auleco Admin' : 'Company Workspace' }}
+      </h2>
     </div>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="zw-main">
-    <!-- Topbar -->
-    <header class="zw-topbar">
-      <div class="topbar-left">
-        <button class="hamburger-btn" [class.active]="mobileSidebarOpen || !sidebarCollapsed" (click)="toggleNav()" aria-label="Toggle menu">
-          <span class="ham-bar"></span><span class="ham-bar"></span><span class="ham-bar"></span>
-        </button>
-        <span class="topbar-logo">⚡</span>
-        <h2 class="page-breadcrumb">
-          {{ authService.isSuperAdmin() ? 'Auleco Admin' : 'Company Workspace' }}
-        </h2>
+    <div class="topbar-right">
+      <!-- Super admin: switch which company every page operates on -->
+      @if (authService.isSuperAdmin()) {
+        <app-company-selector></app-company-selector>
+      }
+      <div class="topbar-user">
+        <div class="user-dot"></div>
+        <span>{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
       </div>
-      <div class="topbar-right">
-        <!-- Super admin: switch which company every page operates on -->
-        <app-company-selector *ngIf="authService.isSuperAdmin()"></app-company-selector>
-        <div class="topbar-user">
-          <div class="user-dot"></div>
-          <span>{{ authService.currentUserValue?.fullName || 'Admin' }}</span>
-        </div>
-      </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- Content -->
-    <div class="zw-content">
-      <div *ngIf="planBanner as pb" role="status" [style.background]="pb.kind === 'expired' ? 'rgba(244,63,94,.14)' : 'rgba(245,158,11,.14)'"
-           [style.border]="pb.kind === 'expired' ? '1px solid rgba(244,63,94,.4)' : '1px solid rgba(245,158,11,.4)'"
-           style="margin:12px 16px 0;padding:10px 14px;border-radius:10px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <!-- Content -->
+  <div class="zw-content">
+    @if (planBanner; as pb) {
+      <div role="status" [style.background]="pb.kind === 'expired' ? 'rgba(244,63,94,.14)' : 'rgba(245,158,11,.14)'"
+        [style.border]="pb.kind === 'expired' ? '1px solid rgba(244,63,94,.4)' : '1px solid rgba(245,158,11,.4)'"
+        style="margin:12px 16px 0;padding:10px 14px;border-radius:10px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <span>{{ pb.kind === 'expired' ? '⛔' : '⚠️' }} {{ pb.text }}</span>
         <a [routerLink]="basePath + '/my-plan'" style="margin-left:auto;font-weight:600;text-decoration:underline">See my plan</a>
       </div>
-      <router-outlet></router-outlet>
-    </div>
-  </main>
+    }
+    <router-outlet></router-outlet>
+  </div>
+</main>
 </div>

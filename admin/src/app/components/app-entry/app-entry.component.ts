@@ -15,83 +15,87 @@ const STORAGE_KEY = 'app_login_context'; // 'admin' | '<companySlug>'
 //
 // NOTE: the wording below is a first draft — marketing copy is the owner's call; edit freely.
 @Component({
-  selector: 'app-entry',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
-    <div class="home" *ngIf="showPicker">
-      <div class="glow glow-a"></div>
-      <div class="glow glow-b"></div>
-
-      <header class="nav">
-        <a class="brand" routerLink="/"><img src="assets/auleco-mark-light.png" alt="" width="32" height="32"><span>Auleco</span></a>
-        <nav class="nav-actions">
-          <button type="button" class="link" (click)="goCompany()">Log in</button>
-          <a routerLink="/company/register" class="btn btn-small">Start free</a>
-        </nav>
-      </header>
-
-      <section class="hero">
-        <div class="eyebrow">For small shops in Bangladesh</div>
-        <h1>Your shop, online and at the counter &mdash; in one place.</h1>
-        <p class="lead">Get your own web address, take Cash on Delivery orders from Facebook customers, sell in-store with a POS, and keep your stock right &mdash; all from your phone.</p>
-        <div class="cta">
-          <a routerLink="/company/register" class="btn btn-primary">{{ trialDays > 0 ? 'Start your ' + trialDays + '-day free trial' : 'Create your shop' }} &rarr;</a>
-          <a href="#plans" class="btn btn-ghost" (click)="scrollTo($event, 'plans')">See plans</a>
-        </div>
-        <ul class="trust">
-          <li>&#10003; Cash on Delivery ready</li>
-          <li>&#10003; Works great on mobile</li>
-          <li>&#10003; Bangla &amp; English storefront</li>
-        </ul>
-        <div class="address-pill" aria-hidden="true"><span class="dot"></span> yourshop.auleco.com</div>
-      </section>
-
-      <section class="features" aria-label="What you get">
-        <article *ngFor="let f of features" class="feature">
-          <div class="feature-icon" aria-hidden="true">{{ f.icon }}</div>
-          <h3>{{ f.title }}</h3>
-          <p>{{ f.text }}</p>
-        </article>
-      </section>
-
-      <section class="steps" aria-label="How it works">
-        <h2>Up and selling in three steps</h2>
-        <ol>
-          <li><b>1</b><div><h3>Create your shop</h3><p>Pick your web address and plan. Takes a couple of minutes.</p></div></li>
-          <li><b>2</b><div><h3>Add your products</h3><p>Photos, prices, sizes and stock &mdash; print barcodes and price tags when you need them.</p></div></li>
-          <li><b>3</b><div><h3>Share the link</h3><p>Post it on Facebook or WhatsApp. Orders arrive; you send them with your courier.</p></div></li>
-        </ol>
-      </section>
-
-      <section id="plans" class="plans" *ngIf="plans.length" aria-label="Plans">
-        <h2>Simple plans</h2>
-        <p class="plans-sub" *ngIf="trialDays > 0">Every plan starts with a {{ trialDays }}-day free trial.</p>
-        <div class="plan-grid">
-          <article *ngFor="let p of plans" class="plan">
-            <h3>{{ p.name }}</h3>
-            <div class="price">&#2547;{{ p.price | number:'1.0-0' }}<span> / {{ p.billingCycle }}</span></div>
-            <ul><li *ngFor="let perk of p.perks">&#10003; {{ perk }}</li></ul>
-            <a routerLink="/company/register" [queryParams]="{ plan: p.id }" class="btn btn-small btn-block">Choose {{ p.name }}</a>
-          </article>
-        </div>
-      </section>
-
-      <section class="final">
-        <h2>Ready to open your online shop?</h2>
-        <a routerLink="/company/register" class="btn btn-primary">Create your shop &rarr;</a>
-      </section>
-
-      <footer class="foot">
-        <span>&copy; Auleco</span>
-        <span class="foot-links">
-          <button type="button" class="link" (click)="goCompany()">Shop login</button>
-          <button type="button" class="link" (click)="goAdmin()">Platform admin</button>
-        </span>
-      </footer>
-    </div>
-  `,
-  styles: [`
+    selector: 'app-entry',
+    imports: [CommonModule, RouterLink],
+    template: `
+    @if (showPicker) {
+      <div class="home">
+        <div class="glow glow-a"></div>
+        <div class="glow glow-b"></div>
+        <header class="nav">
+          <a class="brand" routerLink="/"><img src="assets/auleco-mark-light.png" alt="" width="32" height="32"><span>Auleco</span></a>
+          <nav class="nav-actions">
+            <button type="button" class="link" (click)="goCompany()">Log in</button>
+            <a routerLink="/company/register" class="btn btn-small">Start free</a>
+          </nav>
+        </header>
+        <section class="hero">
+          <div class="eyebrow">For small shops in Bangladesh</div>
+          <h1>Your shop, online and at the counter &mdash; in one place.</h1>
+          <p class="lead">Get your own web address, take Cash on Delivery orders from Facebook customers, sell in-store with a POS, and keep your stock right &mdash; all from your phone.</p>
+          <div class="cta">
+            <a routerLink="/company/register" class="btn btn-primary">{{ trialDays > 0 ? 'Start your ' + trialDays + '-day free trial' : 'Create your shop' }} &rarr;</a>
+            <a href="#plans" class="btn btn-ghost" (click)="scrollTo($event, 'plans')">See plans</a>
+          </div>
+          <ul class="trust">
+            <li>&#10003; Cash on Delivery ready</li>
+            <li>&#10003; Works great on mobile</li>
+            <li>&#10003; Bangla &amp; English storefront</li>
+          </ul>
+          <div class="address-pill" aria-hidden="true"><span class="dot"></span> yourshop.auleco.com</div>
+        </section>
+        <section class="features" aria-label="What you get">
+          @for (f of features; track f) {
+            <article class="feature">
+              <div class="feature-icon" aria-hidden="true">{{ f.icon }}</div>
+              <h3>{{ f.title }}</h3>
+              <p>{{ f.text }}</p>
+            </article>
+          }
+        </section>
+        <section class="steps" aria-label="How it works">
+          <h2>Up and selling in three steps</h2>
+          <ol>
+            <li><b>1</b><div><h3>Create your shop</h3><p>Pick your web address and plan. Takes a couple of minutes.</p></div></li>
+            <li><b>2</b><div><h3>Add your products</h3><p>Photos, prices, sizes and stock &mdash; print barcodes and price tags when you need them.</p></div></li>
+            <li><b>3</b><div><h3>Share the link</h3><p>Post it on Facebook or WhatsApp. Orders arrive; you send them with your courier.</p></div></li>
+          </ol>
+        </section>
+        @if (plans.length) {
+          <section id="plans" class="plans" aria-label="Plans">
+            <h2>Simple plans</h2>
+            @if (trialDays > 0) {
+              <p class="plans-sub">Every plan starts with a {{ trialDays }}-day free trial.</p>
+            }
+            <div class="plan-grid">
+              @for (p of plans; track p) {
+                <article class="plan">
+                  <h3>{{ p.name }}</h3>
+                  <div class="price">&#2547;{{ p.price | number:'1.0-0' }}<span> / {{ p.billingCycle }}</span></div>
+                  <ul>@for (perk of p.perks; track perk) {
+                    <li>&#10003; {{ perk }}</li>
+                  }</ul>
+                  <a routerLink="/company/register" [queryParams]="{ plan: p.id }" class="btn btn-small btn-block">Choose {{ p.name }}</a>
+                </article>
+              }
+            </div>
+          </section>
+        }
+        <section class="final">
+          <h2>Ready to open your online shop?</h2>
+          <a routerLink="/company/register" class="btn btn-primary">Create your shop &rarr;</a>
+        </section>
+        <footer class="foot">
+          <span>&copy; Auleco</span>
+          <span class="foot-links">
+            <button type="button" class="link" (click)="goCompany()">Shop login</button>
+            <button type="button" class="link" (click)="goAdmin()">Platform admin</button>
+          </span>
+        </footer>
+      </div>
+    }
+    `,
+    styles: [`
     :host { display: block; }
     .home { position: relative; overflow: hidden; min-height: 100vh; color: #e5e7eb; font-family: Inter, system-ui, sans-serif;
       background: radial-gradient(circle at 15% 0%, rgba(139,92,246,.16), transparent 50%), radial-gradient(circle at 90% 30%, rgba(244,63,94,.12), transparent 45%), #08090f; }

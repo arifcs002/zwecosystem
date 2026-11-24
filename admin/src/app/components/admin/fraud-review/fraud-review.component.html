@@ -6,8 +6,12 @@
     </div>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="tab-row">
     <button [class.active]="filterDecision === 'ALL'" (click)="filterDecision='ALL'; applyFilter()" class="tab-btn">All</button>
@@ -20,42 +24,54 @@
   </div>
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading flagged orders...</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr>
-          <th>Order #</th>
-          <th>Customer</th>
-          <th>Amount</th>
-          <th>IP Address</th>
-          <th>Risk Score</th>
-          <th>Flags</th>
-          <th>Decision</th>
-          <th>Checked</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let f of filteredFlagged">
-          <td><strong>{{ f.orderNumber }}</strong></td>
-          <td>{{ f.customerName || 'Guest' }}<br><small>{{ f.customerPhone }}</small></td>
-          <td><strong>৳{{ f.orderTotal | number:'1.0-0' }}</strong></td>
-          <td><small>{{ f.ipAddress || '—' }}</small></td>
-          <td><strong>{{ f.riskScore }}</strong>/100</td>
-          <td>
-            <span class="flag-chip" *ngFor="let flag of getFlagList(f.flags)">{{ flag }}</span>
-          </td>
-          <td><span [class]="getDecisionClass(f.decision)">{{ f.decision }}</span></td>
-          <td>{{ f.checkedDate | date:'dd MMM, HH:mm' }}</td>
-          <td class="actions-cell">
-            <button class="btn-primary btn-sm" (click)="resolve(f, 'PASS')">✔ Approve</button>
-            <button class="btn-danger btn-sm" (click)="resolve(f, 'BLOCK')" *ngIf="f.decision !== 'BLOCK'">🚫 Block</button>
-          </td>
-        </tr>
-        <tr *ngIf="filteredFlagged.length === 0">
-          <td colspan="9" class="empty-row">No flagged orders. 🎉</td>
-        </tr>
-      </tbody>
-    </table>
+    @if (isLoading) {
+      <div class="loading">Loading flagged orders...</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>IP Address</th>
+            <th>Risk Score</th>
+            <th>Flags</th>
+            <th>Decision</th>
+            <th>Checked</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filteredFlagged; track f) {
+            <tr>
+              <td><strong>{{ f.orderNumber }}</strong></td>
+              <td>{{ f.customerName || 'Guest' }}<br><small>{{ f.customerPhone }}</small></td>
+              <td><strong>৳{{ f.orderTotal | number:'1.0-0' }}</strong></td>
+              <td><small>{{ f.ipAddress || '—' }}</small></td>
+              <td><strong>{{ f.riskScore }}</strong>/100</td>
+              <td>
+                @for (flag of getFlagList(f.flags); track flag) {
+                  <span class="flag-chip">{{ flag }}</span>
+                }
+              </td>
+              <td><span [class]="getDecisionClass(f.decision)">{{ f.decision }}</span></td>
+              <td>{{ f.checkedDate | date:'dd MMM, HH:mm' }}</td>
+              <td class="actions-cell">
+                <button class="btn-primary btn-sm" (click)="resolve(f, 'PASS')">✔ Approve</button>
+                @if (f.decision !== 'BLOCK') {
+                  <button class="btn-danger btn-sm" (click)="resolve(f, 'BLOCK')">🚫 Block</button>
+                }
+              </td>
+            </tr>
+          }
+          @if (filteredFlagged.length === 0) {
+            <tr>
+              <td colspan="9" class="empty-row">No flagged orders. 🎉</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
 </div>

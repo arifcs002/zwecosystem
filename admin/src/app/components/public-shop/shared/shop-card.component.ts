@@ -16,41 +16,54 @@ export function groupKey(g: ProductGroup): string { return `${g.baseName}::${g.c
 // related products): image with fallback, sale / new / stock badges, wishlist heart,
 // quick add. It owns its own navigation + cart wiring so parents only pass the group.
 @Component({
-  selector: 'app-shop-card',
-  standalone: true,
-  imports: [TranslatePipe, CommonModule, ImgUrlPipe, ImgFallbackDirective],
-  template: `
+    selector: 'app-shop-card',
+    imports: [TranslatePipe, CommonModule, ImgUrlPipe, ImgFallbackDirective],
+    template: `
   <div (click)="open()" class="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer h-full">
     <div class="relative aspect-square bg-gray-50 overflow-hidden">
       <img [src]="group.imageUrl ? (group.imageUrl | imgUrl) : placeholder" appImgFallback [alt]="group.baseName" loading="lazy"
-           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
       <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
-        <span *ngIf="discount > 0" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-sm">-{{ discount }}%</span>
-        <span *ngIf="isNew" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm">{{ 'New' | t }}</span>
-        <span *ngIf="soldOut" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900/85 text-white shadow-sm">{{ 'Sold out' | t }}</span>
-        <span *ngIf="!soldOut && lowStock" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-sm">{{ 'Only {n} left' | t:{ n: group.totalStock } }}</span>
+        @if (discount > 0) {
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-sm">-{{ discount }}%</span>
+        }
+        @if (isNew) {
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm">{{ 'New' | t }}</span>
+        }
+        @if (soldOut) {
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900/85 text-white shadow-sm">{{ 'Sold out' | t }}</span>
+        }
+        @if (!soldOut && lowStock) {
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white shadow-sm">{{ 'Only {n} left' | t:{ n: group.totalStock } }}</span>
+        }
       </div>
       <button type="button" (click)="toggleWish($event)" [attr.aria-label]="wished ? 'Remove from wishlist' : 'Add to wishlist'" [attr.aria-pressed]="wished"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center hover:scale-110 transition"
-              [ngClass]="wished ? 'text-rose-500' : 'text-gray-400 hover:text-rose-400'">
+        class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center hover:scale-110 transition"
+        [ngClass]="wished ? 'text-rose-500' : 'text-gray-400 hover:text-rose-400'">
         <svg class="w-4 h-4" viewBox="0 0 24 24" [attr.fill]="wished ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>
         </svg>
       </button>
-      <span *ngIf="group.variants.length > 1" class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-gray-700 shadow-sm">{{ '{n} sizes' | t:{ n: group.variants.length } }}</span>
+      @if (group.variants.length > 1) {
+        <span class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-gray-700 shadow-sm">{{ '{n} sizes' | t:{ n: group.variants.length } }}</span>
+      }
     </div>
     <div class="p-3 flex-1 flex flex-col">
       <p class="text-[10px] text-indigo-500 font-semibold truncate uppercase tracking-wide">{{ group.categoryName }}</p>
-      <p *ngIf="rating as r" class="text-[11px] text-amber-500 font-semibold mt-0.5" [attr.aria-label]="r.average + ' out of 5 stars, ' + r.count + ' reviews'">★ {{ r.average }} <span class="text-gray-400 font-normal">({{ r.count }})</span></p>
+      @if (rating; as r) {
+        <p class="text-[11px] text-amber-500 font-semibold mt-0.5" [attr.aria-label]="r.average + ' out of 5 stars, ' + r.count + ' reviews'">★ {{ r.average }} <span class="text-gray-400 font-normal">({{ r.count }})</span></p>
+      }
       <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mt-0.5 flex-1">{{ group.baseName }}</h3>
       <div class="flex items-end justify-between mt-2 gap-2">
         <div class="leading-tight">
           <span class="text-base font-bold text-gray-900">৳{{ group.price | number:'1.0-0' }}</span>
-          <span *ngIf="discount > 0" class="block text-xs text-gray-400 line-through">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
+          @if (discount > 0) {
+            <span class="block text-xs text-gray-400 line-through">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
+          }
         </div>
         <button type="button" (click)="primary($event)" [disabled]="soldOut"
-                class="h-9 px-3 rounded-xl text-xs font-semibold transition flex-shrink-0 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                [ngClass]="soldOut ? '' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'">
+          class="h-9 px-3 rounded-xl text-xs font-semibold transition flex-shrink-0 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          [ngClass]="soldOut ? '' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'">
           {{ soldOut ? ('Sold out' | t) : (group.variants.length > 1 ? ('Options' | t) : ('Add' | t)) }}
         </button>
       </div>

@@ -6,75 +6,99 @@
     </div>
   </div>
 
-  <div class="loading" *ngIf="isLoading">Loading...</div>
+  @if (isLoading) {
+    <div class="loading">Loading...</div>
+  }
 
-  <div *ngIf="!isLoading && !plan" class="table-card">
-    <div class="empty-row">No subscription plan assigned yet. Contact support to get started.</div>
-  </div>
-
-  <div *ngIf="!isLoading && plan" class="plan-summary-card">
-    <div class="plan-summary-header">
-      <div>
-        <div class="plan-summary-name">{{ plan.name }}</div>
-        <div class="plan-summary-price">৳{{ plan.price | number:'1.0-0' }} / {{ plan.billingCycle }}</div>
-      </div>
+  @if (!isLoading && !plan) {
+    <div class="table-card">
+      <div class="empty-row">No subscription plan assigned yet. Contact support to get started.</div>
     </div>
+  }
 
-    <div class="usage-grid">
-      <div class="usage-item">
-        <div class="usage-label">Products</div>
-        <div class="usage-value">{{ usage.products }} <span *ngIf="limitFor('max_products')">/ {{ limitFor('max_products') }}</span></div>
-        <div class="usage-bar" *ngIf="limitFor('max_products')">
-          <div class="usage-bar-fill" [style.width.%]="percentOf(usage.products, 'max_products')"></div>
+  @if (!isLoading && plan) {
+    <div class="plan-summary-card">
+      <div class="plan-summary-header">
+        <div>
+          <div class="plan-summary-name">{{ plan.name }}</div>
+          <div class="plan-summary-price">৳{{ plan.price | number:'1.0-0' }} / {{ plan.billingCycle }}</div>
         </div>
       </div>
-      <div class="usage-item">
-        <div class="usage-label">Users</div>
-        <div class="usage-value">{{ usage.users }} <span *ngIf="limitFor('max_users')">/ {{ limitFor('max_users') }}</span></div>
-        <div class="usage-bar" *ngIf="limitFor('max_users')">
-          <div class="usage-bar-fill" [style.width.%]="percentOf(usage.users, 'max_users')"></div>
+      <div class="usage-grid">
+        <div class="usage-item">
+          <div class="usage-label">Products</div>
+          <div class="usage-value">{{ usage.products }} @if (limitFor('max_products')) {
+            <span>/ {{ limitFor('max_products') }}</span>
+          }</div>
+          @if (limitFor('max_products')) {
+            <div class="usage-bar">
+              <div class="usage-bar-fill" [style.width.%]="percentOf(usage.products, 'max_products')"></div>
+            </div>
+          }
+        </div>
+        <div class="usage-item">
+          <div class="usage-label">Users</div>
+          <div class="usage-value">{{ usage.users }} @if (limitFor('max_users')) {
+            <span>/ {{ limitFor('max_users') }}</span>
+          }</div>
+          @if (limitFor('max_users')) {
+            <div class="usage-bar">
+              <div class="usage-bar-fill" [style.width.%]="percentOf(usage.users, 'max_users')"></div>
+            </div>
+          }
+        </div>
+        <div class="usage-item">
+          <div class="usage-label">Orders (all-time)</div>
+          <div class="usage-value">{{ usage.orders }}</div>
         </div>
       </div>
-      <div class="usage-item">
-        <div class="usage-label">Orders (all-time)</div>
-        <div class="usage-value">{{ usage.orders }}</div>
+      @if (billing) {
+        <div class="usage-grid" style="margin-top:16px">
+          <div class="usage-item">
+            <div class="usage-label">Status</div>
+            <div class="usage-value" [style.color]="billing.status === 'active' ? '#34d399' : billing.status === 'grace' ? '#fbbf24' : '#f87171'">{{ statusLabel() }}</div>
+          </div>
+          <div class="usage-item">
+            <div class="usage-label">{{ billing.status === 'active' ? 'Renews / ends on' : 'Ended on' }}</div>
+            <div class="usage-value">{{ billing.expiresAt ? (billing.expiresAt | date:'d MMM yyyy') : 'No end date' }}</div>
+            @if (billing.status === 'active' && billing.daysLeft != null) {
+              <small style="opacity:.6">{{ billing.daysLeft }} days left</small>
+            }
+          </div>
+        </div>
+      }
+      @if (billing) {
+        <div class="plan-features-section">
+          <div class="section-title">Payments</div>
+          @if (billing.payments.length === 0) {
+            <p style="opacity:.6;font-size:13px">No payments recorded yet. To renew, pay the Auleco team (bKash, Nagad, cash or bank) and they will extend your plan.</p>
+          }
+          @if (billing.payments.length) {
+            <table class="data-table" style="width:100%;font-size:13px">
+              <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Covers</th><th style="text-align:right">Amount</th></tr></thead>
+              <tbody>
+                @for (p of billing.payments; track p) {
+                  <tr>
+                    <td>{{ p.createdDate | date:'d MMM yyyy' }}</td>
+                    <td>{{ methodLabel(p.method) }}</td>
+                    <td>{{ p.reference || '—' }}</td>
+                    <td>{{ p.periodStart | date:'d MMM' }} → {{ p.periodEnd | date:'d MMM yyyy' }}</td>
+                    <td style="text-align:right">৳{{ p.amount | number:'1.0-0' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+      <div class="plan-features-section">
+        <div class="section-title">Plan Features</div>
+        <ul class="plan-features">
+          @for (f of featuresOf(); track f) {
+            <li><span class="check">✔</span> {{ f.key }}: <strong>{{ f.value }}</strong></li>
+          }
+        </ul>
       </div>
     </div>
-
-    <div class="usage-grid" *ngIf="billing" style="margin-top:16px">
-      <div class="usage-item">
-        <div class="usage-label">Status</div>
-        <div class="usage-value" [style.color]="billing.status === 'active' ? '#34d399' : billing.status === 'grace' ? '#fbbf24' : '#f87171'">{{ statusLabel() }}</div>
-      </div>
-      <div class="usage-item">
-        <div class="usage-label">{{ billing.status === 'active' ? 'Renews / ends on' : 'Ended on' }}</div>
-        <div class="usage-value">{{ billing.expiresAt ? (billing.expiresAt | date:'d MMM yyyy') : 'No end date' }}</div>
-        <small *ngIf="billing.status === 'active' && billing.daysLeft != null" style="opacity:.6">{{ billing.daysLeft }} days left</small>
-      </div>
-    </div>
-
-    <div class="plan-features-section" *ngIf="billing">
-      <div class="section-title">Payments</div>
-      <p *ngIf="billing.payments.length === 0" style="opacity:.6;font-size:13px">No payments recorded yet. To renew, pay the Auleco team (bKash, Nagad, cash or bank) and they will extend your plan.</p>
-      <table *ngIf="billing.payments.length" class="data-table" style="width:100%;font-size:13px">
-        <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Covers</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let p of billing.payments">
-            <td>{{ p.createdDate | date:'d MMM yyyy' }}</td>
-            <td>{{ methodLabel(p.method) }}</td>
-            <td>{{ p.reference || '—' }}</td>
-            <td>{{ p.periodStart | date:'d MMM' }} → {{ p.periodEnd | date:'d MMM yyyy' }}</td>
-            <td style="text-align:right">৳{{ p.amount | number:'1.0-0' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="plan-features-section">
-      <div class="section-title">Plan Features</div>
-      <ul class="plan-features">
-        <li *ngFor="let f of featuresOf()"><span class="check">✔</span> {{ f.key }}: <strong>{{ f.value }}</strong></li>
-      </ul>
-    </div>
-  </div>
+  }
 </div>

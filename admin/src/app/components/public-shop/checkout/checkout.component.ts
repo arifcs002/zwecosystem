@@ -23,10 +23,9 @@ interface PayMethod { value: string; label: string; note?: string; }
 const BD_MOBILE = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 @Component({
-  selector: 'app-checkout',
-  standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent],
-  templateUrl: './checkout.component.html'
+    selector: 'app-checkout',
+    imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ImgFallbackDirective, ShopHeaderComponent, ShopFooterComponent],
+    templateUrl: './checkout.component.html'
 })
 export class CheckoutComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);

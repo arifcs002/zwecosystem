@@ -8,11 +8,10 @@ import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-d
 import { GlobalNotificationService } from '../../../services/global-notification/global-notification.service';
 
 @Component({
-  selector: 'app-user-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './user-management.component.html',
-  styleUrl: './user-management.component.css'
+    selector: 'app-user-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './user-management.component.html',
+    styleUrl: './user-management.component.css'
 })
 export class UserManagementComponent implements OnInit {
   

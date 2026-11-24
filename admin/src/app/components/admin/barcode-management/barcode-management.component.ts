@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -12,11 +12,10 @@ import { groupProducts, ProductGroup } from '../../../utils/product-group.util';
 type TagFormat = 'thermal' | 'label' | 'a4';
 
 @Component({
-  selector: 'app-barcode-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './barcode-management.component.html',
-  styleUrl: './barcode-management.component.css'
+    selector: 'app-barcode-management',
+    imports: [FormsModule],
+    templateUrl: './barcode-management.component.html',
+    styleUrl: './barcode-management.component.css'
 })
 export class BarcodeManagementComponent implements OnInit {
   private productService = inject(ProductService);

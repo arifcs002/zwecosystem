@@ -1,15 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { SettingsService, CompanySetting } from '../../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../../services/global-notification/global-notification.service';
 
 @Component({
-  selector: 'app-ecommerce-checkout',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './ecommerce-checkout.component.html',
-  styleUrl: '../ecommerce-config.css'
+    selector: 'app-ecommerce-checkout',
+    imports: [FormsModule],
+    templateUrl: './ecommerce-checkout.component.html',
+    styleUrl: '../ecommerce-config.css'
 })
 export class EcommerceCheckoutComponent implements OnInit {
   private settingsService = inject(SettingsService);

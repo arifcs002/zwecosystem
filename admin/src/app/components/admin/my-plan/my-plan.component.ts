@@ -4,11 +4,10 @@ import { SubscriptionPlanService, SubscriptionPlan } from '../../../services/sub
 import { BillingService, BillingSummary } from '../../../services/billing/billing.service';
 
 @Component({
-  selector: 'app-my-plan',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './my-plan.component.html',
-  styleUrl: './my-plan.component.css'
+    selector: 'app-my-plan',
+    imports: [CommonModule],
+    templateUrl: './my-plan.component.html',
+    styleUrl: './my-plan.component.css'
 })
 export class MyPlanComponent implements OnInit {
   private planService = inject(SubscriptionPlanService);

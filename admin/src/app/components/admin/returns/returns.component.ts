@@ -11,10 +11,9 @@ interface NewItem { product: PosProduct; qty: number; }
 // Customer brings something back: find the sale by its receipt number, pick what comes back, then give the
 // money back, take it off what the customer owes, or swap it for other goods.
 @Component({
-  selector: 'app-returns',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-returns',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -28,72 +27,96 @@ interface NewItem { product: PosProduct; qty: number; }
       <input class="form-input" style="flex:1;min-width:220px" [(ngModel)]="orderNumber" name="on" placeholder="Order number from the receipt, e.g. POS-6393…" autocomplete="off">
       <button class="btn-primary" type="submit" [disabled]="busy || orderNumber.trim().length < 3">Find sale</button>
     </form>
-    <p *ngIf="errorMsg" role="alert" style="color:#f87171;margin:10px 0 0;font-size:13.5px">❌ {{ errorMsg }}</p>
+    @if (errorMsg) {
+      <p role="alert" style="color:#f87171;margin:10px 0 0;font-size:13.5px">❌ {{ errorMsg }}</p>
+    }
   </div>
 
-  <div class="table-card" *ngIf="result" role="status" style="padding:16px;border:1px solid rgba(52,211,153,.4)">
-    <h3 style="margin:0 0 6px;color:#34d399">✅ Done — {{ result.returnNumber }}</h3>
-    <div>Value of goods taken back: <b>৳{{ result.refundAmount | number:'1.0-0' }}</b> ({{ result.restocked }} item{{ result.restocked === 1 ? '' : 's' }} put back in stock)</div>
-    <div *ngIf="result.cashToGiveBack > 0" style="font-size:20px;margin-top:8px">💵 Give the customer <b>৳{{ result.cashToGiveBack | number:'1.0-0' }}</b> in cash</div>
-    <div *ngIf="result.customerPays > 0" style="font-size:20px;margin-top:8px">💵 Collect <b>৳{{ result.customerPays | number:'1.0-0' }}</b> from the customer</div>
-    <div *ngIf="result.kind === 'EXCHANGE' && result.cashToGiveBack === 0 && result.customerPays === 0" style="margin-top:8px">Even swap — no money to exchange.</div>
-    <button class="btn-secondary" style="margin-top:12px" (click)="reset()">Start another</button>
-  </div>
-
-  <div class="table-card" *ngIf="data && !result" style="padding:16px">
-    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-      <div><b>{{ data.order.orderNumber }}</b> · ৳{{ data.order.total | number:'1.0-0' }} · {{ data.order.paymentMethod }}
-        <span *ngIf="data.order.customerName"> · {{ data.order.customerName }}</span><span *ngIf="data.order.customerPhone"> ({{ data.order.customerPhone }})</span></div>
-      <span style="opacity:.6;font-size:13px">{{ data.order.status }}</span>
+  @if (result) {
+    <div class="table-card" role="status" style="padding:16px;border:1px solid rgba(52,211,153,.4)">
+      <h3 style="margin:0 0 6px;color:#34d399">✅ Done — {{ result.returnNumber }}</h3>
+      <div>Value of goods taken back: <b>৳{{ result.refundAmount | number:'1.0-0' }}</b> ({{ result.restocked }} item{{ result.restocked === 1 ? '' : 's' }} put back in stock)</div>
+      @if (result.cashToGiveBack > 0) {
+        <div style="font-size:20px;margin-top:8px">💵 Give the customer <b>৳{{ result.cashToGiveBack | number:'1.0-0' }}</b> in cash</div>
+      }
+      @if (result.customerPays > 0) {
+        <div style="font-size:20px;margin-top:8px">💵 Collect <b>৳{{ result.customerPays | number:'1.0-0' }}</b> from the customer</div>
+      }
+      @if (result.kind === 'EXCHANGE' && result.cashToGiveBack === 0 && result.customerPays === 0) {
+        <div style="margin-top:8px">Even swap — no money to exchange.</div>
+      }
+      <button class="btn-secondary" style="margin-top:12px" (click)="reset()">Start another</button>
     </div>
-    <p *ngIf="data.order.status !== 'COMPLETED'" style="color:#fbbf24;font-size:13.5px">Only completed sales can have items returned.</p>
+  }
 
-    <table class="data-table" style="width:100%;min-width:0;font-size:13.5px">
-      <thead><tr><th>Item</th><th style="text-align:right">Sold</th><th style="text-align:right">Back already</th><th>Return qty</th><th>Back on shelf?</th><th style="text-align:right">Refund</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let r of rows">
-          <td>{{ r.name }}</td>
-          <td style="text-align:right">{{ r.sold }}</td>
-          <td style="text-align:right">{{ r.returned }}</td>
-          <td><input class="form-input" style="width:80px" type="number" min="0" [max]="r.remaining" [(ngModel)]="r.qty" [disabled]="r.remaining === 0" [name]="'q' + r.orderItemId"></td>
-          <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px"><input type="checkbox" [(ngModel)]="r.restock" [name]="'s' + r.orderItemId" [disabled]="r.remaining === 0"> resellable</label></td>
-          <td style="text-align:right">৳{{ (r.qty || 0) * r.refundPerUnit | number:'1.0-0' }}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div style="margin:14px 0 6px;font-weight:700">What does the customer want?</div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px">
-      <label><input type="radio" name="how" [(ngModel)]="how" value="CASH"> Money back (cash)</label>
-      <label *ngIf="data.order.customerPhone"><input type="radio" name="how" [(ngModel)]="how" value="ADJUST_DUE"> Take it off what they owe</label>
-      <label><input type="radio" name="how" [(ngModel)]="how" value="EXCHANGE"> Swap for other goods</label>
-    </div>
-
-    <div *ngIf="how === 'EXCHANGE'" style="margin-top:10px;padding:10px;border-radius:10px;background:rgba(139,92,246,.08)">
-      <form (ngSubmit)="addNew()" style="display:flex;gap:8px;flex-wrap:wrap">
-        <input class="form-input" style="flex:1;min-width:200px" [(ngModel)]="newCode" name="nc" placeholder="Scan or type the NEW item's barcode, then Enter">
-        <button class="btn-secondary" type="submit" [disabled]="!newCode.trim()">Add</button>
-      </form>
-      <div *ngFor="let n of newItems" style="display:flex;gap:10px;align-items:center;margin-top:8px;font-size:13.5px">
-        <span style="flex:1">{{ n.product.name }} — ৳{{ n.product.price | number:'1.0-0' }} <span style="opacity:.6">(stock {{ n.product.stockQuantity }})</span></span>
-        <input class="form-input" style="width:80px" type="number" min="1" [max]="n.product.stockQuantity" [(ngModel)]="n.qty" [name]="'n' + n.product.id">
-        <button type="button" (click)="removeNew(n)" aria-label="Remove">✕</button>
+  @if (data && !result) {
+    <div class="table-card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <div><b>{{ data.order.orderNumber }}</b> · ৳{{ data.order.total | number:'1.0-0' }} · {{ data.order.paymentMethod }}
+        @if (data.order.customerName) {
+          <span> · {{ data.order.customerName }}</span>
+          }@if (data.order.customerPhone) {
+          <span> ({{ data.order.customerPhone }})</span>
+        }</div>
+        <span style="opacity:.6;font-size:13px">{{ data.order.status }}</span>
       </div>
+      @if (data.order.status !== 'COMPLETED') {
+        <p style="color:#fbbf24;font-size:13.5px">Only completed sales can have items returned.</p>
+      }
+      <table class="data-table" style="width:100%;min-width:0;font-size:13.5px">
+        <thead><tr><th>Item</th><th style="text-align:right">Sold</th><th style="text-align:right">Back already</th><th>Return qty</th><th>Back on shelf?</th><th style="text-align:right">Refund</th></tr></thead>
+        <tbody>
+          @for (r of rows; track r) {
+            <tr>
+              <td>{{ r.name }}</td>
+              <td style="text-align:right">{{ r.sold }}</td>
+              <td style="text-align:right">{{ r.returned }}</td>
+              <td><input class="form-input" style="width:80px" type="number" min="0" [max]="r.remaining" [(ngModel)]="r.qty" [disabled]="r.remaining === 0" [name]="'q' + r.orderItemId"></td>
+              <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px"><input type="checkbox" [(ngModel)]="r.restock" [name]="'s' + r.orderItemId" [disabled]="r.remaining === 0"> resellable</label></td>
+              <td style="text-align:right">৳{{ (r.qty || 0) * r.refundPerUnit | number:'1.0-0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div style="margin:14px 0 6px;font-weight:700">What does the customer want?</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px">
+        <label><input type="radio" name="how" [(ngModel)]="how" value="CASH"> Money back (cash)</label>
+        @if (data.order.customerPhone) {
+          <label><input type="radio" name="how" [(ngModel)]="how" value="ADJUST_DUE"> Take it off what they owe</label>
+        }
+        <label><input type="radio" name="how" [(ngModel)]="how" value="EXCHANGE"> Swap for other goods</label>
+      </div>
+      @if (how === 'EXCHANGE') {
+        <div style="margin-top:10px;padding:10px;border-radius:10px;background:rgba(139,92,246,.08)">
+          <form (ngSubmit)="addNew()" style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="form-input" style="flex:1;min-width:200px" [(ngModel)]="newCode" name="nc" placeholder="Scan or type the NEW item's barcode, then Enter">
+            <button class="btn-secondary" type="submit" [disabled]="!newCode.trim()">Add</button>
+          </form>
+          @for (n of newItems; track n) {
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px;font-size:13.5px">
+              <span style="flex:1">{{ n.product.name }} — ৳{{ n.product.price | number:'1.0-0' }} <span style="opacity:.6">(stock {{ n.product.stockQuantity }})</span></span>
+              <input class="form-input" style="width:80px" type="number" min="1" [max]="n.product.stockQuantity" [(ngModel)]="n.qty" [name]="'n' + n.product.id">
+              <button type="button" (click)="removeNew(n)" aria-label="Remove">✕</button>
+            </div>
+          }
+        </div>
+      }
+      <input class="form-input" style="margin-top:12px" [(ngModel)]="reason" name="reason" maxlength="300" placeholder="Reason (optional): wrong size, damaged, changed mind…">
+      <div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04)">
+        <div>Value of goods coming back: <b>৳{{ refundTotal | number:'1.0-0' }}</b></div>
+        @if (how === 'EXCHANGE') {
+          <div>New goods: <b>৳{{ newTotal | number:'1.0-0' }}</b></div>
+          @if (newTotal > refundTotal) {
+            <div>Customer pays <b>৳{{ newTotal - refundTotal | number:'1.0-0' }}</b></div>
+          }
+          @if (newTotal < refundTotal) {
+            <div>Give back <b>৳{{ refundTotal - newTotal | number:'1.0-0' }}</b> in cash</div>
+          }
+        }
+      </div>
+      <button class="btn-primary" style="margin-top:12px" (click)="submit()" [disabled]="busy || !canSubmit">{{ busy ? 'Saving…' : 'Confirm' }}</button>
     </div>
-
-    <input class="form-input" style="margin-top:12px" [(ngModel)]="reason" name="reason" maxlength="300" placeholder="Reason (optional): wrong size, damaged, changed mind…">
-
-    <div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04)">
-      <div>Value of goods coming back: <b>৳{{ refundTotal | number:'1.0-0' }}</b></div>
-      <ng-container *ngIf="how === 'EXCHANGE'">
-        <div>New goods: <b>৳{{ newTotal | number:'1.0-0' }}</b></div>
-        <div *ngIf="newTotal > refundTotal">Customer pays <b>৳{{ newTotal - refundTotal | number:'1.0-0' }}</b></div>
-        <div *ngIf="newTotal < refundTotal">Give back <b>৳{{ refundTotal - newTotal | number:'1.0-0' }}</b> in cash</div>
-      </ng-container>
-    </div>
-
-    <button class="btn-primary" style="margin-top:12px" (click)="submit()" [disabled]="busy || !canSubmit">{{ busy ? 'Saving…' : 'Confirm' }}</button>
-  </div>
+  }
 </div>`
 })
 export class ReturnsComponent {

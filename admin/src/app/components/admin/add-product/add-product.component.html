@@ -3,8 +3,8 @@
     <h1 class="page-title">{{ isEditMode ? '✏️ Edit Product' : '➕ Add Products' }}</h1>
     <p class="page-subtitle">
       {{ isEditMode
-        ? 'Update this product\'s details. Stock quantity is adjusted from Inventory, not here.'
-        : 'Pick a supplier & category once, then add new products or restock existing ones — saved together.' }}
+      ? 'Update this product\'s details. Stock quantity is adjusted from Inventory, not here.'
+      : 'Pick a supplier & category once, then add new products or restock existing ones — saved together.' }}
     </p>
   </div>
 
@@ -15,7 +15,9 @@
         <label>Supplier <span class="req">*</span></label>
         <select [(ngModel)]="supplierId" name="supplierId" class="form-input">
           <option [ngValue]="undefined">— Select supplier —</option>
-          <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+          @for (s of suppliers; track s) {
+            <option [ngValue]="s.id">{{ s.name }}</option>
+          }
         </select>
       </div>
       <div class="form-group">
@@ -25,149 +27,190 @@
         </app-category-tree-picker>
       </div>
     </div>
-    <p *ngIf="categoryId && availableSizes.length === 0" class="hint mt-2">This category has no sizes — each product is a single stock item.</p>
-    <p *ngIf="availableSizes.length" class="hint mt-2">Sizes for this category: {{ availableSizes.join(', ') }}</p>
+    @if (categoryId && availableSizes.length === 0) {
+      <p class="hint mt-2">This category has no sizes — each product is a single stock item.</p>
+    }
+    @if (availableSizes.length) {
+      <p class="hint mt-2">Sizes for this category: {{ availableSizes.join(', ') }}</p>
+    }
   </div>
 
   <!-- Product lines -->
-  <div class="line-card" *ngFor="let line of lines; let i = index">
-    <div class="line-head" *ngIf="!isEditMode">
-      <label class="existing-toggle">
-        <input type="checkbox" [ngModel]="line.isExisting" [name]="'ex'+i" (ngModelChange)="toggleExisting(line)">
-        Existing Product (Restock)
-      </label>
-      <span class="line-no">{{ line.isExisting ? 'Restock' : 'New' }} {{ i + 1 }}</span>
-      <button *ngIf="lines.length > 1" class="line-del" (click)="removeLine(i)" title="Remove">✕</button>
-    </div>
-
-    <!-- ══ RESTOCK MODE ══ -->
-    <ng-container *ngIf="line.isExisting">
-      <div class="form-group" *ngIf="!categoryId">
-        <p class="hint">Select a category above to see its existing products.</p>
-      </div>
-
-      <div class="form-group" *ngIf="categoryId">
-        <label>Find Product</label>
-        <input class="form-input" [(ngModel)]="line.existingSearch" [name]="'exsearch'+i"
-          placeholder="Search product name…" (ngModelChange)="refreshExistingResults(line)" (focus)="line.existingGroup = null; refreshExistingResults(line)">
-
-        <div class="existing-list" *ngIf="!line.existingGroup">
-          <button *ngFor="let g of line.existingResults; trackBy: trackByGroupKey" type="button" class="existing-item" (click)="selectExistingGroup(line, g)">
-            <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="existing-thumb">
-            <div *ngIf="!g.imageUrl" class="existing-thumb ph">📦</div>
+  @for (line of lines; track line; let i = $index) {
+    <div class="line-card">
+      @if (!isEditMode) {
+        <div class="line-head">
+          <label class="existing-toggle">
+            <input type="checkbox" [ngModel]="line.isExisting" [name]="'ex'+i" (ngModelChange)="toggleExisting(line)">
+            Existing Product (Restock)
+          </label>
+          <span class="line-no">{{ line.isExisting ? 'Restock' : 'New' }} {{ i + 1 }}</span>
+          @if (lines.length > 1) {
+            <button class="line-del" (click)="removeLine(i)" title="Remove">✕</button>
+          }
+        </div>
+      }
+      <!-- ══ RESTOCK MODE ══ -->
+      @if (line.isExisting) {
+        @if (!categoryId) {
+          <div class="form-group">
+            <p class="hint">Select a category above to see its existing products.</p>
+          </div>
+        }
+        @if (categoryId) {
+          <div class="form-group">
+            <label>Find Product</label>
+            <input class="form-input" [(ngModel)]="line.existingSearch" [name]="'exsearch'+i"
+              placeholder="Search product name…" (ngModelChange)="refreshExistingResults(line)" (focus)="line.existingGroup = null; refreshExistingResults(line)">
+            @if (!line.existingGroup) {
+              <div class="existing-list">
+                @for (g of line.existingResults; track trackByGroupKey($index, g)) {
+                  <button type="button" class="existing-item" (click)="selectExistingGroup(line, g)">
+                    @if (g.imageUrl) {
+                      <img [src]="g.imageUrl | imgUrl" class="existing-thumb">
+                    }
+                    @if (!g.imageUrl) {
+                      <div class="existing-thumb ph">📦</div>
+                    }
+                    <div class="existing-info">
+                      <span class="existing-name">{{ g.baseName }}</span>
+                      <span class="existing-sub">{{ g.variants.length }} size(s) · total stock {{ g.totalStock }}</span>
+                    </div>
+                  </button>
+                }
+                @if (line.existingResults.length === 0) {
+                  <p class="hint">No existing products in this category.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+        <!-- Selected existing product: variant restock grid -->
+        @if (line.existingGroup; as g) {
+          <div class="selected-existing">
+            @if (g.imageUrl) {
+              <img [src]="g.imageUrl | imgUrl" class="existing-thumb">
+            }
+            @if (!g.imageUrl) {
+              <div class="existing-thumb ph">📦</div>
+            }
             <div class="existing-info">
               <span class="existing-name">{{ g.baseName }}</span>
-              <span class="existing-sub">{{ g.variants.length }} size(s) · total stock {{ g.totalStock }}</span>
+              <span class="existing-sub">{{ g.categoryName }}</span>
             </div>
-          </button>
-          <p *ngIf="line.existingResults.length === 0" class="hint">No existing products in this category.</p>
-        </div>
-      </div>
-
-      <!-- Selected existing product: variant restock grid -->
-      <div class="selected-existing" *ngIf="line.existingGroup as g">
-        <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="existing-thumb">
-        <div *ngIf="!g.imageUrl" class="existing-thumb ph">📦</div>
-        <div class="existing-info">
-          <span class="existing-name">{{ g.baseName }}</span>
-          <span class="existing-sub">{{ g.categoryName }}</span>
-        </div>
-        <button class="line-del" (click)="clearExistingGroup(line)" title="Change product">✕</button>
-      </div>
-
-      <div class="form-group" *ngIf="line.existingGroup as g">
-        <label>Add Quantity per size <span class="hint">(current stock shown, total adding: {{ restockLineTotal(line) }})</span></label>
-        <div class="size-grid">
-          <div class="size-cell" *ngFor="let v of g.variants">
-            <span class="size-lbl">{{ v.size || 'Qty' }} <em>({{ v.stockQuantity }})</em></span>
-            <input type="number" min="0" [(ngModel)]="line.restockQuantities[v.size || '']" [name]="'rq'+i+v.id" class="size-inp" placeholder="0">
+            <button class="line-del" (click)="clearExistingGroup(line)" title="Change product">✕</button>
+          </div>
+        }
+        @if (line.existingGroup; as g) {
+          <div class="form-group">
+            <label>Add Quantity per size <span class="hint">(current stock shown, total adding: {{ restockLineTotal(line) }})</span></label>
+            <div class="size-grid">
+              @for (v of g.variants; track v) {
+                <div class="size-cell">
+                  <span class="size-lbl">{{ v.size || 'Qty' }} <em>({{ v.stockQuantity }})</em></span>
+                  <input type="number" min="0" [(ngModel)]="line.restockQuantities[v.size || '']" [name]="'rq'+i+v.id" class="size-inp" placeholder="0">
+                </div>
+              }
+            </div>
+          </div>
+        }
+        @if (line.existingGroup) {
+          <div class="form-group">
+            <label>Buying Cost (optional)</label>
+            <input type="number" [(ngModel)]="line.restockCost" [name]="'rc'+i" class="form-input" placeholder="Unit cost for this restock">
+          </div>
+        }
+      }
+      <!-- ══ NEW PRODUCT MODE ══ -->
+      @if (!line.isExisting) {
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="form-group md:col-span-2">
+            <label>Product Name <span class="req">*</span></label>
+            <input [(ngModel)]="line.name" [name]="'name'+i" class="form-input" placeholder="e.g. Cotton T-Shirt">
+          </div>
+          <div class="form-group">
+            <label>Image</label>
+            <div class="img-row">
+              @if (line.imagePreview) {
+                <img [src]="line.imagePreview" class="img-prev">
+              }
+              <input type="file" accept="image/*" (change)="onImageSelected($event, line)">
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group" *ngIf="line.existingGroup">
-        <label>Buying Cost (optional)</label>
-        <input type="number" [(ngModel)]="line.restockCost" [name]="'rc'+i" class="form-input" placeholder="Unit cost for this restock">
-      </div>
-    </ng-container>
-
-    <!-- ══ NEW PRODUCT MODE ══ -->
-    <ng-container *ngIf="!line.isExisting">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="form-group md:col-span-2">
-          <label>Product Name <span class="req">*</span></label>
-          <input [(ngModel)]="line.name" [name]="'name'+i" class="form-input" placeholder="e.g. Cotton T-Shirt">
-        </div>
-        <div class="form-group">
-          <label>Image</label>
-          <div class="img-row">
-            <img *ngIf="line.imagePreview" [src]="line.imagePreview" class="img-prev">
-            <input type="file" accept="image/*" (change)="onImageSelected($event, line)">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div class="form-group">
+            <label>Buy Price</label>
+            <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="computePrice(line)" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Profit %</label>
+            <input type="number" [(ngModel)]="line.profitPercent" [name]="'pp'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="e.g. 30">
+          </div>
+          <div class="form-group">
+            <label>+ Profit Amt</label>
+            <input type="number" [(ngModel)]="line.profitAmount" [name]="'pa'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="flat">
+          </div>
+          <div class="form-group">
+            <label>Sell Price</label>
+            <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Compare-at <span class="hint">(opt)</span></label>
+            <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was">
           </div>
         </div>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="form-group">
-          <label>Buy Price</label>
-          <input type="number" [(ngModel)]="line.wholesalePrice" [name]="'ws'+i" (ngModelChange)="computePrice(line)" class="form-input">
-        </div>
-        <div class="form-group">
-          <label>Profit %</label>
-          <input type="number" [(ngModel)]="line.profitPercent" [name]="'pp'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="e.g. 30">
-        </div>
-        <div class="form-group">
-          <label>+ Profit Amt</label>
-          <input type="number" [(ngModel)]="line.profitAmount" [name]="'pa'+i" (ngModelChange)="computePrice(line)" class="form-input" placeholder="flat">
-        </div>
-        <div class="form-group">
-          <label>Sell Price</label>
-          <input type="number" [(ngModel)]="line.price" [name]="'price'+i" class="form-input">
-        </div>
-        <div class="form-group">
-          <label>Compare-at <span class="hint">(opt)</span></label>
-          <input type="number" [(ngModel)]="line.compareAtPrice" [name]="'cmp'+i" class="form-input" placeholder="was">
-        </div>
-      </div>
-      <div class="secret-row" *ngIf="line.price > 0">
-        Secret code: <strong>{{ secretOf(line.price) }}</strong>
-      </div>
-
-      <!-- Sizes (add-new only — stock on an existing product is adjusted via Inventory) -->
-      <div class="form-group" *ngIf="availableSizes.length && !isEditMode">
-        <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
-        <div class="size-grid">
-          <div class="size-cell" *ngFor="let sz of availableSizes">
-            <span class="size-lbl">{{ sz }}</span>
-            <input type="number" min="0" [(ngModel)]="line.sizeQuantities[sz]" [name]="'sz'+i+sz" class="size-inp" placeholder="0">
+        @if (line.price > 0) {
+          <div class="secret-row">
+            Secret code: <strong>{{ secretOf(line.price) }}</strong>
           </div>
+        }
+        <!-- Sizes (add-new only — stock on an existing product is adjusted via Inventory) -->
+        @if (availableSizes.length && !isEditMode) {
+          <div class="form-group">
+            <label>Quantity per size <span class="hint">(total: {{ lineQty(line) }})</span></label>
+            <div class="size-grid">
+              @for (sz of availableSizes; track sz) {
+                <div class="size-cell">
+                  <span class="size-lbl">{{ sz }}</span>
+                  <input type="number" min="0" [(ngModel)]="line.sizeQuantities[sz]" [name]="'sz'+i+sz" class="size-inp" placeholder="0">
+                </div>
+              }
+            </div>
+          </div>
+        }
+        <div class="form-group">
+          <label>Unit <span class="hint">(opt — shown next to the price)</span></label>
+          <input [(ngModel)]="line.uom" [name]="'uom'+i" class="form-input" list="uom-list" maxlength="20" placeholder="e.g. pair, kg, dozen">
+          <datalist id="uom-list">@for (u of uomSuggestions; track u) {
+            <option [value]="u"></option>
+          }</datalist>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label>Unit <span class="hint">(opt — shown next to the price)</span></label>
-        <input [(ngModel)]="line.uom" [name]="'uom'+i" class="form-input" list="uom-list" maxlength="20" placeholder="e.g. pair, kg, dozen">
-        <datalist id="uom-list"><option *ngFor="let u of uomSuggestions" [value]="u"></option></datalist>
-      </div>
-
-      <div class="form-group">
-        <label>Details <span class="hint">(opt — e.g. Color: Black, Material: Leather)</span></label>
-        <div *ngFor="let sp of line.specs; let k = index" style="display:flex;gap:8px;margin-bottom:6px">
-          <input [(ngModel)]="sp.key" [name]="'spk'+i+'_'+k" class="form-input" maxlength="40" placeholder="Name" style="flex:1">
-          <input [(ngModel)]="sp.value" [name]="'spv'+i+'_'+k" class="form-input" maxlength="120" placeholder="Value" style="flex:2">
-          <button type="button" (click)="removeSpec(line, k)" aria-label="Remove detail" style="padding:0 10px">✕</button>
+        <div class="form-group">
+          <label>Details <span class="hint">(opt — e.g. Color: Black, Material: Leather)</span></label>
+          @for (sp of line.specs; track sp; let k = $index) {
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+              <input [(ngModel)]="sp.key" [name]="'spk'+i+'_'+k" class="form-input" maxlength="40" placeholder="Name" style="flex:1">
+              <input [(ngModel)]="sp.value" [name]="'spv'+i+'_'+k" class="form-input" maxlength="120" placeholder="Value" style="flex:2">
+              <button type="button" (click)="removeSpec(line, k)" aria-label="Remove detail" style="padding:0 10px">✕</button>
+            </div>
+          }
+          @if (line.specs.length < 20) {
+            <button type="button" (click)="addSpec(line)" class="add-line" style="margin-top:4px">+ Add detail</button>
+          }
         </div>
-        <button type="button" *ngIf="line.specs.length < 20" (click)="addSpec(line)" class="add-line" style="margin-top:4px">+ Add detail</button>
-      </div>
-
-      <div class="form-group">
-        <label>Description</label>
-        <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
-      </div>
-    </ng-container>
-  </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="line.description" [name]="'desc'+i" rows="2" class="form-input resize-none" placeholder="Optional"></textarea>
+        </div>
+      }
+    </div>
+  }
 
   <!-- Add another -->
-  <button *ngIf="!isEditMode" class="add-line" (click)="addLine()">+ Add Another Product</button>
+  @if (!isEditMode) {
+    <button class="add-line" (click)="addLine()">+ Add Another Product</button>
+  }
 
   <!-- Submit -->
   <div class="submit-row">

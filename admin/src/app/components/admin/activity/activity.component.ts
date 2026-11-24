@@ -12,10 +12,9 @@ const AREAS = [
 ];
 
 @Component({
-  selector: 'app-activity',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-activity',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -25,58 +24,80 @@ const AREAS = [
     <button class="btn-secondary" (click)="refresh()">↻ Refresh</button>
   </div>
 
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
 
   <div style="display:flex;gap:8px;margin-bottom:14px">
     <button [class]="tab === 'log' ? 'btn-primary' : 'btn-secondary'" (click)="tab = 'log'">Activity log</button>
     <button [class]="tab === 'sessions' ? 'btn-primary' : 'btn-secondary'" (click)="tab = 'sessions'; loadSessions()">Signed-in staff</button>
   </div>
 
-  <ng-container *ngIf="tab === 'log'">
+  @if (tab === 'log') {
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px">
       <div class="form-group" style="margin:0"><label>Area</label>
-        <select class="form-input" [(ngModel)]="area" (change)="loadLog()"><option *ngFor="let a of areas" [value]="a.value">{{ a.label }}</option></select></div>
+      <select class="form-input" [(ngModel)]="area" (change)="loadLog()">@for (a of areas; track a) {
+        <option [value]="a.value">{{ a.label }}</option>
+      }</select></div>
       <div class="form-group" style="margin:0"><label>From</label><input class="form-input" type="date" [(ngModel)]="from" (change)="loadLog()" /></div>
       <div class="form-group" style="margin:0"><label>To</label><input class="form-input" type="date" [(ngModel)]="to" (change)="loadLog()" /></div>
     </div>
     <div class="table-card">
-      <div class="loading" *ngIf="isLoading">Loading…</div>
-      <table class="data-table" *ngIf="!isLoading">
-        <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let r of rows">
-            <td style="white-space:nowrap;font-size:13px">{{ r.date | date:'MMM d, h:mm a' }}</td>
-            <td>{{ r.user || '—' }}</td>
-            <td><span class="name-badge">{{ r.action }}</span></td>
-            <td style="max-width:420px;word-break:break-word">{{ r.details || '—' }}</td>
-            <td style="font-size:12.5px;opacity:.7">{{ r.ipAddress || '—' }}</td>
-          </tr>
-          <tr *ngIf="rows.length === 0"><td colspan="5" class="empty-row">No activity recorded for this filter yet.</td></tr>
-        </tbody>
-      </table>
+      @if (isLoading) {
+        <div class="loading">Loading…</div>
+      }
+      @if (!isLoading) {
+        <table class="data-table">
+          <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+          <tbody>
+            @for (r of rows; track r) {
+              <tr>
+                <td style="white-space:nowrap;font-size:13px">{{ r.date | date:'MMM d, h:mm a' }}</td>
+                <td>{{ r.user || '—' }}</td>
+                <td><span class="name-badge">{{ r.action }}</span></td>
+                <td style="max-width:420px;word-break:break-word">{{ r.details || '—' }}</td>
+                <td style="font-size:12.5px;opacity:.7">{{ r.ipAddress || '—' }}</td>
+              </tr>
+            }
+            @if (rows.length === 0) {
+              <tr><td colspan="5" class="empty-row">No activity recorded for this filter yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
     <p style="opacity:.6;font-size:12.5px;margin-top:8px">Setting changes list which settings were saved, never their values (so API keys never appear here).</p>
-  </ng-container>
+  }
 
-  <ng-container *ngIf="tab === 'sessions'">
+  @if (tab === 'sessions') {
     <div class="table-card">
       <table class="data-table">
         <thead><tr><th>User</th><th>Signed in</th><th>Device</th><th>IP</th><th></th></tr></thead>
         <tbody>
-          <tr *ngFor="let s of sessions">
-            <td><b>{{ s.fullName || s.email }}</b><div style="font-size:12.5px;opacity:.7">{{ s.email }}</div></td>
-            <td style="font-size:13px">{{ s.createdAt | date:'MMM d, h:mm a' }}</td>
-            <td style="font-size:12.5px;max-width:260px;word-break:break-word">{{ s.userAgent || '—' }}</td>
-            <td style="font-size:12.5px">{{ s.ipAddress || '—' }}</td>
-            <td class="actions"><span *ngIf="s.current" class="name-badge">This is you</span><button *ngIf="!s.current" class="btn-delete" (click)="revoke(s)">Sign out</button></td>
-          </tr>
-          <tr *ngIf="sessions.length === 0"><td colspan="5" class="empty-row">No active sessions.</td></tr>
+          @for (s of sessions; track s) {
+            <tr>
+              <td><b>{{ s.fullName || s.email }}</b><div style="font-size:12.5px;opacity:.7">{{ s.email }}</div></td>
+              <td style="font-size:13px">{{ s.createdAt | date:'MMM d, h:mm a' }}</td>
+              <td style="font-size:12.5px;max-width:260px;word-break:break-word">{{ s.userAgent || '—' }}</td>
+              <td style="font-size:12.5px">{{ s.ipAddress || '—' }}</td>
+              <td class="actions">@if (s.current) {
+                <span class="name-badge">This is you</span>
+                }@if (!s.current) {
+                <button class="btn-delete" (click)="revoke(s)">Sign out</button>
+              }</td>
+            </tr>
+          }
+          @if (sessions.length === 0) {
+            <tr><td colspan="5" class="empty-row">No active sessions.</td></tr>
+          }
         </tbody>
       </table>
     </div>
     <p style="opacity:.6;font-size:12.5px;margin-top:8px">A signed-out device is blocked within about 20 seconds.</p>
-  </ng-container>
+  }
 </div>`
 })
 export class ActivityComponent implements OnInit {

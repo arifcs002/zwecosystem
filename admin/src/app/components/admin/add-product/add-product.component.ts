@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, Observable } from 'rxjs';
@@ -54,11 +54,10 @@ interface ProductLine {
 }
 
 @Component({
-  selector: 'app-add-product',
-  standalone: true,
-  imports: [CommonModule, FormsModule, CategoryTreePickerComponent, ImgUrlPipe],
-  templateUrl: './add-product.component.html',
-  styleUrl: './add-product.component.css'
+    selector: 'app-add-product',
+    imports: [FormsModule, CategoryTreePickerComponent, ImgUrlPipe],
+    templateUrl: './add-product.component.html',
+    styleUrl: './add-product.component.css'
 })
 export class AddProductComponent implements OnInit {
   private supplierService = inject(SupplierService);

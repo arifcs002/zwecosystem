@@ -6,11 +6,10 @@ import { CourierService } from '../../../services/courier/courier.service';
 import { SettingsService } from '../../../services/settings/settings.service';
 
 @Component({
-  selector: 'app-order-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './order-management.component.html',
-  styleUrl: './order-management.component.css'
+    selector: 'app-order-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './order-management.component.html',
+    styleUrl: './order-management.component.css'
 })
 export class OrderManagementComponent implements OnInit {
   private orderService = inject(OrderService);

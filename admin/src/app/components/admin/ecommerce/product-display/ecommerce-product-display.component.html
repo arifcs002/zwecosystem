@@ -7,9 +7,11 @@
     <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">Loading…</div>
+  @if (isLoading) {
+    <div class="loading">Loading…</div>
+  }
 
-  <ng-container *ngIf="!isLoading">
+  @if (!isLoading) {
     <div class="card">
       <p class="card-title">Badges</p>
       <div class="grid2">
@@ -25,26 +27,28 @@
         </div>
       </div>
     </div>
-
     <div class="card">
       <p class="card-title">Quick-order Buttons</p>
       <div class="switch-row" style="margin-bottom:12px;">
         <label>Show "Order on WhatsApp" button</label>
         <label class="switch"><input type="checkbox" [(ngModel)]="enableWhatsapp"><span class="slider"></span></label>
       </div>
-      <div class="fg" *ngIf="enableWhatsapp">
-        <label>WhatsApp number <span class="hint">(with country code, e.g. 8801XXXXXXXXX)</span></label>
-        <input class="inp" [(ngModel)]="whatsappNumber" placeholder="8801XXXXXXXXX">
-      </div>
-
+      @if (enableWhatsapp) {
+        <div class="fg">
+          <label>WhatsApp number <span class="hint">(with country code, e.g. 8801XXXXXXXXX)</span></label>
+          <input class="inp" [(ngModel)]="whatsappNumber" placeholder="8801XXXXXXXXX">
+        </div>
+      }
       <div class="switch-row" style="margin:16px 0 12px;">
         <label>Show "Call for Order" button</label>
         <label class="switch"><input type="checkbox" [(ngModel)]="enableCall"><span class="slider"></span></label>
       </div>
-      <div class="fg" *ngIf="enableCall">
-        <label>Phone number</label>
-        <input class="inp" [(ngModel)]="callNumber" placeholder="01XXXXXXXXX">
-      </div>
+      @if (enableCall) {
+        <div class="fg">
+          <label>Phone number</label>
+          <input class="inp" [(ngModel)]="callNumber" placeholder="01XXXXXXXXX">
+        </div>
+      }
     </div>
-  </ng-container>
+  }
 </div>

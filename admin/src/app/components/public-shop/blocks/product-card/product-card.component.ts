@@ -8,11 +8,10 @@ import { ProductGroup, discountPercent } from '../../../../utils/product-group.u
 // dual price (sale + struck-through "was"), and an action button. It emits
 // intent to the parent — the shop owns the cart + navigation.
 @Component({
-  selector: 'app-product-card',
-  standalone: true,
-  imports: [CommonModule, ImgUrlPipe, ImgFallbackDirective],
-  templateUrl: './product-card.component.html',
-  styleUrl: './product-card.component.css'
+    selector: 'app-product-card',
+    imports: [CommonModule, ImgUrlPipe, ImgFallbackDirective],
+    templateUrl: './product-card.component.html',
+    styleUrl: './product-card.component.css'
 })
 export class ProductCardComponent {
   @Input() group!: ProductGroup;

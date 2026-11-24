@@ -3,201 +3,243 @@
   <app-shop-header [slug]="companySlug" [storeName]="companyName" [logo]="store?.company?.logoUrl || ''" [groups]="allGroups"></app-shop-header>
 
   <!-- Loading -->
-  <div *ngIf="isLoading" class="flex flex-col justify-center items-center py-32 text-gray-400 text-sm gap-3">
-    <svg class="w-7 h-7 animate-spin text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-    {{ 'Loading product…' | t }}
-  </div>
+  @if (isLoading) {
+    <div class="flex flex-col justify-center items-center py-32 text-gray-400 text-sm gap-3">
+      <svg class="w-7 h-7 animate-spin text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      {{ 'Loading product…' | t }}
+    </div>
+  }
 
   <!-- Not found -->
-  <div *ngIf="!isLoading && notFound" class="flex flex-col items-center justify-center py-32 text-center px-4">
-    <div class="text-6xl mb-4">📦</div>
-    <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ 'Product Not Found' | t }}</h2>
-    <p class="text-sm text-gray-500 mb-2">{{ 'It may have been removed or sold out for good.' | t }}</p>
-    <button (click)="goBack()" class="mt-2 text-sm font-semibold text-indigo-600 hover:underline">← Back to store</button>
-  </div>
+  @if (!isLoading && notFound) {
+    <div class="flex flex-col items-center justify-center py-32 text-center px-4">
+      <div class="text-6xl mb-4">📦</div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ 'Product Not Found' | t }}</h2>
+      <p class="text-sm text-gray-500 mb-2">{{ 'It may have been removed or sold out for good.' | t }}</p>
+      <button (click)="goBack()" class="mt-2 text-sm font-semibold text-indigo-600 hover:underline">← Back to store</button>
+    </div>
+  }
 
   <!-- ══ DETAIL ══ -->
-  <main *ngIf="!isLoading && group && selectedVariant" class="max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 pb-28 md:pb-10">
-    <nav class="text-xs text-gray-400 mb-5 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
-      <a [routerLink]="link()" class="hover:text-indigo-600">{{ 'Home' | t }}</a><span>›</span>
-      <a *ngIf="group.categoryId" [routerLink]="link('category', '' + group.categoryId)" class="hover:text-indigo-600">{{ group.categoryName }}</a>
-      <span *ngIf="group.categoryId">›</span>
-      <span class="text-gray-600 font-medium truncate max-w-[14rem]">{{ group.baseName }}</span>
-    </nav>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-
-      <!-- Image -->
-      <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm aspect-square overflow-hidden">
-        <img [src]="group.imageUrl | imgUrl" appImgFallback [alt]="group.baseName" class="w-full h-full object-cover">
-        <span *ngIf="discount > 0" class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full bg-rose-500 text-white shadow">-{{ discount }}%</span>
-        <div class="absolute top-3 right-3 flex flex-col gap-2">
-          <button (click)="toggleWish()" [attr.aria-label]="wished ? 'Remove from wishlist' : 'Add to wishlist'" [attr.aria-pressed]="wished"
-                  class="w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center hover:scale-110 transition" [ngClass]="wished ? 'text-rose-500' : 'text-gray-400'">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" [attr.fill]="wished ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-          </button>
-          <button (click)="share()" [attr.aria-label]="'Share' | t" class="w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center text-gray-500 hover:scale-110 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
-          </button>
+  @if (!isLoading && group && selectedVariant) {
+    <main class="max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 pb-28 md:pb-10">
+      <nav class="text-xs text-gray-400 mb-5 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+        <a [routerLink]="link()" class="hover:text-indigo-600">{{ 'Home' | t }}</a><span>›</span>
+        @if (group.categoryId) {
+          <a [routerLink]="link('category', '' + group.categoryId)" class="hover:text-indigo-600">{{ group.categoryName }}</a>
+        }
+        @if (group.categoryId) {
+          <span>›</span>
+        }
+        <span class="text-gray-600 font-medium truncate max-w-[14rem]">{{ group.baseName }}</span>
+      </nav>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+        <!-- Image -->
+        <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm aspect-square overflow-hidden">
+          <img [src]="group.imageUrl | imgUrl" appImgFallback [alt]="group.baseName" class="w-full h-full object-cover">
+          @if (discount > 0) {
+            <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full bg-rose-500 text-white shadow">-{{ discount }}%</span>
+          }
+          <div class="absolute top-3 right-3 flex flex-col gap-2">
+            <button (click)="toggleWish()" [attr.aria-label]="wished ? 'Remove from wishlist' : 'Add to wishlist'" [attr.aria-pressed]="wished"
+              class="w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center hover:scale-110 transition" [ngClass]="wished ? 'text-rose-500' : 'text-gray-400'">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" [attr.fill]="wished ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            </button>
+            <button (click)="share()" [attr.aria-label]="'Share' | t" class="w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center text-gray-500 hover:scale-110 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- Info -->
-      <div>
-        <p class="text-xs text-indigo-500 font-semibold uppercase tracking-wide mb-1">{{ group.categoryName }}</p>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{{ group.baseName }}</h1>
-        <div class="flex items-center gap-3 mb-5 flex-wrap">
-          <span class="text-3xl font-extrabold text-gray-900">৳{{ selectedVariant.price | number:'1.0-0' }}<span *ngIf="group.uom" class="text-base font-medium text-gray-500"> / {{ group.uom }}</span></span>
-          <span *ngIf="discount > 0" class="text-lg text-gray-400 line-through">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
-          <span *ngIf="discount > 0" class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">{{ 'Save {n}%' | t:{ n: discount } }}</span>
-        </div>
-
-        <!-- Size selector -->
-        <div *ngIf="group.variants.length > 1" class="mb-6">
-          <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{{ 'Select Size' | t }}</p>
-          <div class="flex flex-wrap gap-2">
-            <button *ngFor="let v of group.variants" (click)="selectVariant(v)" [disabled]="v.stockQuantity <= 0"
-              class="px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
+        <!-- Info -->
+        <div>
+          <p class="text-xs text-indigo-500 font-semibold uppercase tracking-wide mb-1">{{ group.categoryName }}</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{{ group.baseName }}</h1>
+          <div class="flex items-center gap-3 mb-5 flex-wrap">
+            <span class="text-3xl font-extrabold text-gray-900">৳{{ selectedVariant.price | number:'1.0-0' }}@if (group.uom) {
+              <span class="text-base font-medium text-gray-500"> / {{ group.uom }}</span>
+            }</span>
+            @if (discount > 0) {
+              <span class="text-lg text-gray-400 line-through">৳{{ group.compareAtPrice | number:'1.0-0' }}</span>
+            }
+            @if (discount > 0) {
+              <span class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">{{ 'Save {n}%' | t:{ n: discount } }}</span>
+            }
+          </div>
+          <!-- Size selector -->
+          @if (group.variants.length > 1) {
+            <div class="mb-6">
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{{ 'Select Size' | t }}</p>
+              <div class="flex flex-wrap gap-2">
+                @for (v of group.variants; track v) {
+                  <button (click)="selectVariant(v)" [disabled]="v.stockQuantity <= 0"
+                    class="px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
               [ngClass]="selectedVariant.id === v.id
                 ? 'border-indigo-600 bg-indigo-600 text-white'
                 : v.stockQuantity <= 0
                   ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
                   : 'border-gray-200 text-gray-700 hover:border-indigo-300'">
-              {{ v.size || v.name }}
+                    {{ v.size || v.name }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+          <!-- Stock status -->
+          <div class="mb-6">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+              [ngClass]="selectedVariant.stockQuantity <= 0 ? 'bg-gray-100 text-gray-500' : selectedVariant.stockQuantity <= lowStockThreshold ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+              {{ stockLabel(selectedVariant.stockQuantity) }}
+            </span>
+          </div>
+          <!-- Quantity -->
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">{{ 'Qty' | t }}</span>
+            <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
+              <button (click)="changeQuantity(-1)" [attr.aria-label]="'Decrease quantity' | t" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">−</button>
+              <span class="w-10 text-center text-sm font-semibold">{{ quantity }}</span>
+              <button (click)="changeQuantity(1)" [attr.aria-label]="'Increase quantity' | t" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">+</button>
+            </div>
+          </div>
+          <!-- Actions (desktop; mobile uses the sticky bar below) -->
+          <div class="hidden md:flex gap-3">
+            <button (click)="addToCart()" [disabled]="!inStock"
+              class="flex-1 py-3 rounded-xl border-2 border-indigo-600 text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition disabled:opacity-40 disabled:cursor-not-allowed">
+              {{ 'Add to Cart' | t }}
+            </button>
+            <button (click)="buyNow()" [disabled]="!inStock"
+              class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+              {{ 'Buy Now' | t }}
             </button>
           </div>
+          <!-- Quick-order buttons -->
+          @if (enableWhatsapp || enableCall) {
+            <div class="flex gap-3 mt-3">
+              @if (enableWhatsapp && whatsappNumber) {
+                <button (click)="orderOnWhatsApp()"
+                  class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                  💬 Order on WhatsApp
+                </button>
+              }
+              @if (enableCall && callNumber) {
+                <button (click)="callToOrder()"
+                  class="flex-1 py-2.5 rounded-xl bg-gray-800 text-white font-semibold text-sm hover:bg-gray-900 transition flex items-center justify-center gap-2">
+                  📞 Call to Order
+                </button>
+              }
+            </div>
+          }
+          <!-- Trust -->
+          <ul class="grid grid-cols-3 gap-2 mt-6 text-center text-[11px] text-gray-500">
+            <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">🚚</span>{{ 'Fast delivery' | t }}</li>
+            <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">💵</span>{{ 'Cash on delivery' | t }}</li>
+            <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">🔒</span>{{ 'Secure checkout' | t }}</li>
+          </ul>
+          <!-- Description -->
+          @if (group.attributes.length) {
+            <div class="mt-8 pt-6 border-t border-gray-100">
+              <h2 class="font-bold text-gray-900 mb-3">{{ 'Details' | t }}</h2>
+              <dl class="text-sm divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                @for (a of group.attributes; track a) {
+                  <div class="flex gap-4 px-4 py-2.5 bg-white">
+                    <dt class="w-1/3 text-gray-500">{{ a.key }}</dt>
+                    <dd class="flex-1 text-gray-900">{{ a.value }}</dd>
+                  </div>
+                }
+              </dl>
+            </div>
+          }
+          @if (selectedVariant.description) {
+            <div class="mt-8 pt-6 border-t border-gray-100">
+              <h3 class="text-sm font-bold text-gray-900 mb-2">{{ 'Product Details' | t }}</h3>
+              <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ selectedVariant.description }}</p>
+            </div>
+          }
         </div>
-
-        <!-- Stock status -->
-        <div class="mb-6">
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full"
-            [ngClass]="selectedVariant.stockQuantity <= 0 ? 'bg-gray-100 text-gray-500' : selectedVariant.stockQuantity <= lowStockThreshold ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-            {{ stockLabel(selectedVariant.stockQuantity) }}
-          </span>
-        </div>
-
-        <!-- Quantity -->
-        <div class="flex items-center gap-3 mb-6">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">{{ 'Qty' | t }}</span>
-          <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
-            <button (click)="changeQuantity(-1)" [attr.aria-label]="'Decrease quantity' | t" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">−</button>
-            <span class="w-10 text-center text-sm font-semibold">{{ quantity }}</span>
-            <button (click)="changeQuantity(1)" [attr.aria-label]="'Increase quantity' | t" class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-50">+</button>
+      </div>
+      <!-- Reviews -->
+      <section class="mt-12" id="reviews">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4"><span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500"></span>{{ 'Customer reviews' | t }}</h2>
+        <div class="grid md:grid-cols-[16rem_1fr] gap-6">
+          <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center h-fit">
+            @if (reviewData.count > 0) {
+              <p class="text-4xl font-extrabold text-gray-900">{{ reviewData.average }}</p>
+              <p class="text-amber-400 text-lg tracking-wider" aria-hidden="true">{{ '★'.repeat(Math.round(reviewData.average)) }}<span class="text-gray-200">{{ '★'.repeat(5 - Math.round(reviewData.average)) }}</span></p>
+              <p class="text-xs text-gray-400 mt-1">{{ (reviewData.count === 1 ? '{n} review' : '{n} reviews') | t:{ n: reviewData.count } }}</p>
+            } @else {
+              <p class="text-sm text-gray-400">{{ 'No reviews yet.' | t }}<br>{{ 'Be the first to share your thoughts.' | t }}</p>
+            }
+          </div>
+          <div class="space-y-4">
+            @for (r of reviewData.reviews; track r) {
+              <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold text-gray-800 text-sm">{{ r.reviewerName }} @if (r.isVerified) {
+                    <span class="ml-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">✓ Verified buyer</span>
+                  }</p>
+                  <span class="text-xs text-gray-400">{{ r.date | date:'mediumDate' }}</span>
+                </div>
+                <p class="text-amber-400 text-sm" aria-hidden="true">{{ '★'.repeat(r.rating) }}<span class="text-gray-200">{{ '★'.repeat(5 - r.rating) }}</span></p>
+                @if (r.comment) {
+                  <p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{{ r.comment }}</p>
+                }
+              </div>
+            }
+            <form (ngSubmit)="submitReview()" class="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+              <p class="font-semibold text-gray-800 text-sm">{{ 'Write a review' | t }}</p>
+              <div class="flex items-center gap-1" role="radiogroup" [attr.aria-label]="'Your rating' | t">
+                @for (s of starRange; track s) {
+                  <button type="button" (click)="reviewForm.rating = s" [attr.aria-label]="s + ' star' + (s === 1 ? '' : 's')"
+                  class="text-2xl leading-none transition" [ngClass]="s <= reviewForm.rating ? 'text-amber-400' : 'text-gray-200 hover:text-amber-200'">★</button>
+                }
+              </div>
+              <input [(ngModel)]="reviewForm.name" name="rname" [placeholder]="'Your name *' | t" maxlength="60" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
+              <textarea [(ngModel)]="reviewForm.comment" name="rcomment" rows="3" maxlength="1000" [placeholder]="'How was it? (optional)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+              <label class="flex items-center gap-2 text-xs text-gray-500 cursor-pointer"><input type="checkbox" [(ngModel)]="showVerify" name="rverify" class="accent-indigo-600"> {{ 'I bought this — show a “Verified buyer” badge' | t }}</label>
+              @if (showVerify) {
+                <div class="grid sm:grid-cols-2 gap-2">
+                  <input [(ngModel)]="reviewForm.orderNumber" name="rorder" [placeholder]="'Order number' | t" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
+                  <input [(ngModel)]="reviewForm.phone" name="rphone" inputmode="tel" [placeholder]="'Phone used for the order' | t" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+              }
+              @if (reviewError) {
+                <p role="alert" class="text-sm text-rose-600">{{ reviewError }}</p>
+              }
+              @if (reviewMsg) {
+                <p role="status" class="text-sm text-emerald-600">{{ reviewMsg }}</p>
+              }
+              <button type="submit" [disabled]="reviewBusy" class="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-60">{{ reviewBusy ? ('Sending…' | t) : ('Submit review' | t) }}</button>
+            </form>
           </div>
         </div>
-
-        <!-- Actions (desktop; mobile uses the sticky bar below) -->
-        <div class="hidden md:flex gap-3">
-          <button (click)="addToCart()" [disabled]="!inStock"
-            class="flex-1 py-3 rounded-xl border-2 border-indigo-600 text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition disabled:opacity-40 disabled:cursor-not-allowed">
-            {{ 'Add to Cart' | t }}
-          </button>
-          <button (click)="buyNow()" [disabled]="!inStock"
-            class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
-            {{ 'Buy Now' | t }}
-          </button>
-        </div>
-
-        <!-- Quick-order buttons -->
-        <div *ngIf="enableWhatsapp || enableCall" class="flex gap-3 mt-3">
-          <button *ngIf="enableWhatsapp && whatsappNumber" (click)="orderOnWhatsApp()"
-            class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-            💬 Order on WhatsApp
-          </button>
-          <button *ngIf="enableCall && callNumber" (click)="callToOrder()"
-            class="flex-1 py-2.5 rounded-xl bg-gray-800 text-white font-semibold text-sm hover:bg-gray-900 transition flex items-center justify-center gap-2">
-            📞 Call to Order
-          </button>
-        </div>
-
-        <!-- Trust -->
-        <ul class="grid grid-cols-3 gap-2 mt-6 text-center text-[11px] text-gray-500">
-          <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">🚚</span>{{ 'Fast delivery' | t }}</li>
-          <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">💵</span>{{ 'Cash on delivery' | t }}</li>
-          <li class="bg-white border border-gray-100 rounded-xl py-2.5 px-1"><span class="block text-lg">🔒</span>{{ 'Secure checkout' | t }}</li>
-        </ul>
-
-        <!-- Description -->
-        <div *ngIf="group.attributes.length" class="mt-8 pt-6 border-t border-gray-100">
-          <h2 class="font-bold text-gray-900 mb-3">{{ 'Details' | t }}</h2>
-          <dl class="text-sm divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
-            <div *ngFor="let a of group.attributes" class="flex gap-4 px-4 py-2.5 bg-white">
-              <dt class="w-1/3 text-gray-500">{{ a.key }}</dt>
-              <dd class="flex-1 text-gray-900">{{ a.value }}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div *ngIf="selectedVariant.description" class="mt-8 pt-6 border-t border-gray-100">
-          <h3 class="text-sm font-bold text-gray-900 mb-2">{{ 'Product Details' | t }}</h3>
-          <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ selectedVariant.description }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reviews -->
-    <section class="mt-12" id="reviews">
-      <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4"><span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-amber-400 to-orange-500"></span>{{ 'Customer reviews' | t }}</h2>
-      <div class="grid md:grid-cols-[16rem_1fr] gap-6">
-        <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center h-fit">
-          <ng-container *ngIf="reviewData.count > 0; else noReviews">
-            <p class="text-4xl font-extrabold text-gray-900">{{ reviewData.average }}</p>
-            <p class="text-amber-400 text-lg tracking-wider" aria-hidden="true">{{ '★'.repeat(Math.round(reviewData.average)) }}<span class="text-gray-200">{{ '★'.repeat(5 - Math.round(reviewData.average)) }}</span></p>
-            <p class="text-xs text-gray-400 mt-1">{{ (reviewData.count === 1 ? '{n} review' : '{n} reviews') | t:{ n: reviewData.count } }}</p>
-          </ng-container>
-          <ng-template #noReviews><p class="text-sm text-gray-400">{{ 'No reviews yet.' | t }}<br>{{ 'Be the first to share your thoughts.' | t }}</p></ng-template>
-        </div>
-        <div class="space-y-4">
-          <div *ngFor="let r of reviewData.reviews" class="bg-white rounded-2xl border border-gray-100 p-4">
-            <div class="flex items-center justify-between gap-2">
-              <p class="font-semibold text-gray-800 text-sm">{{ r.reviewerName }} <span *ngIf="r.isVerified" class="ml-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">✓ Verified buyer</span></p>
-              <span class="text-xs text-gray-400">{{ r.date | date:'mediumDate' }}</span>
-            </div>
-            <p class="text-amber-400 text-sm" aria-hidden="true">{{ '★'.repeat(r.rating) }}<span class="text-gray-200">{{ '★'.repeat(5 - r.rating) }}</span></p>
-            <p *ngIf="r.comment" class="text-sm text-gray-600 mt-1 whitespace-pre-line">{{ r.comment }}</p>
+      </section>
+      <!-- Related -->
+      @if (related.length) {
+        <section class="mt-12">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-indigo-600 to-violet-600"></span>{{ 'You may also like' | t }}</h2>
+            <a [routerLink]="link('shop')" class="text-xs font-semibold text-indigo-600 hover:underline">{{ 'View all →' | t }}</a>
           </div>
-
-          <form (ngSubmit)="submitReview()" class="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-            <p class="font-semibold text-gray-800 text-sm">{{ 'Write a review' | t }}</p>
-            <div class="flex items-center gap-1" role="radiogroup" [attr.aria-label]="'Your rating' | t">
-              <button type="button" *ngFor="let s of starRange" (click)="reviewForm.rating = s" [attr.aria-label]="s + ' star' + (s === 1 ? '' : 's')"
-                      class="text-2xl leading-none transition" [ngClass]="s <= reviewForm.rating ? 'text-amber-400' : 'text-gray-200 hover:text-amber-200'">★</button>
-            </div>
-            <input [(ngModel)]="reviewForm.name" name="rname" [placeholder]="'Your name *' | t" maxlength="60" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-            <textarea [(ngModel)]="reviewForm.comment" name="rcomment" rows="3" maxlength="1000" [placeholder]="'How was it? (optional)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
-            <label class="flex items-center gap-2 text-xs text-gray-500 cursor-pointer"><input type="checkbox" [(ngModel)]="showVerify" name="rverify" class="accent-indigo-600"> {{ 'I bought this — show a “Verified buyer” badge' | t }}</label>
-            <div *ngIf="showVerify" class="grid sm:grid-cols-2 gap-2">
-              <input [(ngModel)]="reviewForm.orderNumber" name="rorder" [placeholder]="'Order number' | t" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-              <input [(ngModel)]="reviewForm.phone" name="rphone" inputmode="tel" [placeholder]="'Phone used for the order' | t" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400">
-            </div>
-            <p *ngIf="reviewError" role="alert" class="text-sm text-rose-600">{{ reviewError }}</p>
-            <p *ngIf="reviewMsg" role="status" class="text-sm text-emerald-600">{{ reviewMsg }}</p>
-            <button type="submit" [disabled]="reviewBusy" class="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-60">{{ reviewBusy ? ('Sending…' | t) : ('Submit review' | t) }}</button>
-          </form>
-        </div>
-      </div>
-    </section>
-    <!-- Related -->
-    <section *ngIf="related.length" class="mt-12">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-gradient-to-b from-indigo-600 to-violet-600"></span>{{ 'You may also like' | t }}</h2>
-        <a [routerLink]="link('shop')" class="text-xs font-semibold text-indigo-600 hover:underline">{{ 'View all →' | t }}</a>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <app-shop-card *ngFor="let g of related" [group]="g" [slug]="companySlug" [lowStockThreshold]="lowStockThreshold" [newBadgeDays]="newBadgeDays"></app-shop-card>
-      </div>
-    </section>
-  </main>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            @for (g of related; track g) {
+              <app-shop-card [group]="g" [slug]="companySlug" [lowStockThreshold]="lowStockThreshold" [newBadgeDays]="newBadgeDays"></app-shop-card>
+            }
+          </div>
+        </section>
+      }
+    </main>
+  }
 
   <!-- Sticky mobile buy bar -->
-  <div *ngIf="!isLoading && group && selectedVariant" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-    <div class="leading-tight">
-      <p class="text-[10px] text-gray-400">{{ 'Total' | t }}</p>
-      <p class="text-lg font-extrabold text-gray-900">৳{{ selectedVariant.price * quantity | number:'1.0-0' }}</p>
+  @if (!isLoading && group && selectedVariant) {
+    <div class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+      <div class="leading-tight">
+        <p class="text-[10px] text-gray-400">{{ 'Total' | t }}</p>
+        <p class="text-lg font-extrabold text-gray-900">৳{{ selectedVariant.price * quantity | number:'1.0-0' }}</p>
+      </div>
+      <button (click)="addToCart()" [disabled]="!inStock" class="flex-1 py-3 rounded-xl border-2 border-indigo-600 text-indigo-600 font-semibold text-sm disabled:opacity-40">{{ 'Add to Cart' | t }}</button>
+      <button (click)="buyNow()" [disabled]="!inStock" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm disabled:opacity-40">{{ inStock ? 'Buy Now' : ('Sold out' | t) }}</button>
     </div>
-    <button (click)="addToCart()" [disabled]="!inStock" class="flex-1 py-3 rounded-xl border-2 border-indigo-600 text-indigo-600 font-semibold text-sm disabled:opacity-40">{{ 'Add to Cart' | t }}</button>
-    <button (click)="buyNow()" [disabled]="!inStock" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm disabled:opacity-40">{{ inStock ? 'Buy Now' : ('Sold out' | t) }}</button>
-  </div>
+  }
 
   <app-shop-footer [store]="store" [slug]="companySlug"></app-shop-footer>
 </div>

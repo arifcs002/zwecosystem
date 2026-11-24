@@ -1,16 +1,15 @@
 import { Component, Input, OnInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 import { ImgUrlPipe } from '../../../../pipes/img-url.pipe';
 import { HeroSlide } from '../../../../models/storefront-layout.model';
 import { TenantService } from '../../../../services/tenant/tenant.service';
 
 @Component({
-  selector: 'app-hero-slider',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ImgUrlPipe],
-  templateUrl: './hero-slider.component.html',
-  styleUrl: './hero-slider.component.css'
+    selector: 'app-hero-slider',
+    imports: [RouterModule, ImgUrlPipe],
+    templateUrl: './hero-slider.component.html',
+    styleUrl: './hero-slider.component.css'
 })
 export class HeroSliderComponent implements OnInit, OnDestroy {
   @Input() slides: HeroSlide[] = [];

@@ -6,11 +6,10 @@ import { SubscriptionPlanService, SubscriptionPlan } from '../../../services/sub
 interface CompanyOption { id: number; name: string; }
 
 @Component({
-  selector: 'app-subscription-plans',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './subscription-plans.component.html',
-  styleUrl: './subscription-plans.component.css'
+    selector: 'app-subscription-plans',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './subscription-plans.component.html',
+    styleUrl: './subscription-plans.component.css'
 })
 export class SubscriptionPlansComponent implements OnInit {
   private planService = inject(SubscriptionPlanService);

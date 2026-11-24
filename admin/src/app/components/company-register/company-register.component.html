@@ -1,5 +1,5 @@
 <div class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden text-neutral-100 font-sans"
-     style="background: radial-gradient(circle at 15% 0%, rgba(244,63,94,.12), transparent 55%), radial-gradient(circle at 85% 100%, rgba(16,185,129,.08), transparent 55%), #08090a;">
+  style="background: radial-gradient(circle at 15% 0%, rgba(244,63,94,.12), transparent 55%), radial-gradient(circle at 85% 100%, rgba(16,185,129,.08), transparent 55%), #08090a;">
 
   <div class="z-10 w-full max-w-4xl p-6 relative">
     <div class="text-center mb-9">
@@ -9,192 +9,211 @@
     </div>
 
     <!-- Success Message -->
-    <div *ngIf="successMessage" class="rounded-[22px] p-11 text-center" style="background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.25);">
-      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background: rgba(16,185,129,.18);">
-        <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-      </div>
-      <h2 class="text-[22px] font-bold text-white mb-2">Registration submitted</h2>
-      <p class="text-emerald-200 text-sm mb-6">{{ successMessage }}</p>
-
-      <div *ngIf="registeredStoreUrl" class="max-w-sm mx-auto rounded-[16px] p-5 mb-6 text-left" style="background:#0e1410; border:1px solid rgba(16,185,129,.2);">
-        <div class="mb-3">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70 mb-1">Store URL</p>
-          <p class="text-sm font-mono text-white break-all">{{ registeredStoreUrl }}</p>
+    @if (successMessage) {
+      <div class="rounded-[22px] p-11 text-center" style="background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.25);">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background: rgba(16,185,129,.18);">
+          <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
         </div>
-        <div *ngIf="registeredStoreCode">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70 mb-1">Store Code</p>
-          <p class="text-lg font-mono font-bold tracking-[.2em] text-white">{{ registeredStoreCode }}</p>
+        <h2 class="text-[22px] font-bold text-white mb-2">Registration submitted</h2>
+        <p class="text-emerald-200 text-sm mb-6">{{ successMessage }}</p>
+        @if (registeredStoreUrl) {
+          <div class="max-w-sm mx-auto rounded-[16px] p-5 mb-6 text-left" style="background:#0e1410; border:1px solid rgba(16,185,129,.2);">
+            <div class="mb-3">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70 mb-1">Store URL</p>
+              <p class="text-sm font-mono text-white break-all">{{ registeredStoreUrl }}</p>
+            </div>
+            @if (registeredStoreCode) {
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70 mb-1">Store Code</p>
+                <p class="text-lg font-mono font-bold tracking-[.2em] text-white">{{ registeredStoreCode }}</p>
+              </div>
+            }
+          </div>
+        }
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          @if (registeredStoreUrl) {
+            <a [href]="whatsappShareUrl" target="_blank" rel="noopener"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold rounded-[11px] transition-all">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.28 4 3.4 7.88 3.4 12.65a8.6 8.6 0 0 0 1.15 4.32L3.4 21l4.14-1.09a8.65 8.65 0 0 0 4.5 1.24h.01c4.76 0 8.64-3.88 8.64-8.65a8.6 8.6 0 0 0-2.54-6.18ZM12.05 19.4h-.01a7.2 7.2 0 0 1-3.66-1l-.26-.16-2.72.72.73-2.65-.17-.27a7.2 7.2 0 0 1-1.11-3.83c0-3.98 3.24-7.22 7.23-7.22a7.18 7.18 0 0 1 5.11 2.12 7.18 7.18 0 0 1 2.11 5.11c0 3.98-3.25 7.22-7.25 7.22Zm3.96-5.4c-.22-.11-1.29-.64-1.49-.71-.2-.07-.34-.11-.49.11-.14.22-.56.71-.69.85-.13.15-.25.16-.47.05-.22-.11-.92-.34-1.75-1.08-.65-.58-1.08-1.29-1.21-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.15.04-.28-.02-.39-.06-.11-.49-1.19-.68-1.63-.18-.43-.36-.37-.49-.38-.13-.01-.28-.01-.42-.01-.15 0-.39.06-.6.28-.2.22-.78.77-.78 1.86 0 1.1.8 2.16.91 2.31.11.15 1.56 2.39 3.79 3.35.53.23.94.36 1.26.47.53.17 1.01.14 1.39.09.42-.06 1.29-.53 1.48-1.04.18-.51.18-.94.13-1.04-.05-.09-.2-.15-.42-.26Z"/></svg>
+              Share on WhatsApp
+            </a>
+          }
+          <button (click)="goBack()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-[11px] transition-all">Return to Home</button>
         </div>
       </div>
-
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <a *ngIf="registeredStoreUrl" [href]="whatsappShareUrl" target="_blank" rel="noopener"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold rounded-[11px] transition-all">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.6 6.32A8.86 8.86 0 0 0 12.05 4C7.28 4 3.4 7.88 3.4 12.65a8.6 8.6 0 0 0 1.15 4.32L3.4 21l4.14-1.09a8.65 8.65 0 0 0 4.5 1.24h.01c4.76 0 8.64-3.88 8.64-8.65a8.6 8.6 0 0 0-2.54-6.18ZM12.05 19.4h-.01a7.2 7.2 0 0 1-3.66-1l-.26-.16-2.72.72.73-2.65-.17-.27a7.2 7.2 0 0 1-1.11-3.83c0-3.98 3.24-7.22 7.23-7.22a7.18 7.18 0 0 1 5.11 2.12 7.18 7.18 0 0 1 2.11 5.11c0 3.98-3.25 7.22-7.25 7.22Zm3.96-5.4c-.22-.11-1.29-.64-1.49-.71-.2-.07-.34-.11-.49.11-.14.22-.56.71-.69.85-.13.15-.25.16-.47.05-.22-.11-.92-.34-1.75-1.08-.65-.58-1.08-1.29-1.21-1.51-.13-.22-.01-.34.1-.45.1-.1.22-.25.33-.38.11-.13.14-.22.22-.36.07-.15.04-.28-.02-.39-.06-.11-.49-1.19-.68-1.63-.18-.43-.36-.37-.49-.38-.13-.01-.28-.01-.42-.01-.15 0-.39.06-.6.28-.2.22-.78.77-.78 1.86 0 1.1.8 2.16.91 2.31.11.15 1.56 2.39 3.79 3.35.53.23.94.36 1.26.47.53.17 1.01.14 1.39.09.42-.06 1.29-.53 1.48-1.04.18-.51.18-.94.13-1.04-.05-.09-.2-.15-.42-.26Z"/></svg>
-          Share on WhatsApp
-        </a>
-        <button (click)="goBack()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-[11px] transition-all">Return to Home</button>
-      </div>
-    </div>
+    }
 
     <!-- Registration Form -->
-    <form *ngIf="!successMessage" (ngSubmit)="onSubmit()" #registerForm="ngForm"
-          class="rounded-[24px] p-8 md:p-9 relative"
-          style="background: #141014; border: 1px solid rgba(255,255,255,.07); box-shadow: 0 30px 70px rgba(0,0,0,.4);">
-
-      <div *ngIf="errorMessage" class="mb-7 p-4 rounded-xl flex items-center gap-3" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: #fca5a5;">
-        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-        <span>{{ errorMessage }}</span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
-        <!-- Column 1: Company Info -->
-        <div class="space-y-4">
-          <div class="flex items-center gap-2.5 mb-1 pb-3" style="border-bottom: 1px solid rgba(255,255,255,.08);">
-            <div class="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style="background: rgba(244,63,94,.15);">
-              <svg class="w-[15px] h-[15px] text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path></svg>
+    @if (!successMessage) {
+      <form (ngSubmit)="onSubmit()" #registerForm="ngForm"
+        class="rounded-[24px] p-8 md:p-9 relative"
+        style="background: #141014; border: 1px solid rgba(255,255,255,.07); box-shadow: 0 30px 70px rgba(0,0,0,.4);">
+        @if (errorMessage) {
+          <div class="mb-7 p-4 rounded-xl flex items-center gap-3" style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: #fca5a5;">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <span>{{ errorMessage }}</span>
+          </div>
+        }
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-9">
+          <!-- Column 1: Company Info -->
+          <div class="space-y-4">
+            <div class="flex items-center gap-2.5 mb-1 pb-3" style="border-bottom: 1px solid rgba(255,255,255,.08);">
+              <div class="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style="background: rgba(244,63,94,.15);">
+                <svg class="w-[15px] h-[15px] text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path></svg>
+              </div>
+              <h3 class="text-base font-extrabold text-white">Company Details</h3>
             </div>
-            <h3 class="text-base font-extrabold text-white">Company Details</h3>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Company Name <span class="text-rose-400">*</span></label>
-            <input type="text" name="companyName" [(ngModel)]="formData.companyName" required
-              class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
-              style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="Enter your company name">
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Store Subdomain <span class="text-rose-400">*</span></label>
-            <div class="flex">
-              <input type="text" name="subdomain" [ngModel]="formData.subdomain" (input)="sanitizeSubdomain($event)" required
-                maxlength="30"
-                class="w-full rounded-l-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
-                [style.border-color]="subdomainError ? 'rgba(244,63,94,.6)' : 'rgba(255,255,255,.1)'"
-                style="background:#0e0c0e; border-width:1px; border-style:solid; border-right:0;" placeholder="mystore">
-              <span class="px-3.5 py-2.5 rounded-r-[10px] text-[12.5px] text-neutral-400 whitespace-nowrap" style="background:#1c191c; border:1px solid rgba(255,255,255,.1); border-left:0;">.{{ rootDomain }}</span>
+            <div>
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Company Name <span class="text-rose-400">*</span></label>
+              <input type="text" name="companyName" [(ngModel)]="formData.companyName" required
+                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
+                style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="Enter your company name">
             </div>
-            <p *ngIf="subdomainError" class="text-xs text-rose-400 mt-1.5">{{ subdomainError }}</p>
-            <p *ngIf="!subdomainError" class="text-xs text-neutral-500 mt-2">Letters, numbers, and underscore only — max 30 characters.</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Full Address <span class="text-rose-400">*</span></label>
-            <textarea name="address" [(ngModel)]="formData.address" required rows="2"
-              class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none resize-none"
+            <div>
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Store Subdomain <span class="text-rose-400">*</span></label>
+              <div class="flex">
+                <input type="text" name="subdomain" [ngModel]="formData.subdomain" (input)="sanitizeSubdomain($event)" required
+                  maxlength="30"
+                  class="w-full rounded-l-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
+                  [style.border-color]="subdomainError ? 'rgba(244,63,94,.6)' : 'rgba(255,255,255,.1)'"
+                  style="background:#0e0c0e; border-width:1px; border-style:solid; border-right:0;" placeholder="mystore">
+                <span class="px-3.5 py-2.5 rounded-r-[10px] text-[12.5px] text-neutral-400 whitespace-nowrap" style="background:#1c191c; border:1px solid rgba(255,255,255,.1); border-left:0;">.{{ rootDomain }}</span>
+              </div>
+              @if (subdomainError) {
+                <p class="text-xs text-rose-400 mt-1.5">{{ subdomainError }}</p>
+              }
+              @if (!subdomainError) {
+                <p class="text-xs text-neutral-500 mt-2">Letters, numbers, and underscore only — max 30 characters.</p>
+              }
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Full Address <span class="text-rose-400">*</span></label>
+              <textarea name="address" [(ngModel)]="formData.address" required rows="2"
+                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none resize-none"
               style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="Street address, building, floor"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-neutral-400 mb-1.5">Division</label>
+                <input type="text" name="division" [(ngModel)]="formData.division"
+                  class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-neutral-400 mb-1.5">District</label>
+                <input type="text" name="district" [(ngModel)]="formData.district"
+                  class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+              </div>
+            </div>
           </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Division</label>
-              <input type="text" name="division" [(ngModel)]="formData.division"
-                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+          <!-- Column 2: Owner Info -->
+          <div class="space-y-4">
+            <div class="flex items-center gap-2.5 mb-1 pb-3" style="border-bottom: 1px solid rgba(255,255,255,.08);">
+              <div class="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style="background: rgba(16,185,129,.15);">
+                <svg class="w-[15px] h-[15px] text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              </div>
+              <h3 class="text-base font-extrabold text-white">Owner Details</h3>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-neutral-400 mb-1.5">First Name <span class="text-rose-400">*</span></label>
+                <input type="text" name="ownerFirstName" [(ngModel)]="formData.ownerFirstName" required
+                  class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-neutral-400 mb-1.5">Last Name <span class="text-rose-400">*</span></label>
+                <input type="text" name="ownerLastName" [(ngModel)]="formData.ownerLastName" required
+                  class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+              </div>
             </div>
             <div>
-              <label class="block text-xs font-medium text-neutral-400 mb-1.5">District</label>
-              <input type="text" name="district" [(ngModel)]="formData.district"
-                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Email Address <span class="text-rose-400">*</span></label>
+              <input type="email" name="ownerEmail" [(ngModel)]="formData.ownerEmail" required
+                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
+                style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="owner@company.com">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Phone Number <span class="text-rose-400">*</span></label>
+              <input type="tel" name="ownerPhone" [ngModel]="formData.ownerPhone" (input)="sanitizePhone($event)" required
+                maxlength="11" inputmode="numeric"
+                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
+                [style.border-color]="phoneError ? 'rgba(244,63,94,.6)' : 'rgba(255,255,255,.1)'"
+                style="background:#0e0c0e; border-width:1px; border-style:solid;" placeholder="01XXXXXXXXX">
+              @if (phoneError) {
+                <p class="text-xs text-rose-400 mt-1.5">{{ phoneError }}</p>
+              }
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Secure Password <span class="text-rose-400">*</span></label>
+              <div class="relative">
+                <input [type]="showPassword ? 'text' : 'password'" name="password" [(ngModel)]="formData.password" required
+                  class="w-full rounded-[10px] px-3.5 py-2.5 pr-11 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
+                  style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="••••••••">
+                <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-500 hover:text-neutral-300">
+                  @if (!showPassword) {
+                    <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  }
+                  @if (showPassword) {
+                    <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    </svg>
+                  }
+                </button>
+              </div>
+              <p class="text-xs text-neutral-500 mt-2">Use at least 8 characters with letters & numbers.</p>
             </div>
           </div>
         </div>
-
-        <!-- Column 2: Owner Info -->
-        <div class="space-y-4">
-          <div class="flex items-center gap-2.5 mb-1 pb-3" style="border-bottom: 1px solid rgba(255,255,255,.08);">
-            <div class="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style="background: rgba(16,185,129,.15);">
-              <svg class="w-[15px] h-[15px] text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        @if (plans.length) {
+          <div class="mt-9">
+            <h3 class="text-sm font-semibold text-white mb-1">Choose your plan</h3>
+            @if (trialDays > 0) {
+              <p class="text-xs text-neutral-500 mb-4">Start with a {{ trialDays }}-day free trial. You can change plan later.</p>
+            }
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              @for (p of plans; track p) {
+                <label class="block cursor-pointer rounded-xl p-4 transition"
+                  [style.border]="formData.planId === p.id ? '1.5px solid #f43f5e' : '1px solid rgba(255,255,255,.1)'"
+                  [style.background]="formData.planId === p.id ? 'rgba(244,63,94,.08)' : 'rgba(255,255,255,.02)'">
+                  <input type="radio" name="planId" class="sr-only" [value]="p.id" [(ngModel)]="formData.planId">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <span class="font-bold text-white">{{ p.name }}</span>
+                    <span class="text-sm text-neutral-300">৳{{ p.price | number:'1.0-0' }} <span class="text-neutral-500">/ {{ p.billingCycle }}</span></span>
+                  </div>
+                  <ul class="mt-3 space-y-1 text-xs text-neutral-400">
+                    @for (perk of p.perks; track perk) {
+                      <li>✔ {{ perk }}</li>
+                    }
+                  </ul>
+                </label>
+              }
             </div>
-            <h3 class="text-base font-extrabold text-white">Owner Details</h3>
           </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-neutral-400 mb-1.5">First Name <span class="text-rose-400">*</span></label>
-              <input type="text" name="ownerFirstName" [(ngModel)]="formData.ownerFirstName" required
-                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-neutral-400 mb-1.5">Last Name <span class="text-rose-400">*</span></label>
-              <input type="text" name="ownerLastName" [(ngModel)]="formData.ownerLastName" required
-                class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white focus:outline-none" style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Email Address <span class="text-rose-400">*</span></label>
-            <input type="email" name="ownerEmail" [(ngModel)]="formData.ownerEmail" required
-              class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
-              style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="owner@company.com">
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Phone Number <span class="text-rose-400">*</span></label>
-            <input type="tel" name="ownerPhone" [ngModel]="formData.ownerPhone" (input)="sanitizePhone($event)" required
-              maxlength="11" inputmode="numeric"
-              class="w-full rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
-              [style.border-color]="phoneError ? 'rgba(244,63,94,.6)' : 'rgba(255,255,255,.1)'"
-              style="background:#0e0c0e; border-width:1px; border-style:solid;" placeholder="01XXXXXXXXX">
-            <p *ngIf="phoneError" class="text-xs text-rose-400 mt-1.5">{{ phoneError }}</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-neutral-400 mb-1.5">Secure Password <span class="text-rose-400">*</span></label>
-            <div class="relative">
-              <input [type]="showPassword ? 'text' : 'password'" name="password" [(ngModel)]="formData.password" required
-                class="w-full rounded-[10px] px-3.5 py-2.5 pr-11 text-[13.5px] text-white placeholder-neutral-600 focus:outline-none"
-                style="background:#0e0c0e; border:1px solid rgba(255,255,255,.1);" placeholder="••••••••">
-              <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-500 hover:text-neutral-300">
-                <svg *ngIf="!showPassword" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        }
+        <div class="mt-9 pt-6 flex flex-col sm:flex-row items-center justify-between gap-5" style="border-top: 1px solid rgba(255,255,255,.08);">
+          <p class="text-sm text-neutral-500">Already have an approved account?
+            <a routerLink="/" class="ml-1 font-medium" style="color:#fb7185;">Return Home</a>
+          </p>
+          <button type="submit" [disabled]="registerForm.invalid || loading || hasBlockingErrors"
+            class="w-full sm:w-auto px-8 py-3.5 text-white font-bold rounded-[11px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background: linear-gradient(135deg,#e11d48,#f43f5e); box-shadow: 0 10px 24px rgba(225,29,72,.3);">
+            @if (loading) {
+              <span class="flex items-center gap-2 justify-center">
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <svg *ngIf="showPassword" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                </svg>
-              </button>
-            </div>
-            <p class="text-xs text-neutral-500 mt-2">Use at least 8 characters with letters & numbers.</p>
-          </div>
+                Processing...
+              </span>
+            }
+            @if (!loading) {
+              <span>Submit Registration</span>
+            }
+          </button>
         </div>
-      </div>
-
-      <div *ngIf="plans.length" class="mt-9">
-        <h3 class="text-sm font-semibold text-white mb-1">Choose your plan</h3>
-        <p *ngIf="trialDays > 0" class="text-xs text-neutral-500 mb-4">Start with a {{ trialDays }}-day free trial. You can change plan later.</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label *ngFor="let p of plans" class="block cursor-pointer rounded-xl p-4 transition"
-            [style.border]="formData.planId === p.id ? '1.5px solid #f43f5e' : '1px solid rgba(255,255,255,.1)'"
-            [style.background]="formData.planId === p.id ? 'rgba(244,63,94,.08)' : 'rgba(255,255,255,.02)'">
-            <input type="radio" name="planId" class="sr-only" [value]="p.id" [(ngModel)]="formData.planId">
-            <div class="flex items-baseline justify-between gap-2">
-              <span class="font-bold text-white">{{ p.name }}</span>
-              <span class="text-sm text-neutral-300">৳{{ p.price | number:'1.0-0' }} <span class="text-neutral-500">/ {{ p.billingCycle }}</span></span>
-            </div>
-            <ul class="mt-3 space-y-1 text-xs text-neutral-400">
-              <li *ngFor="let perk of p.perks">✔ {{ perk }}</li>
-            </ul>
-          </label>
-        </div>
-      </div>
-
-      <div class="mt-9 pt-6 flex flex-col sm:flex-row items-center justify-between gap-5" style="border-top: 1px solid rgba(255,255,255,.08);">
-        <p class="text-sm text-neutral-500">Already have an approved account?
-          <a routerLink="/" class="ml-1 font-medium" style="color:#fb7185;">Return Home</a>
-        </p>
-        <button type="submit" [disabled]="registerForm.invalid || loading || hasBlockingErrors"
-          class="w-full sm:w-auto px-8 py-3.5 text-white font-bold rounded-[11px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style="background: linear-gradient(135deg,#e11d48,#f43f5e); box-shadow: 0 10px 24px rgba(225,29,72,.3);">
-          <span *ngIf="loading" class="flex items-center gap-2 justify-center">
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </span>
-          <span *ngIf="!loading">Submit Registration</span>
-        </button>
-      </div>
-    </form>
+      </form>
+    }
   </div>
 </div>

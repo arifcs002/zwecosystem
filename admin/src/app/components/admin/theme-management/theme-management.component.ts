@@ -10,11 +10,10 @@ interface CompanyThemeConfig {
 }
 
 @Component({
-  selector: 'app-theme-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './theme-management.component.html',
-  styleUrl: './theme-management.component.css'
+    selector: 'app-theme-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './theme-management.component.html',
+    styleUrl: './theme-management.component.css'
 })
 export class ThemeManagementComponent implements OnInit {
   

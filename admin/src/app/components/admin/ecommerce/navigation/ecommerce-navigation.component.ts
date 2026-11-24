@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SettingsService, CompanySetting } from '../../../../services/settings/settings.service';
@@ -7,11 +7,10 @@ import { CategoryService, Category } from '../../../../services/category/categor
 import { GlobalNotificationService } from '../../../../services/global-notification/global-notification.service';
 
 @Component({
-  selector: 'app-ecommerce-navigation',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './ecommerce-navigation.component.html',
-  styleUrl: '../ecommerce-config.css'
+    selector: 'app-ecommerce-navigation',
+    imports: [FormsModule],
+    templateUrl: './ecommerce-navigation.component.html',
+    styleUrl: '../ecommerce-config.css'
 })
 export class EcommerceNavigationComponent implements OnInit {
   private settingsService = inject(SettingsService);

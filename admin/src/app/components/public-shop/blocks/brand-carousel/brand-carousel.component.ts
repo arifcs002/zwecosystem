@@ -1,26 +1,35 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ImgUrlPipe } from '../../../../pipes/img-url.pipe';
 import { Brand } from '../../../../services/brand/brand.service';
 
 // A row of brand logos (falls back to the brand initial when no logo is set).
 // Purely presentational — parent passes the store's brands.
 @Component({
-  selector: 'app-brand-carousel',
-  standalone: true,
-  imports: [CommonModule, ImgUrlPipe],
-  template: `
-    <div class="brand-block" *ngIf="brands.length">
-      <h2 class="sec-title" *ngIf="title">{{ title }}</h2>
-      <div class="row">
-        <div *ngFor="let b of brands" class="brand" [title]="b.name">
-          <img *ngIf="b.logoUrl" [src]="b.logoUrl | imgUrl" [alt]="b.name">
-          <span *ngIf="!b.logoUrl" class="fallback">{{ b.name.charAt(0) }}</span>
+    selector: 'app-brand-carousel',
+    imports: [ImgUrlPipe],
+    template: `
+    @if (brands.length) {
+      <div class="brand-block">
+        @if (title) {
+          <h2 class="sec-title">{{ title }}</h2>
+        }
+        <div class="row">
+          @for (b of brands; track b) {
+            <div class="brand" [title]="b.name">
+              @if (b.logoUrl) {
+                <img [src]="b.logoUrl | imgUrl" [alt]="b.name">
+              }
+              @if (!b.logoUrl) {
+                <span class="fallback">{{ b.name.charAt(0) }}</span>
+              }
+            </div>
+          }
         </div>
       </div>
-    </div>
-  `,
-  styles: [`
+    }
+    `,
+    styles: [`
     :host { display: block; }
     .sec-title { font-size: 20px; font-weight: 800; color: #1f2430; margin: 0 0 14px; position: relative; padding-left: 12px; }
     .sec-title::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 4px; background: #7c3aed; }

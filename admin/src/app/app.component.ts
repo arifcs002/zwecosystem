@@ -1,5 +1,5 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { environment } from '../environments/environment';
@@ -57,12 +57,11 @@ interface LoggedInUser {
 }
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, GlobalErrorToastComponent],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+    selector: 'app-root',
+    imports: [FormsModule, RouterOutlet, GlobalErrorToastComponent],
+    templateUrl: './app.component.html',
+    styleUrl: './app.component.css',
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppComponent implements OnInit {
   apiUrl = environment.apiUrl;

@@ -5,11 +5,10 @@ import { OrderService } from '../../../services/order/order.service';
 import { RequiredErrorComponent } from '../../../shared/required-error/required-error.component';
 
 @Component({
-  selector: 'app-payment-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RequiredErrorComponent],
-  templateUrl: './payment-management.component.html',
-  styleUrl: './payment-management.component.css'
+    selector: 'app-payment-management',
+    imports: [CommonModule, FormsModule, RequiredErrorComponent],
+    templateUrl: './payment-management.component.html',
+    styleUrl: './payment-management.component.css'
 })
 export class PaymentManagementComponent implements OnInit {
   private orderService = inject(OrderService);

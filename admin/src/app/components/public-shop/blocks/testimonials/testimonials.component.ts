@@ -1,30 +1,37 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Testimonial } from '../../../../models/storefront-layout.model';
 
 // Customer review cards. Rating renders as filled/empty stars (1..5).
 @Component({
-  selector: 'app-testimonials',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="tst-block" *ngIf="items.length">
-      <h2 class="sec-title" *ngIf="title">{{ title }}</h2>
-      <div class="grid">
-        <div *ngFor="let t of items" class="card">
-          <div class="stars">
-            <span *ngFor="let s of [1,2,3,4,5]" [class.on]="s <= (t.rating || 5)">★</span>
-          </div>
-          <p class="text">“{{ t.text }}”</p>
-          <div class="who">
-            <span class="avatar">{{ (t.name || '?').charAt(0) }}</span>
-            <span class="name">{{ t.name }}</span>
-          </div>
+    selector: 'app-testimonials',
+    imports: [],
+    template: `
+    @if (items.length) {
+      <div class="tst-block">
+        @if (title) {
+          <h2 class="sec-title">{{ title }}</h2>
+        }
+        <div class="grid">
+          @for (t of items; track t) {
+            <div class="card">
+              <div class="stars">
+                @for (s of [1,2,3,4,5]; track s) {
+                  <span [class.on]="s <= (t.rating || 5)">★</span>
+                }
+              </div>
+              <p class="text">“{{ t.text }}”</p>
+              <div class="who">
+                <span class="avatar">{{ (t.name || '?').charAt(0) }}</span>
+                <span class="name">{{ t.name }}</span>
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </div>
-  `,
-  styles: [`
+    }
+    `,
+    styles: [`
     :host { display: block; }
     .sec-title { font-size: 20px; font-weight: 800; color: #1f2430; margin: 0 0 16px; position: relative; padding-left: 12px; }
     .sec-title::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 4px; background: #7c3aed; }

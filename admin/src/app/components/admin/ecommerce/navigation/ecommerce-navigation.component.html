@@ -7,9 +7,11 @@
     <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">Loading…</div>
+  @if (isLoading) {
+    <div class="loading">Loading…</div>
+  }
 
-  <ng-container *ngIf="!isLoading">
+  @if (!isLoading) {
     <!-- Announcement bar -->
     <div class="card">
       <p class="card-title">Announcement Bar</p>
@@ -29,25 +31,29 @@
         <input class="inp" [(ngModel)]="announcementLink" placeholder="/category/1">
       </div>
     </div>
-
     <!-- Nav categories -->
     <div class="card">
       <p class="card-title">Navigation Categories</p>
       <p class="muted" style="margin-bottom:10px;">Pick which categories appear in the header menu bar. Order them below.</p>
       <div class="chip-grid">
-        <button *ngFor="let c of categories" class="chip" [class.on]="isNavSelected(+c.id!)" (click)="toggleNav(+c.id!)">
-          {{ c.name }}
-        </button>
+        @for (c of categories; track c) {
+          <button class="chip" [class.on]="isNavSelected(+c.id!)" (click)="toggleNav(+c.id!)">
+            {{ c.name }}
+          </button>
+        }
       </div>
-
-      <div class="ord-list" *ngIf="navCategoryIds.length">
-        <div *ngFor="let id of navCategoryIds; let i = index" class="ord-item">
-          <span class="nm">{{ catName(id) }}</span>
-          <button class="mini" (click)="moveNav(i, -1)" [disabled]="i === 0">▲</button>
-          <button class="mini" (click)="moveNav(i, 1)" [disabled]="i === navCategoryIds.length - 1">▼</button>
-          <button class="mini" (click)="toggleNav(id)">✕</button>
+      @if (navCategoryIds.length) {
+        <div class="ord-list">
+          @for (id of navCategoryIds; track id; let i = $index) {
+            <div class="ord-item">
+              <span class="nm">{{ catName(id) }}</span>
+              <button class="mini" (click)="moveNav(i, -1)" [disabled]="i === 0">▲</button>
+              <button class="mini" (click)="moveNav(i, 1)" [disabled]="i === navCategoryIds.length - 1">▼</button>
+              <button class="mini" (click)="toggleNav(id)">✕</button>
+            </div>
+          }
         </div>
-      </div>
+      }
     </div>
-  </ng-container>
+  }
 </div>

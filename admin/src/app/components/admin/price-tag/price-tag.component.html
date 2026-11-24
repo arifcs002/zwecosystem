@@ -9,7 +9,9 @@
     </button>
   </div>
 
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <div class="mb-6 bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg">
     <p class="text-sm text-amber-300">
@@ -22,35 +24,43 @@
   </div>
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading products...</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead>
-        <tr>
-          <th class="w-12 text-center">
-            <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll()" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40">
-          </th>
-          <th>Product Name</th>
-          <th>Barcode Number</th>
-          <th>Price</th>
-          <th class="text-center">Copies</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of filteredRows">
-          <td class="text-center">
-            <input type="checkbox" [(ngModel)]="row.selected" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40">
-          </td>
-          <td><strong class="text-gray-200">{{ row.product.name }}</strong></td>
-          <td class="text-gray-400 font-mono tracking-widest">{{ codeOf(row.product) }}</td>
-          <td class="text-emerald-400 font-bold">৳ {{ row.product.price | number:'1.0-0' }}</td>
-          <td class="text-center">
-            <input type="number" [(ngModel)]="row.copies" min="1" class="form-input w-20 py-1 text-center inline-block">
-          </td>
-        </tr>
-        <tr *ngIf="filteredRows.length === 0">
-          <td colspan="5" class="empty-row">No products found.</td>
-        </tr>
-      </tbody>
-    </table>
+    @if (isLoading) {
+      <div class="loading">Loading products...</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="w-12 text-center">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll()" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40">
+            </th>
+            <th>Product Name</th>
+            <th>Barcode Number</th>
+            <th>Price</th>
+            <th class="text-center">Copies</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filteredRows; track row) {
+            <tr>
+              <td class="text-center">
+                <input type="checkbox" [(ngModel)]="row.selected" class="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40">
+              </td>
+              <td><strong class="text-gray-200">{{ row.product.name }}</strong></td>
+              <td class="text-gray-400 font-mono tracking-widest">{{ codeOf(row.product) }}</td>
+              <td class="text-emerald-400 font-bold">৳ {{ row.product.price | number:'1.0-0' }}</td>
+              <td class="text-center">
+                <input type="number" [(ngModel)]="row.copies" min="1" class="form-input w-20 py-1 text-center inline-block">
+              </td>
+            </tr>
+          }
+          @if (filteredRows.length === 0) {
+            <tr>
+              <td colspan="5" class="empty-row">No products found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
 </div>

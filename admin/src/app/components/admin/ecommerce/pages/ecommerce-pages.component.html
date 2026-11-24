@@ -7,9 +7,11 @@
     <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">Loading…</div>
+  @if (isLoading) {
+    <div class="loading">Loading…</div>
+  }
 
-  <ng-container *ngIf="!isLoading">
+  @if (!isLoading) {
     <div class="card">
       <p class="card-title">Contact Information</p>
       <div class="grid2">
@@ -18,25 +20,21 @@
       </div>
       <div class="fg"><label>Address</label><input class="inp" [(ngModel)]="contactAddress" placeholder="Rampura, Dhaka, Bangladesh"></div>
     </div>
-
     <div class="card">
       <p class="card-title">About Us</p>
       <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageAbout" placeholder="Tell customers about your store…"></textarea></div>
     </div>
-
     <div class="card">
       <p class="card-title">Privacy Policy</p>
       <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pagePrivacy" placeholder="How you handle customer data…"></textarea></div>
     </div>
-
     <div class="card">
       <p class="card-title">Refund Policy</p>
       <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageRefund" placeholder="Your return/refund terms…"></textarea></div>
     </div>
-
     <div class="card">
       <p class="card-title">Terms &amp; Conditions</p>
       <div class="fg"><textarea class="inp" rows="4" [(ngModel)]="pageTerms" placeholder="Store terms of use…"></textarea></div>
     </div>
-  </ng-container>
+  }
 </div>

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CompanySetting, SettingsService } from '../../../services/settings/settings.service';
 
@@ -11,10 +11,9 @@ const STATUSES = [
 
 // One place for: SMS wording per order status, the text printed on invoices, and courier API keys.
 @Component({
-  selector: 'app-messages-courier',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-messages-courier',
+    imports: [FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -24,29 +23,35 @@ const STATUSES = [
     <button class="btn-primary" (click)="save()" [disabled]="saving || loading">{{ saving ? 'Saving…' : 'Save all' }}</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-  <div class="loading" *ngIf="loading">Loading…</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
+  @if (loading) {
+    <div class="loading">Loading…</div>
+  }
 
-  <ng-container *ngIf="!loading">
+  @if (!loading) {
     <div class="table-card" style="padding:18px;margin-bottom:16px">
       <h3 style="margin:0 0 4px">SMS to customers</h3>
       <p style="opacity:.65;font-size:13px;margin:0 0 12px">Sent when you move an order to that status. Leave a box empty to use the built-in message. Placeholders: <code>{{ '{order} {shop} {name} {tracking} {total}' }}</code></p>
       <div class="form-group"><label>SMS gateway URL</label>
-        <input class="form-input" [(ngModel)]="v['sms_api_url']" placeholder="https://your-sms-provider/send?to={{ '{phone}' }}&amp;msg={{ '{message}' }}" />
-        <small style="opacity:.6">Empty = no SMS is sent.</small></div>
-      <div class="form-group" *ngFor="let s of statuses">
-        <label>When {{ s.label }}</label>
-        <input class="form-input" [(ngModel)]="v['sms_template_' + s.key]" [placeholder]="'e.g. Hi {name}, your order {order} is ' + s.label.toLowerCase() + '. — {shop}'" maxlength="300" />
-      </div>
+      <input class="form-input" [(ngModel)]="v['sms_api_url']" placeholder="https://your-sms-provider/send?to={{ '{phone}' }}&amp;msg={{ '{message}' }}" />
+      <small style="opacity:.6">Empty = no SMS is sent.</small></div>
+      @for (s of statuses; track s) {
+        <div class="form-group">
+          <label>When {{ s.label }}</label>
+          <input class="form-input" [(ngModel)]="v['sms_template_' + s.key]" [placeholder]="'e.g. Hi {name}, your order {order} is ' + s.label.toLowerCase() + '. — {shop}'" maxlength="300" />
+        </div>
+      }
     </div>
-
     <div class="table-card" style="padding:18px;margin-bottom:16px">
       <h3 style="margin:0 0 12px">Invoice</h3>
       <div class="form-group"><label>Header (address, phone, VAT/BIN)</label><textarea class="form-input" rows="2" [(ngModel)]="v['invoice_header_text']" maxlength="400"></textarea></div>
       <div class="form-group"><label>Footer note</label><textarea class="form-input" rows="2" [(ngModel)]="v['invoice_footer_text']" maxlength="400" placeholder="Thank you for shopping with us!"></textarea></div>
     </div>
-
     <div class="table-card" style="padding:18px">
       <h3 style="margin:0 0 4px">Steadfast Courier</h3>
       <p style="opacity:.65;font-size:13px;margin:0 0 12px">Get these from your Steadfast merchant panel (API settings). They are stored write-only: once saved, they show as ••••••••.</p>
@@ -56,7 +61,6 @@ const STATUSES = [
       </div>
       <small style="opacity:.6">Then open any order and press “Send to Steadfast”.</small>
     </div>
-
     <div class="table-card" style="padding:18px;margin-top:16px">
       <h3 style="margin:0 0 4px">Pathao Courier</h3>
       <p style="opacity:.65;font-size:13px;margin:0 0 12px">From your Pathao merchant panel (Developer / API). The login details are stored write-only: once saved, they show as ••••••••. The Store ID is the number of your pickup store.</p>
@@ -67,14 +71,14 @@ const STATUSES = [
         <div class="form-group"><label>Merchant password</label><input class="form-input" type="password" autocomplete="new-password" [(ngModel)]="v['secret_pathao_password']" /></div>
         <div class="form-group"><label>Store ID</label><input class="form-input" inputmode="numeric" maxlength="12" [(ngModel)]="v['pathao_store_id']" placeholder="e.g. 123456" /></div>
         <div class="form-group"><label>Mode</label>
-          <select class="form-input" [(ngModel)]="v['pathao_sandbox']">
-            <option value="">Live (real parcels)</option>
-            <option value="true">Sandbox (testing only)</option>
-          </select></div>
+        <select class="form-input" [(ngModel)]="v['pathao_sandbox']">
+          <option value="">Live (real parcels)</option>
+          <option value="true">Sandbox (testing only)</option>
+        </select></div>
       </div>
       <small style="opacity:.6">Try one parcel in Sandbox mode first, then switch to Live. Then open any order and press “Send to Pathao”.</small>
     </div>
-  </ng-container>
+  }
 </div>`
 })
 export class MessagesCourierComponent implements OnInit {

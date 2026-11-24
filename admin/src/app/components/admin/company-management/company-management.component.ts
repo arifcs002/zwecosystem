@@ -9,11 +9,10 @@ import { GlobalNotificationService } from '../../../services/global-notification
 import { environment } from '../../../../environments/environment';
 
 @Component({
-  selector: 'app-company-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './company-management.component.html',
-  styleUrl: './company-management.component.css'
+    selector: 'app-company-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './company-management.component.html',
+    styleUrl: './company-management.component.css'
 })
 export class CompanyManagementComponent implements OnInit {
   private router = inject(Router);

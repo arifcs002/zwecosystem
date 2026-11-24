@@ -5,128 +5,146 @@
   <div class="max-w-screen-lg mx-auto w-full px-4 py-8 flex-1">
 
     <!-- ══ SUCCESS ══ -->
-    <div *ngIf="placedOrderNumber" class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mt-4">
-      <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl flex items-center justify-center mx-auto mb-4">✓</div>
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ 'Order Confirmed!' | t }}</h1>
-      <p class="text-gray-500 mb-3">{{ 'Thank you for your order. We\'ll call you to confirm delivery.' | t }}</p>
-      <div class="bg-gray-50 rounded-xl p-3 mb-3">
-        <p class="text-xs text-gray-400">{{ 'Order number' | t }}</p>
-        <p class="font-bold text-gray-900 break-all">{{ placedOrderNumber }}</p>
-        <button (click)="copyOrderNumber()" class="text-xs font-semibold text-indigo-600 hover:underline mt-1">{{ copied ? 'Copied ✓' : 'Copy' }}</button>
+    @if (placedOrderNumber) {
+      <div class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mt-4">
+        <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl flex items-center justify-center mx-auto mb-4">✓</div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ 'Order Confirmed!' | t }}</h1>
+        <p class="text-gray-500 mb-3">{{ 'Thank you for your order. We\'ll call you to confirm delivery.' | t }}</p>
+        <div class="bg-gray-50 rounded-xl p-3 mb-3">
+          <p class="text-xs text-gray-400">{{ 'Order number' | t }}</p>
+          <p class="font-bold text-gray-900 break-all">{{ placedOrderNumber }}</p>
+          <button (click)="copyOrderNumber()" class="text-xs font-semibold text-indigo-600 hover:underline mt-1">{{ copied ? 'Copied ✓' : 'Copy' }}</button>
+        </div>
+        <p class="text-gray-500 mb-5">{{ 'Total:' | t }} <span class="font-bold text-gray-900">৳{{ placedTotal | number:'1.0-0' }}</span></p>
+        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+          <a [routerLink]="link('track-order')" [queryParams]="{ order: placedOrderNumber, phone: placedPhone }"
+          class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">{{ 'Track my order' | t }}</a>
+          <button (click)="backToShop()" class="px-5 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition">{{ 'Continue shopping' | t }}</button>
+        </div>
       </div>
-      <p class="text-gray-500 mb-5">{{ 'Total:' | t }} <span class="font-bold text-gray-900">৳{{ placedTotal | number:'1.0-0' }}</span></p>
-      <div class="flex flex-col sm:flex-row gap-2 justify-center">
-        <a [routerLink]="link('track-order')" [queryParams]="{ order: placedOrderNumber, phone: placedPhone }"
-           class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">{{ 'Track my order' | t }}</a>
-        <button (click)="backToShop()" class="px-5 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition">{{ 'Continue shopping' | t }}</button>
-      </div>
-    </div>
+    }
 
     <!-- ══ EMPTY CART ══ -->
-    <div *ngIf="!placedOrderNumber && cart.cart.length === 0" class="max-w-md mx-auto text-center mt-16 text-gray-400">
-      <div class="text-5xl mb-4">🛒</div>
-      <p class="text-lg font-semibold text-gray-600 mb-3">{{ 'Your cart is empty' | t }}</p>
-      <button (click)="backToShop()" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">{{ 'Start Shopping' | t }}</button>
-    </div>
+    @if (!placedOrderNumber && cart.cart.length === 0) {
+      <div class="max-w-md mx-auto text-center mt-16 text-gray-400">
+        <div class="text-5xl mb-4">🛒</div>
+        <p class="text-lg font-semibold text-gray-600 mb-3">{{ 'Your cart is empty' | t }}</p>
+        <button (click)="backToShop()" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">{{ 'Start Shopping' | t }}</button>
+      </div>
+    }
 
     <!-- ══ CHECKOUT ══ -->
-    <div *ngIf="!placedOrderNumber && cart.cart.length > 0" class="grid lg:grid-cols-3 gap-6">
-
-      <!-- Left: review + shipping -->
-      <div class="lg:col-span-2 space-y-6">
-
-        <!-- Order review -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Order Review' | t }}</h2>
-          <div class="space-y-3">
-            <div *ngFor="let item of cart.cart" class="flex items-center gap-3">
-              <img [src]="item.product.image" appImgFallback class="w-14 h-14 rounded-lg object-cover border border-gray-100 bg-gray-50" alt="">
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}<span *ngIf="item.product.size" class="text-gray-400 font-normal"> · {{ item.product.size }}</span></p>
-                <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
+    @if (!placedOrderNumber && cart.cart.length > 0) {
+      <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Left: review + shipping -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Order review -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Order Review' | t }}</h2>
+            <div class="space-y-3">
+              @for (item of cart.cart; track item) {
+                <div class="flex items-center gap-3">
+                  <img [src]="item.product.image" appImgFallback class="w-14 h-14 rounded-lg object-cover border border-gray-100 bg-gray-50" alt="">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 truncate">{{ item.product.name }}@if (item.product.size) {
+                      <span class="text-gray-400 font-normal"> · {{ item.product.size }}</span>
+                    }</p>
+                    <p class="text-xs text-gray-500">৳{{ item.product.price | number:'1.0-0' }}</p>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button (click)="changeQty(item, -1)" [attr.aria-label]="'Decrease quantity' | t" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">−</button>
+                    <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
+                    <button (click)="changeQty(item, 1)" [attr.aria-label]="'Increase quantity' | t" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
+                  </div>
+                  <span class="text-sm font-bold text-gray-900 w-16 text-right">৳{{ (item.product.price * item.quantity) | number:'1.0-0' }}</span>
+                  <button (click)="removeItem(item)" [attr.aria-label]="'Remove item' | t" class="text-gray-300 hover:text-rose-500 ml-1">✕</button>
+                </div>
+              }
+            </div>
+          </div>
+          <!-- Shipping -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Shipping Address' | t }}</h2>
+            <div class="space-y-3">
+              <div class="grid sm:grid-cols-2 gap-3">
+                <input [(ngModel)]="cart.customerInfo.name" (ngModelChange)="scheduleCapture()" name="name" autocomplete="name" [placeholder]="'Full Name *' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+                <div>
+                  <input [(ngModel)]="cart.customerInfo.mobile" (ngModelChange)="scheduleCapture()" name="mobile" inputmode="tel" autocomplete="tel" [placeholder]="'Mobile Number * (01XXXXXXXXX)' | t" class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
+                    [ngClass]="cart.customerInfo.mobile && !phoneLooksValid ? 'border-amber-300' : 'border-gray-200'">
+                  @if (cart.customerInfo.mobile && !phoneLooksValid) {
+                    <p class="text-[11px] text-amber-600 mt-1">{{ 'Enter an 11-digit mobile number like 01712345678' | t }}</p>
+                  }
+                </div>
               </div>
-              <div class="flex items-center gap-1.5">
-                <button (click)="changeQty(item, -1)" [attr.aria-label]="'Decrease quantity' | t" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">−</button>
-                <span class="w-6 text-center text-sm font-semibold">{{ item.quantity }}</span>
-                <button (click)="changeQty(item, 1)" [attr.aria-label]="'Increase quantity' | t" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
+              <textarea [(ngModel)]="cart.customerInfo.address" (ngModelChange)="scheduleCapture()" name="address" rows="2" autocomplete="street-address" [placeholder]="'Full Address *' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <input [(ngModel)]="cart.customerInfo.district" name="district" [placeholder]="'District' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+                <input [(ngModel)]="cart.customerInfo.thana" name="thana" [placeholder]="'Thana / Area' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
               </div>
-              <span class="text-sm font-bold text-gray-900 w-16 text-right">৳{{ (item.product.price * item.quantity) | number:'1.0-0' }}</span>
-              <button (click)="removeItem(item)" [attr.aria-label]="'Remove item' | t" class="text-gray-300 hover:text-rose-500 ml-1">✕</button>
+              <textarea [(ngModel)]="cart.customerInfo.notes" name="notes" rows="1" [placeholder]="'Special notes (optional)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
             </div>
           </div>
         </div>
-
-        <!-- Shipping -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Shipping Address' | t }}</h2>
-          <div class="space-y-3">
-            <div class="grid sm:grid-cols-2 gap-3">
-              <input [(ngModel)]="cart.customerInfo.name" (ngModelChange)="scheduleCapture()" name="name" autocomplete="name" [placeholder]="'Full Name *' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-              <div>
-                <input [(ngModel)]="cart.customerInfo.mobile" (ngModelChange)="scheduleCapture()" name="mobile" inputmode="tel" autocomplete="tel" [placeholder]="'Mobile Number * (01XXXXXXXXX)' | t" class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
-                       [ngClass]="cart.customerInfo.mobile && !phoneLooksValid ? 'border-amber-300' : 'border-gray-200'">
-                <p *ngIf="cart.customerInfo.mobile && !phoneLooksValid" class="text-[11px] text-amber-600 mt-1">{{ 'Enter an 11-digit mobile number like 01712345678' | t }}</p>
+        <!-- Right: payment + summary -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Payment Method' | t }}</h2>
+            <div class="space-y-2">
+              @for (m of payMethods; track m) {
+                <label
+                  class="flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition"
+                  [ngClass]="cart.customerInfo.paymentMethod === m.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                  <input type="radio" name="pay" [value]="m.value" [(ngModel)]="cart.customerInfo.paymentMethod" class="accent-indigo-600">
+                  <div>
+                    <span class="text-sm font-semibold text-gray-800">{{ m.label }}</span>
+                    @if (m.note) {
+                      <span class="block text-xs text-gray-500">{{ m.note }}</span>
+                    }
+                  </div>
+                </label>
+              }
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <!-- Coupon -->
+            <div class="mb-4">
+              @if (!appliedCoupon) {
+                <div class="flex gap-2">
+                  <input [(ngModel)]="couponInput" name="coupon" (keydown.enter)="applyCoupon()" [placeholder]="'Coupon code' | t" autocomplete="off" [attr.aria-label]="'Coupon code' | t"
+                    class="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase placeholder:normal-case focus:outline-none focus:border-indigo-400">
+                  <button (click)="applyCoupon()" [disabled]="couponBusy" class="px-4 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50">{{ couponBusy ? '…' : ('Apply' | t) }}</button>
+                </div>
+              }
+              @if (appliedCoupon) {
+                <div class="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  <span class="text-sm font-semibold text-emerald-700">🏷️ {{ appliedCoupon }}</span>
+                  <button (click)="removeCoupon()" class="text-xs font-semibold text-emerald-700 hover:underline">{{ 'Remove' | t }}</button>
+                </div>
+              }
+              @if (couponMessage) {
+                <p role="status" class="text-xs mt-1.5" [ngClass]="couponError ? 'text-rose-600' : 'text-emerald-600'">{{ couponMessage }}</p>
+              }
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between text-gray-600"><span>{{ 'Subtotal' | t }}</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
+              @if (discountApplied > 0) {
+                <div class="flex justify-between text-emerald-600 font-medium"><span>{{ 'Discount' | t }} <span class="text-xs font-normal opacity-80">({{ discountLabel }})</span></span><span>−৳{{ discountApplied | number:'1.0-0' }}</span></div>
+              }
+              <div class="flex justify-between text-gray-600">
+                <span>{{ 'Delivery' | t }}</span>
+                <span [class.text-emerald-600]="shippingFee === 0" [class.font-semibold]="shippingFee === 0">{{ shippingFee === 0 ? 'FREE' : '৳' + (shippingFee | number:'1.0-0') }}</span>
               </div>
+              <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base"><span>{{ 'Total' | t }}</span><span>৳{{ total | number:'1.0-0' }}</span></div>
             </div>
-            <textarea [(ngModel)]="cart.customerInfo.address" (ngModelChange)="scheduleCapture()" name="address" rows="2" autocomplete="street-address" [placeholder]="'Full Address *' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
-            <div class="grid sm:grid-cols-2 gap-3">
-              <input [(ngModel)]="cart.customerInfo.district" name="district" [placeholder]="'District' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-              <input [(ngModel)]="cart.customerInfo.thana" name="thana" [placeholder]="'Thana / Area' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-            </div>
-            <textarea [(ngModel)]="cart.customerInfo.notes" name="notes" rows="1" [placeholder]="'Special notes (optional)' | t" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"></textarea>
+            <button (click)="placeOrder()" [disabled]="placing"
+              class="w-full mt-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-60">
+              {{ placing ? ('Placing Order…' | t) : ('Place Order' | t) }}
+            </button>
+            <p class="text-[11px] text-gray-400 text-center mt-2">{{ 'By placing this order you agree to be contacted for delivery.' | t }}</p>
           </div>
         </div>
       </div>
-
-      <!-- Right: payment + summary -->
-      <div class="space-y-6">
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-indigo-600 rounded"></span>{{ 'Payment Method' | t }}</h2>
-          <div class="space-y-2">
-            <label *ngFor="let m of payMethods"
-              class="flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition"
-              [ngClass]="cart.customerInfo.paymentMethod === m.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
-              <input type="radio" name="pay" [value]="m.value" [(ngModel)]="cart.customerInfo.paymentMethod" class="accent-indigo-600">
-              <div>
-                <span class="text-sm font-semibold text-gray-800">{{ m.label }}</span>
-                <span *ngIf="m.note" class="block text-xs text-gray-500">{{ m.note }}</span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <!-- Coupon -->
-          <div class="mb-4">
-            <div *ngIf="!appliedCoupon" class="flex gap-2">
-              <input [(ngModel)]="couponInput" name="coupon" (keydown.enter)="applyCoupon()" [placeholder]="'Coupon code' | t" autocomplete="off" [attr.aria-label]="'Coupon code' | t"
-                     class="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase placeholder:normal-case focus:outline-none focus:border-indigo-400">
-              <button (click)="applyCoupon()" [disabled]="couponBusy" class="px-4 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50">{{ couponBusy ? '…' : ('Apply' | t) }}</button>
-            </div>
-            <div *ngIf="appliedCoupon" class="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-              <span class="text-sm font-semibold text-emerald-700">🏷️ {{ appliedCoupon }}</span>
-              <button (click)="removeCoupon()" class="text-xs font-semibold text-emerald-700 hover:underline">{{ 'Remove' | t }}</button>
-            </div>
-            <p *ngIf="couponMessage" role="status" class="text-xs mt-1.5" [ngClass]="couponError ? 'text-rose-600' : 'text-emerald-600'">{{ couponMessage }}</p>
-          </div>
-
-          <div class="space-y-2 text-sm">
-            <div class="flex justify-between text-gray-600"><span>{{ 'Subtotal' | t }}</span><span>৳{{ subtotal | number:'1.0-0' }}</span></div>
-            <div *ngIf="discountApplied > 0" class="flex justify-between text-emerald-600 font-medium"><span>{{ 'Discount' | t }} <span class="text-xs font-normal opacity-80">({{ discountLabel }})</span></span><span>−৳{{ discountApplied | number:'1.0-0' }}</span></div>
-            <div class="flex justify-between text-gray-600">
-              <span>{{ 'Delivery' | t }}</span>
-              <span [class.text-emerald-600]="shippingFee === 0" [class.font-semibold]="shippingFee === 0">{{ shippingFee === 0 ? 'FREE' : '৳' + (shippingFee | number:'1.0-0') }}</span>
-            </div>
-            <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base"><span>{{ 'Total' | t }}</span><span>৳{{ total | number:'1.0-0' }}</span></div>
-          </div>
-          <button (click)="placeOrder()" [disabled]="placing"
-            class="w-full mt-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition disabled:opacity-60">
-            {{ placing ? ('Placing Order…' | t) : ('Place Order' | t) }}
-          </button>
-          <p class="text-[11px] text-gray-400 text-center mt-2">{{ 'By placing this order you agree to be contacted for delivery.' | t }}</p>
-        </div>
-      </div>
-    </div>
+    }
   </div>
 
   <app-shop-footer [store]="store" [slug]="companySlug"></app-shop-footer>

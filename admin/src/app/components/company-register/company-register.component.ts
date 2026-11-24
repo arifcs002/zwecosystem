@@ -23,10 +23,9 @@ export function planPerks(features: string | null | undefined): string[] {
 const VALID_PHONE_PREFIXES = ['019', '015', '014', '013', '018', '017', '016'];
 
 @Component({
-  selector: 'app-company-register',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, RequiredErrorComponent],
-  templateUrl: './company-register.component.html'
+    selector: 'app-company-register',
+    imports: [CommonModule, FormsModule, RouterModule, RequiredErrorComponent],
+    templateUrl: './company-register.component.html'
 })
 export class CompanyRegisterComponent implements OnInit {
   private http = inject(HttpClient);

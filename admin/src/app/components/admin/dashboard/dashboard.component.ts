@@ -7,11 +7,10 @@ import { CompanyContextService, CompanyOption } from '../../../services/company-
 import { Subject, takeUntil, switchMap, forkJoin } from 'rxjs';
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
-  templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+    selector: 'app-dashboard',
+    imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+    templateUrl: './dashboard.component.html',
+    styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);

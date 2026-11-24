@@ -18,11 +18,10 @@ export interface ProductGroup {
 }
 
 @Component({
-  selector: 'app-product-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe],
-  templateUrl: './product-management.component.html',
-  styleUrl: './product-management.component.css'
+    selector: 'app-product-management',
+    imports: [CommonModule, FormsModule, RouterModule, ImgUrlPipe],
+    templateUrl: './product-management.component.html',
+    styleUrl: './product-management.component.css'
 })
 export class ProductManagementComponent implements OnInit {
   private productService = inject(ProductService);

@@ -19,86 +19,103 @@ type Sort = 'newest' | 'price-asc' | 'price-desc' | 'name';
 // Everything is derived client-side from the cached storefront payload, and the filters
 // live in the URL (?q=&cat=&sort=&min=&max=&stock=) so a filtered view can be shared.
 @Component({
-  selector: 'app-shop-page',
-  standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
-  template: `
+    selector: 'app-shop-page',
+    imports: [TranslatePipe, CommonModule, FormsModule, RouterModule, ShopHeaderComponent, ShopFooterComponent, ShopCardComponent],
+    template: `
   <div class="shop-root min-h-screen bg-gray-50 flex flex-col" style="font-family: 'Outfit', sans-serif;">
     <app-shop-header [slug]="slug" [storeName]="store?.company?.name || ''" [logo]="store?.company?.logoUrl || ''" [groups]="groups"></app-shop-header>
-
-    <div *ngIf="loading" class="flex justify-center py-32 text-gray-400 text-sm">{{ 'Loading products…' | t }}</div>
-    <div *ngIf="!loading && error" class="text-center py-32 px-4">
-      <div class="text-5xl mb-3">🏪</div><p class="font-semibold text-gray-700">Store not found</p>
-    </div>
-
-    <main *ngIf="!loading && !error" class="max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 flex-1">
-      <nav class="text-xs text-gray-400 mb-3 flex items-center gap-1.5" aria-label="Breadcrumb">
-        <a [routerLink]="link()" class="hover:text-indigo-600">{{ 'Home' | t }}</a><span>›</span><span class="text-gray-600 font-medium">{{ 'All Products' | t }}</span>
-      </nav>
-      <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">{{ q ? ('Results for “{q}”' | t:{ q: q }) : ('All Products' | t) }}</h1>
-          <p class="text-sm text-gray-500">{{ (filtered.length === 1 ? '{n} product' : '{n} products') | t:{ n: filtered.length } }}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button (click)="filtersOpen = !filtersOpen" class="lg:hidden px-3 py-2 text-sm font-semibold border border-gray-200 bg-white rounded-xl">Filters{{ activeFilters ? ' (' + activeFilters + ')' : '' }}</button>
-          <select [(ngModel)]="sort" (ngModelChange)="apply()" [attr.aria-label]="'Sort by' | t" class="px-3 py-2 text-sm border border-gray-200 bg-white rounded-xl focus:outline-none focus:border-indigo-400">
-            <option value="newest">{{ 'Newest' | t }}</option><option value="price-asc">{{ 'Price: Low to High' | t }}</option>
-            <option value="price-desc">{{ 'Price: High to Low' | t }}</option><option value="name">{{ 'Name: A–Z' | t }}</option>
-          </select>
-        </div>
+  
+    @if (loading) {
+      <div class="flex justify-center py-32 text-gray-400 text-sm">{{ 'Loading products…' | t }}</div>
+    }
+    @if (!loading && error) {
+      <div class="text-center py-32 px-4">
+        <div class="text-5xl mb-3">🏪</div><p class="font-semibold text-gray-700">Store not found</p>
       </div>
-
-      <div class="grid lg:grid-cols-[15rem_1fr] gap-6">
-        <aside [class.hidden]="!filtersOpen" class="lg:block bg-white border border-gray-100 rounded-2xl p-4 h-fit lg:sticky lg:top-24 space-y-5">
+    }
+  
+    @if (!loading && !error) {
+      <main class="max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 flex-1">
+        <nav class="text-xs text-gray-400 mb-3 flex items-center gap-1.5" aria-label="Breadcrumb">
+          <a [routerLink]="link()" class="hover:text-indigo-600">{{ 'Home' | t }}</a><span>›</span><span class="text-gray-600 font-medium">{{ 'All Products' | t }}</span>
+        </nav>
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
           <div>
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{{ 'Category' | t }}</p>
-            <div class="flex flex-wrap lg:flex-col gap-1.5">
-              <button (click)="cat = 0; apply()" class="text-left px-3 py-1.5 rounded-lg text-sm transition" [ngClass]="!cat ? 'bg-indigo-600 text-white font-semibold' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'">{{ 'All' | t }}</button>
-              <button *ngFor="let c of categories" (click)="cat = c.id; apply()" class="text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between gap-2"
-                      [ngClass]="cat === c.id ? 'bg-indigo-600 text-white font-semibold' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'">
-                <span class="truncate">{{ c.name }}</span><span class="opacity-60 text-xs">{{ c.count }}</span>
-              </button>
+            <h1 class="text-2xl font-bold text-gray-900">{{ q ? ('Results for “{q}”' | t:{ q: q }) : ('All Products' | t) }}</h1>
+            <p class="text-sm text-gray-500">{{ (filtered.length === 1 ? '{n} product' : '{n} products') | t:{ n: filtered.length } }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="filtersOpen = !filtersOpen" class="lg:hidden px-3 py-2 text-sm font-semibold border border-gray-200 bg-white rounded-xl">Filters{{ activeFilters ? ' (' + activeFilters + ')' : '' }}</button>
+            <select [(ngModel)]="sort" (ngModelChange)="apply()" [attr.aria-label]="'Sort by' | t" class="px-3 py-2 text-sm border border-gray-200 bg-white rounded-xl focus:outline-none focus:border-indigo-400">
+              <option value="newest">{{ 'Newest' | t }}</option><option value="price-asc">{{ 'Price: Low to High' | t }}</option>
+              <option value="price-desc">{{ 'Price: High to Low' | t }}</option><option value="name">{{ 'Name: A–Z' | t }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid lg:grid-cols-[15rem_1fr] gap-6">
+          <aside [class.hidden]="!filtersOpen" class="lg:block bg-white border border-gray-100 rounded-2xl p-4 h-fit lg:sticky lg:top-24 space-y-5">
+            <div>
+              <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{{ 'Category' | t }}</p>
+              <div class="flex flex-wrap lg:flex-col gap-1.5">
+                <button (click)="cat = 0; apply()" class="text-left px-3 py-1.5 rounded-lg text-sm transition" [ngClass]="!cat ? 'bg-indigo-600 text-white font-semibold' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'">{{ 'All' | t }}</button>
+                @for (c of categories; track c) {
+                  <button (click)="cat = c.id; apply()" class="text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between gap-2"
+                    [ngClass]="cat === c.id ? 'bg-indigo-600 text-white font-semibold' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'">
+                    <span class="truncate">{{ c.name }}</span><span class="opacity-60 text-xs">{{ c.count }}</span>
+                  </button>
+                }
+              </div>
             </div>
-          </div>
-          <div *ngIf="collections.length">
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{{ 'Collections' | t }}</p>
-            <div class="flex flex-wrap lg:flex-col gap-1.5">
-              <a *ngFor="let c of collections" [routerLink]="link('collection', c.slug)" class="px-3 py-1.5 rounded-lg text-sm bg-gray-50 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition">{{ c.name }}</a>
+            @if (collections.length) {
+              <div>
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{{ 'Collections' | t }}</p>
+                <div class="flex flex-wrap lg:flex-col gap-1.5">
+                  @for (c of collections; track c) {
+                    <a [routerLink]="link('collection', c.slug)" class="px-3 py-1.5 rounded-lg text-sm bg-gray-50 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition">{{ c.name }}</a>
+                  }
+                </div>
+              </div>
+            }
+            <div>
+              <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Price (৳)</p>
+              <div class="flex items-center gap-2">
+                <input type="number" min="0" [(ngModel)]="minPrice" (change)="apply()" [placeholder]="'Min' | t" [attr.aria-label]="'Minimum price' | t" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400">
+                <span class="text-gray-300">–</span>
+                <input type="number" min="0" [(ngModel)]="maxPrice" (change)="apply()" [placeholder]="'Max' | t" [attr.aria-label]="'Maximum price' | t" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400">
+              </div>
             </div>
-          </div>
-          <div>
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Price (৳)</p>
-            <div class="flex items-center gap-2">
-              <input type="number" min="0" [(ngModel)]="minPrice" (change)="apply()" [placeholder]="'Min' | t" [attr.aria-label]="'Minimum price' | t" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400">
-              <span class="text-gray-300">–</span>
-              <input type="number" min="0" [(ngModel)]="maxPrice" (change)="apply()" [placeholder]="'Max' | t" [attr.aria-label]="'Maximum price' | t" class="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400">
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="inStockOnly" (ngModelChange)="apply()" class="accent-indigo-600 w-4 h-4"> {{ 'In stock only' | t }}
+            </label>
+            @if (activeFilters) {
+              <button (click)="reset()" class="w-full text-sm font-semibold text-indigo-600 hover:underline">{{ 'Clear all filters' | t }}</button>
+            }
+          </aside>
+          <section>
+            @if (filtered.length === 0) {
+              <div class="text-center py-20 bg-white rounded-2xl border border-gray-100">
+                <div class="text-5xl mb-3">🔍</div>
+                <p class="font-semibold text-gray-700 mb-1">{{ 'No products found' | t }}</p>
+                <p class="text-sm text-gray-400 mb-4">{{ 'Try a different search or clear your filters.' | t }}</p>
+                <button (click)="reset()" class="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700">{{ 'Clear filters' | t }}</button>
+              </div>
+            }
+            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              @for (g of visible; track trackGroup($index, g)) {
+                <app-shop-card [group]="g" [slug]="slug" [lowStockThreshold]="lowStock" [newBadgeDays]="newDays"></app-shop-card>
+              }
             </div>
-          </div>
-          <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="inStockOnly" (ngModelChange)="apply()" class="accent-indigo-600 w-4 h-4"> {{ 'In stock only' | t }}
-          </label>
-          <button *ngIf="activeFilters" (click)="reset()" class="w-full text-sm font-semibold text-indigo-600 hover:underline">{{ 'Clear all filters' | t }}</button>
-        </aside>
-
-        <section>
-          <div *ngIf="filtered.length === 0" class="text-center py-20 bg-white rounded-2xl border border-gray-100">
-            <div class="text-5xl mb-3">🔍</div>
-            <p class="font-semibold text-gray-700 mb-1">{{ 'No products found' | t }}</p>
-            <p class="text-sm text-gray-400 mb-4">{{ 'Try a different search or clear your filters.' | t }}</p>
-            <button (click)="reset()" class="px-5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700">{{ 'Clear filters' | t }}</button>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            <app-shop-card *ngFor="let g of visible; trackBy: trackGroup" [group]="g" [slug]="slug" [lowStockThreshold]="lowStock" [newBadgeDays]="newDays"></app-shop-card>
-          </div>
-          <div *ngIf="visible.length < filtered.length" class="text-center mt-6">
-            <button (click)="more()" class="px-6 py-2.5 border border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition">
-              Show more ({{ filtered.length - visible.length }} left)
-            </button>
-          </div>
-        </section>
-      </div>
-    </main>
+            @if (visible.length < filtered.length) {
+              <div class="text-center mt-6">
+                <button (click)="more()" class="px-6 py-2.5 border border-gray-200 bg-white rounded-xl text-sm font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition">
+                  Show more ({{ filtered.length - visible.length }} left)
+                </button>
+              </div>
+            }
+          </section>
+        </div>
+      </main>
+    }
     <app-shop-footer [store]="store" [slug]="slug"></app-shop-footer>
   </div>`
 })

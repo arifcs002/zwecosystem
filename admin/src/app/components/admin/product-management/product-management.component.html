@@ -16,192 +16,199 @@
   </div>
 
   <!-- Loading -->
-  <div *ngIf="isLoading" class="flex justify-center py-16 text-gray-500 text-sm gap-2">
-    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-    Loading…
-  </div>
+  @if (isLoading) {
+    <div class="flex justify-center py-16 text-gray-500 text-sm gap-2">
+      <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading…
+    </div>
+  }
 
   <!-- Table -->
-  <div *ngIf="!isLoading" class="table-card">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th class="w-16">Photo</th>
-          <th>Product Name</th>
-          <th>Category</th>
-          <th>Sizes</th>
-          <th>Total Stock</th>
-          <th>Price (BDT)</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let g of filteredGroups">
-
-          <!-- Photo -->
-          <td>
-            <div class="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/8 flex items-center justify-center flex-shrink-0">
-              <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" class="w-full h-full object-cover" alt="">
-              <span *ngIf="!g.imageUrl" class="text-xl">📦</span>
-            </div>
-          </td>
-
-          <!-- Name -->
-          <td>
-            <p class="font-semibold text-gray-100 text-sm">{{ g.baseName }}</p>
-            <p class="text-xs text-gray-500">{{ g.variants.length }} size{{ g.variants.length > 1 ? 's' : '' }}</p>
-          </td>
-
-          <!-- Category -->
-          <td>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-violet-900/30 border border-violet-600/30 text-violet-300">
-              {{ g.category }}
-            </span>
-          </td>
-
-          <!-- Sizes pills -->
-          <td>
-            <div class="flex flex-wrap gap-1">
-              <span *ngFor="let v of g.variants"
-                class="text-[10px] font-bold px-1.5 py-0.5 rounded border"
-                [ngClass]="v.stockQuantity > 0 ? 'border-emerald-600/40 text-emerald-400 bg-emerald-900/20' : 'border-rose-600/40 text-rose-400 bg-rose-900/20'">
-                {{ v.size }}·{{ v.stockQuantity }}
-              </span>
-            </div>
-          </td>
-
-          <!-- Total Stock -->
-          <td>
-            <span class="font-bold text-sm"
-              [ngClass]="groupStock(g) > 0 ? 'text-emerald-400' : 'text-rose-400'">
-              {{ groupStock(g) }}
-            </span>
-          </td>
-
-          <!-- Price -->
-          <td>
-            <p class="text-sm font-semibold text-gray-200">৳{{ g.price | number:'1.0-0' }}</p>
-            <p class="text-xs text-gray-500">WS: ৳{{ g.wholesalePrice | number:'1.0-0' }}</p>
-          </td>
-
-          <!-- Actions -->
-          <td>
-            <div class="flex items-center gap-1">
-              <!-- Details -->
-              <button (click)="openDetail(g)"
-                title="View Details / Stock"
-                class="p-1.5 rounded-lg bg-sky-900/30 border border-sky-600/30 text-sky-400 hover:bg-sky-900/60 transition text-xs">
-                📋
-              </button>
-              <!-- Edit -->
-              <a [routerLink]="['../edit-product', g.variants[0].id]"
-                title="Edit"
-                class="p-1.5 rounded-lg bg-amber-900/30 border border-amber-600/30 text-amber-400 hover:bg-amber-900/60 transition text-xs">
-                ✏️
-              </a>
-              <!-- Delete Group -->
-              <button (click)="deleteGroup(g)"
-                title="Delete All Sizes"
-                class="p-1.5 rounded-lg bg-rose-900/30 border border-rose-600/30 text-rose-400 hover:bg-rose-900/60 transition text-xs">
-                🗑️
-              </button>
-            </div>
-          </td>
-        </tr>
-
-        <tr *ngIf="filteredGroups.length === 0">
-          <td colspan="7" class="text-center py-12 text-gray-500 text-sm">No products found.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  @if (!isLoading) {
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="w-16">Photo</th>
+            <th>Product Name</th>
+            <th>Category</th>
+            <th>Sizes</th>
+            <th>Total Stock</th>
+            <th>Price (BDT)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (g of filteredGroups; track g) {
+            <tr>
+              <!-- Photo -->
+              <td>
+                <div class="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/8 flex items-center justify-center flex-shrink-0">
+                  @if (g.imageUrl) {
+                    <img [src]="g.imageUrl | imgUrl" class="w-full h-full object-cover" alt="">
+                  }
+                  @if (!g.imageUrl) {
+                    <span class="text-xl">📦</span>
+                  }
+                </div>
+              </td>
+              <!-- Name -->
+              <td>
+                <p class="font-semibold text-gray-100 text-sm">{{ g.baseName }}</p>
+                <p class="text-xs text-gray-500">{{ g.variants.length }} size{{ g.variants.length > 1 ? 's' : '' }}</p>
+              </td>
+              <!-- Category -->
+              <td>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-violet-900/30 border border-violet-600/30 text-violet-300">
+                  {{ g.category }}
+                </span>
+              </td>
+              <!-- Sizes pills -->
+              <td>
+                <div class="flex flex-wrap gap-1">
+                  @for (v of g.variants; track v) {
+                    <span
+                      class="text-[10px] font-bold px-1.5 py-0.5 rounded border"
+                      [ngClass]="v.stockQuantity > 0 ? 'border-emerald-600/40 text-emerald-400 bg-emerald-900/20' : 'border-rose-600/40 text-rose-400 bg-rose-900/20'">
+                      {{ v.size }}·{{ v.stockQuantity }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <!-- Total Stock -->
+              <td>
+                <span class="font-bold text-sm"
+                  [ngClass]="groupStock(g) > 0 ? 'text-emerald-400' : 'text-rose-400'">
+                  {{ groupStock(g) }}
+                </span>
+              </td>
+              <!-- Price -->
+              <td>
+                <p class="text-sm font-semibold text-gray-200">৳{{ g.price | number:'1.0-0' }}</p>
+                <p class="text-xs text-gray-500">WS: ৳{{ g.wholesalePrice | number:'1.0-0' }}</p>
+              </td>
+              <!-- Actions -->
+              <td>
+                <div class="flex items-center gap-1">
+                  <!-- Details -->
+                  <button (click)="openDetail(g)"
+                    title="View Details / Stock"
+                    class="p-1.5 rounded-lg bg-sky-900/30 border border-sky-600/30 text-sky-400 hover:bg-sky-900/60 transition text-xs">
+                    📋
+                  </button>
+                  <!-- Edit -->
+                  <a [routerLink]="['../edit-product', g.variants[0].id]"
+                    title="Edit"
+                    class="p-1.5 rounded-lg bg-amber-900/30 border border-amber-600/30 text-amber-400 hover:bg-amber-900/60 transition text-xs">
+                    ✏️
+                  </a>
+                  <!-- Delete Group -->
+                  <button (click)="deleteGroup(g)"
+                    title="Delete All Sizes"
+                    class="p-1.5 rounded-lg bg-rose-900/30 border border-rose-600/30 text-rose-400 hover:bg-rose-900/60 transition text-xs">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (filteredGroups.length === 0) {
+            <tr>
+              <td colspan="7" class="text-center py-12 text-gray-500 text-sm">No products found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 
 </div>
 
 <!-- ══ DETAIL POPUP ══════════════════════════════════════════════════════ -->
-<div *ngIf="detailGroup" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeDetail()"></div>
-  <div class="relative bg-[#0d0d1a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
-
-    <!-- Header -->
-    <div class="flex items-start gap-4 p-5 border-b border-white/8">
-      <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-white/5 border border-white/8 flex items-center justify-center">
-        <img *ngIf="detailGroup.imageUrl" [src]="detailGroup.imageUrl | imgUrl" class="w-full h-full object-cover" alt="">
-        <span *ngIf="!detailGroup.imageUrl" class="text-2xl">📦</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <h2 class="font-bold text-white text-base">{{ detailGroup.baseName }}</h2>
-        <p class="text-xs text-gray-400 mt-0.5">{{ detailGroup.category }}</p>
-        <div class="flex gap-4 mt-1.5">
-          <span class="text-sm font-semibold text-violet-400">৳{{ detailGroup.price | number:'1.0-0' }}</span>
-          <span class="text-xs text-gray-500">WS: ৳{{ detailGroup.wholesalePrice | number:'1.0-0' }}</span>
+@if (detailGroup) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="closeDetail()"></div>
+    <div class="relative bg-[#0d0d1a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-start gap-4 p-5 border-b border-white/8">
+        <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-white/5 border border-white/8 flex items-center justify-center">
+          @if (detailGroup.imageUrl) {
+            <img [src]="detailGroup.imageUrl | imgUrl" class="w-full h-full object-cover" alt="">
+          }
+          @if (!detailGroup.imageUrl) {
+            <span class="text-2xl">📦</span>
+          }
         </div>
-      </div>
-      <button (click)="closeDetail()" class="text-gray-500 hover:text-gray-300 text-lg leading-none">✕</button>
-    </div>
-
-    <!-- Size × Qty table -->
-    <div class="flex-1 overflow-y-auto p-5">
-      <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Stock by Size</p>
-
-      <div class="space-y-2">
-        <div *ngFor="let v of detailGroup.variants"
-          class="flex items-center gap-3 p-3 rounded-xl border"
-          [ngClass]="v.stockQuantity > 0 ? 'border-white/8 bg-white/[0.02]' : 'border-rose-600/20 bg-rose-900/10'">
-
-          <!-- Size badge -->
-          <div class="w-10 h-10 rounded-lg border flex items-center justify-center font-bold text-sm flex-shrink-0"
-            [ngClass]="v.stockQuantity > 0 ? 'border-emerald-600/40 text-emerald-400 bg-emerald-900/20' : 'border-rose-600/40 text-rose-400 bg-rose-900/20'">
-            {{ v.size }}
-          </div>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-0">
-            <p class="text-xs text-gray-400">{{ v.sku }}</p>
-            <div class="flex items-center gap-2 mt-0.5">
-              <span class="text-sm font-bold" [ngClass]="v.stockQuantity > 0 ? 'text-emerald-400' : 'text-rose-400'">
-                {{ v.stockQuantity }} in stock
-              </span>
-              <span class="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                [ngClass]="v.stockQuantity > 0 ? 'bg-emerald-900/40 text-emerald-400' : 'bg-rose-900/40 text-rose-400'">
-                {{ v.stockQuantity > 0 ? 'IN STOCK' : 'OUT' }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Stock adjust -->
-          <div class="flex items-center gap-1.5">
-            <input type="number" [(ngModel)]="stockInputs[v.id]" min="1" [name]="'stock_' + v.id"
-              class="w-14 h-8 text-center bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500">
-            <button (click)="adjustStock(v, 1)"
-              title="Add Stock"
-              class="h-8 px-2 rounded-lg bg-emerald-900/40 border border-emerald-600/40 text-emerald-400 hover:bg-emerald-900/70 transition text-xs font-bold">
-              +Add
-            </button>
-            <button (click)="adjustStock(v, -1)"
-              title="Remove Stock"
-              class="h-8 px-2 rounded-lg bg-amber-900/40 border border-amber-600/40 text-amber-400 hover:bg-amber-900/70 transition text-xs font-bold">
-              −Out
-            </button>
-            <button (click)="deleteVariant(v)"
-              title="Delete this size"
-              class="h-8 w-8 rounded-lg bg-rose-900/40 border border-rose-600/40 text-rose-400 hover:bg-rose-900/70 transition text-sm flex items-center justify-center">
-              🗑
-            </button>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-bold text-white text-base">{{ detailGroup.baseName }}</h2>
+          <p class="text-xs text-gray-400 mt-0.5">{{ detailGroup.category }}</p>
+          <div class="flex gap-4 mt-1.5">
+            <span class="text-sm font-semibold text-violet-400">৳{{ detailGroup.price | number:'1.0-0' }}</span>
+            <span class="text-xs text-gray-500">WS: ৳{{ detailGroup.wholesalePrice | number:'1.0-0' }}</span>
           </div>
         </div>
+        <button (click)="closeDetail()" class="text-gray-500 hover:text-gray-300 text-lg leading-none">✕</button>
       </div>
-
-      <p *ngIf="detailGroup.variants.length === 0" class="text-center text-gray-500 text-sm py-6">
-        No sizes available.
-      </p>
+      <!-- Size × Qty table -->
+      <div class="flex-1 overflow-y-auto p-5">
+        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Stock by Size</p>
+        <div class="space-y-2">
+          @for (v of detailGroup.variants; track v) {
+            <div
+              class="flex items-center gap-3 p-3 rounded-xl border"
+              [ngClass]="v.stockQuantity > 0 ? 'border-white/8 bg-white/[0.02]' : 'border-rose-600/20 bg-rose-900/10'">
+              <!-- Size badge -->
+              <div class="w-10 h-10 rounded-lg border flex items-center justify-center font-bold text-sm flex-shrink-0"
+                [ngClass]="v.stockQuantity > 0 ? 'border-emerald-600/40 text-emerald-400 bg-emerald-900/20' : 'border-rose-600/40 text-rose-400 bg-rose-900/20'">
+                {{ v.size }}
+              </div>
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-gray-400">{{ v.sku }}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-sm font-bold" [ngClass]="v.stockQuantity > 0 ? 'text-emerald-400' : 'text-rose-400'">
+                    {{ v.stockQuantity }} in stock
+                  </span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded font-bold"
+                    [ngClass]="v.stockQuantity > 0 ? 'bg-emerald-900/40 text-emerald-400' : 'bg-rose-900/40 text-rose-400'">
+                    {{ v.stockQuantity > 0 ? 'IN STOCK' : 'OUT' }}
+                  </span>
+                </div>
+              </div>
+              <!-- Stock adjust -->
+              <div class="flex items-center gap-1.5">
+                <input type="number" [(ngModel)]="stockInputs[v.id]" min="1" [name]="'stock_' + v.id"
+                  class="w-14 h-8 text-center bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500">
+                  <button (click)="adjustStock(v, 1)"
+                    title="Add Stock"
+                    class="h-8 px-2 rounded-lg bg-emerald-900/40 border border-emerald-600/40 text-emerald-400 hover:bg-emerald-900/70 transition text-xs font-bold">
+                    +Add
+                  </button>
+                  <button (click)="adjustStock(v, -1)"
+                    title="Remove Stock"
+                    class="h-8 px-2 rounded-lg bg-amber-900/40 border border-amber-600/40 text-amber-400 hover:bg-amber-900/70 transition text-xs font-bold">
+                    −Out
+                  </button>
+                  <button (click)="deleteVariant(v)"
+                    title="Delete this size"
+                    class="h-8 w-8 rounded-lg bg-rose-900/40 border border-rose-600/40 text-rose-400 hover:bg-rose-900/70 transition text-sm flex items-center justify-center">
+                    🗑
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          @if (detailGroup.variants.length === 0) {
+            <p class="text-center text-gray-500 text-sm py-6">
+              No sizes available.
+            </p>
+          }
+        </div>
+        <!-- Footer total -->
+        <div class="px-5 py-3 border-t border-white/8 flex justify-between text-sm">
+          <span class="text-gray-400">Total Stock</span>
+          <span class="font-bold text-white">{{ detailTotalStock() }} units</span>
+        </div>
+      </div>
     </div>
-
-    <!-- Footer total -->
-    <div class="px-5 py-3 border-t border-white/8 flex justify-between text-sm">
-      <span class="text-gray-400">Total Stock</span>
-      <span class="font-bold text-white">{{ detailTotalStock() }} units</span>
-    </div>
-
-  </div>
-</div>
+  }

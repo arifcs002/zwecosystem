@@ -5,10 +5,9 @@ import { CustomerAccountRow, CustomerAdminService, CustomerGroup } from '../../.
 import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-dialog.service';
 
 @Component({
-  selector: 'app-customer-accounts',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-customer-accounts',
+    imports: [CommonModule, FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -18,50 +17,75 @@ import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-d
     <button class="btn-primary" (click)="openGroup(null)">+ New Group</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg && !showModal">❌ {{ errorMsg }}</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg && !showModal) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
 
   <p style="opacity:.7;font-size:13px;margin:0 0 12px">A member's group discount and a coupon do not add up — the customer gets whichever is bigger. Accounts are not phone-verified, so groups are assigned here by you, never automatically.</p>
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-    <div *ngFor="let g of groups" class="table-card" style="padding:12px 16px;min-width:200px">
-      <div style="font-weight:700">{{ g.name }}</div>
-      <div style="font-size:22px;font-weight:800;color:#34d399">{{ g.discountPercent }}% off</div>
-      <div style="opacity:.65;font-size:12.5px">{{ g.members }} member{{ g.members === 1 ? '' : 's' }}<span *ngIf="g.description"> · {{ g.description }}</span></div>
-      <div style="margin-top:8px"><button class="btn-edit" (click)="openGroup(g)">✏️ Edit</button> <button class="btn-delete" (click)="removeGroup(g)">🗑️</button></div>
-    </div>
-    <div *ngIf="groups.length === 0" style="opacity:.6;padding:8px 0">No groups yet.</div>
+    @for (g of groups; track g) {
+      <div class="table-card" style="padding:12px 16px;min-width:200px">
+        <div style="font-weight:700">{{ g.name }}</div>
+        <div style="font-size:22px;font-weight:800;color:#34d399">{{ g.discountPercent }}% off</div>
+        <div style="opacity:.65;font-size:12.5px">{{ g.members }} member{{ g.members === 1 ? '' : 's' }}@if (g.description) {
+          <span> · {{ g.description }}</span>
+        }</div>
+        <div style="margin-top:8px"><button class="btn-edit" (click)="openGroup(g)">✏️ Edit</button> <button class="btn-delete" (click)="removeGroup(g)">🗑️</button></div>
+      </div>
+    }
+    @if (groups.length === 0) {
+      <div style="opacity:.6;padding:8px 0">No groups yet.</div>
+    }
   </div>
 
   <div class="form-group" style="max-width:340px"><input class="form-input" [(ngModel)]="search" (input)="loadAccounts()" placeholder="🔍 Search by name or phone" /></div>
 
   <div class="table-card">
-    <div class="loading" *ngIf="isLoading">Loading…</div>
-    <table class="data-table" *ngIf="!isLoading">
-      <thead><tr><th>Customer</th><th>Orders</th><th>Joined</th><th>Group</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let a of accounts">
-          <td><b>{{ a.name }}</b><div style="font-size:13px;opacity:.75">{{ a.phone }}<span *ngIf="a.email"> · {{ a.email }}</span></div></td>
-          <td>{{ a.orders }}</td>
-          <td style="font-size:13px">{{ a.createdDate | date:'mediumDate' }}</td>
-          <td>
-            <select class="form-input" style="min-width:140px" [ngModel]="a.groupId ?? ''" (ngModelChange)="assign(a, $event)">
-              <option value="">— none —</option>
-              <option *ngFor="let g of groups" [value]="g.id">{{ g.name }} ({{ g.discountPercent }}%)</option>
-            </select>
-          </td>
-          <td class="actions"><button [class]="a.isActive ? 'btn-edit' : 'btn-delete'" (click)="toggleActive(a)">{{ a.isActive ? '✓ Active — disable' : '⛔ Disabled — enable' }}</button></td>
-        </tr>
-        <tr *ngIf="accounts.length === 0"><td colspan="5" class="empty-row">No customer accounts yet.</td></tr>
+    @if (isLoading) {
+      <div class="loading">Loading…</div>
+    }
+    @if (!isLoading) {
+      <table class="data-table">
+        <thead><tr><th>Customer</th><th>Orders</th><th>Joined</th><th>Group</th><th>Status</th></tr></thead>
+        <tbody>
+          @for (a of accounts; track a) {
+            <tr>
+              <td><b>{{ a.name }}</b><div style="font-size:13px;opacity:.75">{{ a.phone }}@if (a.email) {
+              <span> · {{ a.email }}</span>
+            }</div></td>
+            <td>{{ a.orders }}</td>
+            <td style="font-size:13px">{{ a.createdDate | date:'mediumDate' }}</td>
+            <td>
+              <select class="form-input" style="min-width:140px" [ngModel]="a.groupId ?? ''" (ngModelChange)="assign(a, $event)">
+                <option value="">— none —</option>
+                @for (g of groups; track g) {
+                  <option [value]="g.id">{{ g.name }} ({{ g.discountPercent }}%)</option>
+                }
+              </select>
+            </td>
+            <td class="actions"><button [class]="a.isActive ? 'btn-edit' : 'btn-delete'" (click)="toggleActive(a)">{{ a.isActive ? '✓ Active — disable' : '⛔ Disabled — enable' }}</button></td>
+          </tr>
+        }
+        @if (accounts.length === 0) {
+          <tr><td colspan="5" class="empty-row">No customer accounts yet.</td></tr>
+        }
       </tbody>
     </table>
-  </div>
+  }
+</div>
 
-  <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
+@if (showModal) {
+  <div class="modal-overlay" (click)="showModal = false">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header"><h2>{{ form.id ? 'Edit Group' : 'New Group' }}</h2><button class="close-btn" (click)="showModal = false">✕</button></div>
       <div class="modal-body">
-        <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
+        @if (errorMsg) {
+          <div class="alert-error">❌ {{ errorMsg }}</div>
+        }
         <div class="form-group"><label>Name *</label><input class="form-input" [(ngModel)]="form.name" name="gname" maxlength="60" placeholder="VIP" /></div>
         <div class="form-group"><label>Discount (%) *</label><input class="form-input" type="number" min="0" max="100" step="0.5" [(ngModel)]="form.discountPercent" name="gpct" /></div>
         <div class="form-group"><label>Description</label><input class="form-input" [(ngModel)]="form.description" name="gdesc" maxlength="300" /></div>
@@ -69,6 +93,7 @@ import { ConfirmDialogService } from '../../../services/confirm-dialog/confirm-d
       <div class="modal-footer"><button class="btn-secondary" (click)="showModal = false">Cancel</button><button class="btn-primary" (click)="saveGroup()">Save</button></div>
     </div>
   </div>
+}
 </div>`
 })
 export class CustomerAccountsComponent implements OnInit {

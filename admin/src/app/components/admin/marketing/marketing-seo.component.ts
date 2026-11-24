@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CompanySetting, SettingsService } from '../../../services/settings/settings.service';
 import { resolveImageUrl } from '../../../utils/image-url.util';
@@ -9,10 +9,9 @@ const GA4_ID = /^G-[A-Z0-9]{6,14}$/;
 const KEYS = ['meta_pixel_id', 'ga4_measurement_id', 'secret_meta_capi_token', 'meta_test_event_code', 'seo_title', 'seo_description', 'seo_og_image'];
 
 @Component({
-  selector: 'app-marketing-seo',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-marketing-seo',
+    imports: [FormsModule],
+    template: `
 <div class="page-container">
   <div class="page-header">
     <div>
@@ -22,45 +21,53 @@ const KEYS = ['meta_pixel_id', 'ga4_measurement_id', 'secret_meta_capi_token', '
     <button class="btn-primary" (click)="save()" [disabled]="saving || loading">{{ saving ? 'Saving…' : 'Save all' }}</button>
   </div>
 
-  <div class="alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
-  <div class="alert-error" *ngIf="errorMsg">❌ {{ errorMsg }}</div>
-  <div class="loading" *ngIf="loading">Loading…</div>
+  @if (successMsg) {
+    <div class="alert-success">✅ {{ successMsg }}</div>
+  }
+  @if (errorMsg) {
+    <div class="alert-error">❌ {{ errorMsg }}</div>
+  }
+  @if (loading) {
+    <div class="loading">Loading…</div>
+  }
 
-  <ng-container *ngIf="!loading">
+  @if (!loading) {
     <div class="table-card" style="padding:18px;margin-bottom:16px">
       <h3 style="margin:0 0 4px">Facebook (Meta) Pixel</h3>
       <p style="opacity:.65;font-size:13px;margin:0 0 12px">Lets Facebook see who views, adds to cart and buys, so your ads find more buyers. Find the ID in Meta Events Manager → Data sources → your Pixel.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group"><label>Pixel ID</label>
-          <input class="form-input" [(ngModel)]="v['meta_pixel_id']" inputmode="numeric" placeholder="e.g. 123456789012345" maxlength="20" />
-          <small *ngIf="v['meta_pixel_id'] && !pixelOk" style="color:#f87171">Pixel IDs are 5-20 digits.</small></div>
+        <input class="form-input" [(ngModel)]="v['meta_pixel_id']" inputmode="numeric" placeholder="e.g. 123456789012345" maxlength="20" />
+        @if (v['meta_pixel_id'] && !pixelOk) {
+          <small style="color:#f87171">Pixel IDs are 5-20 digits.</small>
+        }</div>
         <div class="form-group"><label>Conversions API access token <span style="opacity:.6">(optional, recommended)</span></label>
-          <input class="form-input" type="password" autocomplete="off" [(ngModel)]="v['secret_meta_capi_token']" />
-          <small style="opacity:.6">Sends each sale from our server too, so ad blockers and iOS don't hide it. Stored write-only.</small></div>
+        <input class="form-input" type="password" autocomplete="off" [(ngModel)]="v['secret_meta_capi_token']" />
+        <small style="opacity:.6">Sends each sale from our server too, so ad blockers and iOS don't hide it. Stored write-only.</small></div>
         <div class="form-group"><label>Test event code <span style="opacity:.6">(only while testing)</span></label>
-          <input class="form-input" [(ngModel)]="v['meta_test_event_code']" placeholder="e.g. TEST12345" maxlength="40" />
-          <small style="opacity:.6">From Events Manager → Test events. Clear it once you've checked a sale appears.</small></div>
+        <input class="form-input" [(ngModel)]="v['meta_test_event_code']" placeholder="e.g. TEST12345" maxlength="40" />
+        <small style="opacity:.6">From Events Manager → Test events. Clear it once you've checked a sale appears.</small></div>
       </div>
     </div>
-
     <div class="table-card" style="padding:18px;margin-bottom:16px">
       <h3 style="margin:0 0 4px">Google Analytics 4</h3>
       <div class="form-group" style="max-width:340px"><label>Measurement ID</label>
-        <input class="form-input" [(ngModel)]="v['ga4_measurement_id']" placeholder="G-XXXXXXXXXX" maxlength="16" style="text-transform:uppercase" />
-        <small *ngIf="v['ga4_measurement_id'] && !gaOk" style="color:#f87171">It looks like G- followed by letters/numbers.</small></div>
+      <input class="form-input" [(ngModel)]="v['ga4_measurement_id']" placeholder="G-XXXXXXXXXX" maxlength="16" style="text-transform:uppercase" />
+      @if (v['ga4_measurement_id'] && !gaOk) {
+        <small style="color:#f87171">It looks like G- followed by letters/numbers.</small>
+      }</div>
     </div>
-
     <div class="table-card" style="padding:18px">
       <h3 style="margin:0 0 4px">Search &amp; link previews</h3>
       <p style="opacity:.65;font-size:13px;margin:0 0 12px">This is what shows on Google and in the card when someone shares your shop link on Facebook or WhatsApp. Each product also gets its own preview automatically (name, price, photo).</p>
       <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px">
         <div>
           <div class="form-group"><label>Shop title</label><input class="form-input" [(ngModel)]="v['seo_title']" maxlength="70" placeholder="e.g. Zaira's World — Shoes in Dhaka" />
-            <small style="opacity:.6">{{ (v['seo_title'] || '').length }}/70 — keep it under about 60 characters.</small></div>
+          <small style="opacity:.6">{{ (v['seo_title'] || '').length }}/70 — keep it under about 60 characters.</small></div>
           <div class="form-group"><label>Description</label><textarea class="form-input" rows="3" [(ngModel)]="v['seo_description']" maxlength="300" placeholder="One or two sentences about what you sell"></textarea>
-            <small style="opacity:.6">{{ (v['seo_description'] || '').length }}/300 — about 150 characters shows fully on Google.</small></div>
+          <small style="opacity:.6">{{ (v['seo_description'] || '').length }}/300 — about 150 characters shows fully on Google.</small></div>
           <div class="form-group"><label>Share image (URL)</label><input class="form-input" [(ngModel)]="v['seo_og_image']" placeholder="/uploads/... or https://..." />
-            <small style="opacity:.6">Best size 1200×630. Empty = your shop logo.</small></div>
+          <small style="opacity:.6">Best size 1200×630. Empty = your shop logo.</small></div>
         </div>
         <div>
           <div style="opacity:.65;font-size:12px;margin-bottom:6px">Preview of a shared link</div>
@@ -76,7 +83,7 @@ const KEYS = ['meta_pixel_id', 'ga4_measurement_id', 'secret_meta_capi_token', '
       </div>
       <p style="opacity:.6;font-size:12.5px;margin:12px 0 0">Your sitemap is at <code>/sitemap.xml</code> and robots at <code>/robots.txt</code> on your shop address — submit the sitemap in Google Search Console. To check a link preview, paste a product link into Facebook's Sharing Debugger.</p>
     </div>
-  </ng-container>
+  }
 </div>`
 })
 export class MarketingSeoComponent implements OnInit {

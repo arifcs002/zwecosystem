@@ -5,11 +5,10 @@ import { OrderService } from '../../../services/order/order.service';
 import { UserService } from '../../../services/user/user.service';
 
 @Component({
-  selector: 'app-delivery-management',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './delivery-management.component.html',
-  styleUrl: './delivery-management.component.css'
+    selector: 'app-delivery-management',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './delivery-management.component.html',
+    styleUrl: './delivery-management.component.css'
 })
 export class DeliveryManagementComponent implements OnInit {
   private orderService = inject(OrderService);

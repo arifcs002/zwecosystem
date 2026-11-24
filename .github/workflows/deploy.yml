@@ -48,7 +48,7 @@ jobs:
       - name: ⚙️ Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: admin/package-lock.json
 
@@ -58,12 +58,7 @@ jobs:
           npm ci --legacy-peer-deps
           npm run build -- --configuration=production
 
-      # These logic tests run TypeScript directly, which needs Node 22+.
-      - name: ⚙️ Set up Node 22 for the logic tests
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
+      # These logic tests run TypeScript directly, which needs Node 22+ (the job already uses 22).
       - name: 🧪 Browser-side logic tests (receipt printing, CSV import)
         working-directory: admin
         run: npm run test:unit

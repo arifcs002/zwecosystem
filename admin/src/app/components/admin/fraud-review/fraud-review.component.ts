@@ -4,11 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { FraudService } from '../../../services/fraud/fraud.service';
 
 @Component({
-  selector: 'app-fraud-review',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './fraud-review.component.html',
-  styleUrl: './fraud-review.component.css'
+    selector: 'app-fraud-review',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './fraud-review.component.html',
+    styleUrl: './fraud-review.component.css'
 })
 export class FraudReviewComponent implements OnInit {
   private fraudService = inject(FraudService);

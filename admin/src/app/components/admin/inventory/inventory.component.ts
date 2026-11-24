@@ -9,11 +9,10 @@ import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 type Tab = 'overview' | 'purchase' | 'movements';
 
 @Component({
-  selector: 'app-inventory',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
-  templateUrl: './inventory.component.html',
-  styleUrl: './inventory.component.css'
+    selector: 'app-inventory',
+    imports: [CommonModule, FormsModule, ImgUrlPipe],
+    templateUrl: './inventory.component.html',
+    styleUrl: './inventory.component.css'
 })
 export class InventoryComponent implements OnInit {
   private inventory = inject(InventoryService);

@@ -6,239 +6,271 @@
     </div>
     <button (click)="saveSettings()" [disabled]="saving || isLoading"
       class="btn-primary flex items-center gap-2">
-      <svg *ngIf="saving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      @if (saving) {
+        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      }
       {{ saving ? 'Saving…' : 'Save Configuration' }}
     </button>
   </div>
 
-  <div *ngIf="isLoading" class="flex justify-center items-center py-16 text-gray-500 text-sm">
-    <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-    Loading settings…
-  </div>
-
-  <div class="tab-row" *ngIf="!isLoading">
-    <button [class.active]="activeTab === 'general'" (click)="activeTab = 'general'" class="tab-btn">⚙️ General Settings</button>
-    <button [class.active]="activeTab === 'plan'" (click)="activeTab = 'plan'" class="tab-btn">💎 My Plan</button>
-  </div>
-
-  <app-my-plan *ngIf="!isLoading && activeTab === 'plan'"></app-my-plan>
-
-  <div *ngIf="!isLoading && activeTab === 'general'" class="space-y-6 max-w-4xl">
-
-    <!-- Mobile App Download (staff/super-admin only — no public/customer login exists) -->
-    <div *ngIf="latestAppVersion" class="bg-gradient-to-r from-violet-900/20 to-indigo-900/20 border border-violet-600/20 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
-      <div>
-        <h3 class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-1">📱 Mobile App</h3>
-        <p class="text-sm text-gray-300">Version {{ latestAppVersion.versionName }}<span *ngIf="latestAppVersion.releaseNotes"> — {{ latestAppVersion.releaseNotes }}</span></p>
-        <p *ngIf="companyAppCode" class="text-sm text-gray-400 mt-2">
-          Your Store Code: <span class="font-mono font-bold text-violet-200 tracking-widest">{{ companyAppCode }}</span>
-          <span class="block text-xs text-gray-500 mt-0.5">Enter this in the app after installing to reach your store's login.</span>
-        </p>
-      </div>
-      <a [href]="resolveUrl(latestAppVersion.apkUrl)" class="btn-primary flex items-center gap-2 flex-shrink-0">
-        ⬇ Download APK
-      </a>
+  @if (isLoading) {
+    <div class="flex justify-center items-center py-16 text-gray-500 text-sm">
+      <svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Loading settings…
     </div>
+  }
 
-    <!-- Basic Info -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Basic Information</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="form-group">
-          <label>Store Name</label>
-          <input type="text" [(ngModel)]="storeName" name="storeName" class="form-input" placeholder="e.g. My Fashion Hub">
-        </div>
-        <div class="form-group">
-          <label>Contact Number</label>
-          <input type="text" [(ngModel)]="storePhone" name="storePhone" class="form-input" placeholder="+88017XXXXXXXX">
-        </div>
-      </div>
+  @if (!isLoading) {
+    <div class="tab-row">
+      <button [class.active]="activeTab === 'general'" (click)="activeTab = 'general'" class="tab-btn">⚙️ General Settings</button>
+      <button [class.active]="activeTab === 'plan'" (click)="activeTab = 'plan'" class="tab-btn">💎 My Plan</button>
     </div>
+  }
 
-    <!-- Theme -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Theme & Branding</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="form-group">
-          <label>Primary Color</label>
-          <div class="flex items-center gap-2 mt-1">
-            <input type="color" [(ngModel)]="primaryColor" name="primaryColorPicker" class="h-10 w-10 border border-white/10 rounded cursor-pointer bg-transparent">
-            <input type="text" [(ngModel)]="primaryColor" name="primaryColorText" class="form-input font-mono flex-1">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Store Logo URL</label>
-          <input type="text" [(ngModel)]="logoUrl" name="logoUrl" placeholder="https://…/logo.png" class="form-input">
-        </div>
-      </div>
-    </div>
+  @if (!isLoading && activeTab === 'plan') {
+    <app-my-plan></app-my-plan>
+  }
 
-    <!-- Footer & Social Links -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Footer & Social Links</h3>
-      <div class="form-group mb-4">
-        <label>About / Footer Text</label>
-        <textarea [(ngModel)]="footerAboutText" name="footerAboutText" rows="2" class="form-input" placeholder="A short line about your store shown in the footer…"></textarea>
-      </div>
-      <div class="space-y-3">
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-400 text-xs font-bold">fb</span>
-          <input type="text" [(ngModel)]="facebookLink" name="facebookLink" placeholder="https://facebook.com/yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-pink-400 text-xs font-bold">ig</span>
-          <input type="text" [(ngModel)]="instagramLink" name="instagramLink" placeholder="https://instagram.com/yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-sky-400 text-xs font-bold">𝕏</span>
-          <input type="text" [(ngModel)]="twitterLink" name="twitterLink" placeholder="https://x.com/yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-red-400 text-xs font-bold">yt</span>
-          <input type="text" [(ngModel)]="youtubeLink" name="youtubeLink" placeholder="https://youtube.com/@yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-emerald-400 text-xs font-bold">wa</span>
-          <input type="text" [(ngModel)]="whatsappLink" name="whatsappLink" placeholder="https://wa.me/8801XXXXXXXXX" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-gray-300 text-xs font-bold">tt</span>
-          <input type="text" [(ngModel)]="tiktokLink" name="tiktokLink" placeholder="https://tiktok.com/@yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-        <div class="flex items-center gap-0">
-          <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-300 text-xs font-bold">in</span>
-          <input type="text" [(ngModel)]="linkedinLink" name="linkedinLink" placeholder="https://linkedin.com/company/yourshop" class="form-input rounded-l-none flex-1">
-        </div>
-      </div>
-    </div>
-
-    <!-- SMS notifications -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">📲 SMS Notifications</h3>
-      <p class="text-xs text-gray-500 mb-4">
-        Paste your SMS gateway URL with <code class="text-violet-300">&#123;to&#125;</code> and
-        <code class="text-violet-300">&#123;msg&#125;</code> placeholders. When set, customers get an SMS
-        as their order moves through Processing → Shipped → Delivered. Leave blank to disable.
-      </p>
-      <div class="form-group">
-        <label>SMS Gateway URL</label>
-        <input type="text" [(ngModel)]="smsApiUrl" name="smsApiUrl" class="form-input"
-          placeholder="http://bulksmsbd.net/api/smsapi?api_key=KEY&type=text&senderid=SID&number={to}&message={msg}">
-      </div>
-      <p class="text-[11px] text-gray-600 mt-2">Works with bulksmsbd, greenweb, MIM SMS and any gateway that accepts number &amp; message as URL params.</p>
-    </div>
-
-    <!-- Storefront Sections: category/sub-category visibility + per-category top-10 ordering -->
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Storefront Sections</h3>
-      <p class="text-xs text-gray-500 mb-4">
-        Tick a category or sub-category to give it its own section on the public storefront homepage.
-        Open it to pick &amp; order up to {{ MAX_PER_CATEGORY }} products — leave empty to auto-show the latest products instead.
-      </p>
-
-      <div *ngIf="categoryTree.length === 0" class="text-center text-gray-600 text-sm py-4">
-        No categories available. Create categories first.
-      </div>
-
-      <ng-container *ngFor="let node of categoryTree">
-        <ng-container *ngTemplateOutlet="categoryRow; context: { node: node, depth: 0 }"></ng-container>
-      </ng-container>
-
-      <!-- Recursive row template: renders a category + its children + its product picker -->
-      <ng-template #categoryRow let-node="node" let-depth="depth">
-        <div [style.margin-left.px]="depth * 20" class="mb-2">
-          <div class="flex items-center gap-2 p-3 rounded-xl border transition-all"
-            [ngClass]="selectedCategoryIds[node.id] ? 'border-sky-500/50 bg-sky-900/20' : 'border-white/5 bg-white/[0.02]'">
-
-            <button *ngIf="node.children.length" (click)="toggleCategoryExpand(node)"
-              class="text-gray-400 hover:text-gray-200 flex-shrink-0">
-              <svg class="w-3.5 h-3.5 transition-transform" [ngClass]="node.expanded ? 'rotate-90' : ''"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
-            <span *ngIf="!node.children.length" class="w-3.5 flex-shrink-0"></span>
-
-            <label class="flex items-center gap-2 flex-1 cursor-pointer select-none">
-              <input type="checkbox" [checked]="!!selectedCategoryIds[node.id]" (change)="toggleCategoryVisible(node.id)"
-                class="rounded border-white/20 bg-transparent text-sky-500 h-4 w-4 flex-shrink-0">
-              <span class="text-sm text-gray-200">{{ node.name }}</span>
-            </label>
-
-            <button *ngIf="selectedCategoryIds[node.id]" (click)="togglePicker(node.id)"
-              class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-all flex-shrink-0"
-              [ngClass]="selectedCount(node.id) > 0 ? 'border-violet-500/50 bg-violet-900/20 text-violet-300' : 'border-white/10 text-gray-400 hover:border-white/20'">
-              {{ selectedCount(node.id) > 0 ? (selectedCount(node.id) + ' / ' + MAX_PER_CATEGORY + ' picked') : 'Auto (latest)' }}
-              <svg class="w-3 h-3 inline-block ml-1 transition-transform" [ngClass]="openPickerId === node.id ? 'rotate-180' : ''"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:inline">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Product picker / ordering panel -->
-          <div *ngIf="selectedCategoryIds[node.id] && openPickerId === node.id" class="mt-2 ml-6 p-4 rounded-xl border border-white/5 bg-black/20">
-
-            <!-- Selected & ordered (one card per product — all sizes folded together) -->
-            <div *ngIf="orderedGroupsInCategory(node.id).length > 0" class="space-y-1.5 mb-3">
-              <div *ngFor="let g of orderedGroupsInCategory(node.id); let i = index"
-                class="flex items-center gap-2 p-2 rounded-lg bg-violet-900/15 border border-violet-500/20">
-                <span class="text-xs font-bold text-violet-400 w-5 text-center flex-shrink-0">{{ i + 1 }}</span>
-                <div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
-                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
-                  <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-xs">📦</div>
-                </div>
-                <span class="text-sm text-gray-200 flex-1 truncate">{{ g.baseName }}<span *ngIf="g.variants.length > 1" class="text-gray-500"> · {{ g.variants.length }} sizes</span></span>
-                <button (click)="moveProduct(node.id, i, -1)" [disabled]="i === 0"
-                  class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↑</button>
-                <button (click)="moveProduct(node.id, i, 1)" [disabled]="i === orderedGroupsInCategory(node.id).length - 1"
-                  class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↓</button>
-                <button (click)="removeProductFromCategory(node.id, g)"
-                  class="text-rose-400 hover:text-rose-300 w-6 h-6 flex items-center justify-center">✕</button>
-              </div>
-            </div>
-            <p *ngIf="orderedGroupsInCategory(node.id).length === 0" class="text-xs text-gray-500 mb-3 italic">
-              No products picked yet — the storefront will auto-show the latest products from this category.
-            </p>
-
-            <!-- Add more -->
-            <input type="text" [(ngModel)]="categorySearch[node.id]"
-              class="form-input text-sm mb-2" placeholder="Search products to add…">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
-              <button *ngFor="let g of filteredGroupsInCategory(node.id)" type="button"
-                (click)="addProductToCategory(node.id, g)"
-                class="flex items-center gap-2 p-2 rounded-lg border border-white/5 bg-white/[0.02] hover:border-white/15 transition-all text-left">
-                <div class="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
-                  <img *ngIf="g.imageUrl" [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
-                  <div *ngIf="!g.imageUrl" class="w-full h-full flex items-center justify-center text-xs">📦</div>
-                </div>
-                <span class="text-xs text-gray-300 flex-1 truncate">{{ g.baseName }}<span *ngIf="g.variants.length > 1" class="text-gray-500"> · {{ g.variants.length }} sizes</span></span>
-                <span class="text-violet-400 text-sm flex-shrink-0">+</span>
-              </button>
-              <p *ngIf="filteredGroupsInCategory(node.id).length === 0" class="text-xs text-gray-600 italic py-2 col-span-full text-center">
-                No more products to add in this category.
+  @if (!isLoading && activeTab === 'general') {
+    <div class="space-y-6 max-w-4xl">
+      <!-- Mobile App Download (staff/super-admin only — no public/customer login exists) -->
+      @if (latestAppVersion) {
+        <div class="bg-gradient-to-r from-violet-900/20 to-indigo-900/20 border border-violet-600/20 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 class="text-[11px] font-bold text-violet-300 uppercase tracking-widest mb-1">📱 Mobile App</h3>
+            <p class="text-sm text-gray-300">Version {{ latestAppVersion.versionName }}@if (latestAppVersion.releaseNotes) {
+              <span> — {{ latestAppVersion.releaseNotes }}</span>
+            }</p>
+            @if (companyAppCode) {
+              <p class="text-sm text-gray-400 mt-2">
+                Your Store Code: <span class="font-mono font-bold text-violet-200 tracking-widest">{{ companyAppCode }}</span>
+                <span class="block text-xs text-gray-500 mt-0.5">Enter this in the app after installing to reach your store's login.</span>
               </p>
+            }
+          </div>
+          <a [href]="resolveUrl(latestAppVersion.apkUrl)" class="btn-primary flex items-center gap-2 flex-shrink-0">
+            ⬇ Download APK
+          </a>
+        </div>
+      }
+      <!-- Basic Info -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Basic Information</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label>Store Name</label>
+            <input type="text" [(ngModel)]="storeName" name="storeName" class="form-input" placeholder="e.g. My Fashion Hub">
+          </div>
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input type="text" [(ngModel)]="storePhone" name="storePhone" class="form-input" placeholder="+88017XXXXXXXX">
+          </div>
+        </div>
+      </div>
+      <!-- Theme -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Theme & Branding</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label>Primary Color</label>
+            <div class="flex items-center gap-2 mt-1">
+              <input type="color" [(ngModel)]="primaryColor" name="primaryColorPicker" class="h-10 w-10 border border-white/10 rounded cursor-pointer bg-transparent">
+              <input type="text" [(ngModel)]="primaryColor" name="primaryColorText" class="form-input font-mono flex-1">
             </div>
           </div>
-
-          <!-- Children -->
-          <ng-container *ngIf="node.children.length && node.expanded">
-            <ng-container *ngFor="let child of node.children">
-              <ng-container *ngTemplateOutlet="categoryRow; context: { node: child, depth: depth + 1 }"></ng-container>
-            </ng-container>
-          </ng-container>
+          <div class="form-group">
+            <label>Store Logo URL</label>
+            <input type="text" [(ngModel)]="logoUrl" name="logoUrl" placeholder="https://…/logo.png" class="form-input">
+          </div>
         </div>
-      </ng-template>
+      </div>
+      <!-- Footer & Social Links -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4">Footer & Social Links</h3>
+        <div class="form-group mb-4">
+          <label>About / Footer Text</label>
+          <textarea [(ngModel)]="footerAboutText" name="footerAboutText" rows="2" class="form-input" placeholder="A short line about your store shown in the footer…"></textarea>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-400 text-xs font-bold">fb</span>
+            <input type="text" [(ngModel)]="facebookLink" name="facebookLink" placeholder="https://facebook.com/yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-pink-400 text-xs font-bold">ig</span>
+            <input type="text" [(ngModel)]="instagramLink" name="instagramLink" placeholder="https://instagram.com/yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-sky-400 text-xs font-bold">𝕏</span>
+            <input type="text" [(ngModel)]="twitterLink" name="twitterLink" placeholder="https://x.com/yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-red-400 text-xs font-bold">yt</span>
+            <input type="text" [(ngModel)]="youtubeLink" name="youtubeLink" placeholder="https://youtube.com/@yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-emerald-400 text-xs font-bold">wa</span>
+            <input type="text" [(ngModel)]="whatsappLink" name="whatsappLink" placeholder="https://wa.me/8801XXXXXXXXX" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-gray-300 text-xs font-bold">tt</span>
+            <input type="text" [(ngModel)]="tiktokLink" name="tiktokLink" placeholder="https://tiktok.com/@yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+          <div class="flex items-center gap-0">
+            <span class="h-[38px] w-11 flex items-center justify-center bg-white/5 border border-white/10 border-r-0 rounded-l-lg text-blue-300 text-xs font-bold">in</span>
+            <input type="text" [(ngModel)]="linkedinLink" name="linkedinLink" placeholder="https://linkedin.com/company/yourshop" class="form-input rounded-l-none flex-1">
+          </div>
+        </div>
+      </div>
+      <!-- SMS notifications -->
+      <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">📲 SMS Notifications</h3>
+        <p class="text-xs text-gray-500 mb-4">
+          Paste your SMS gateway URL with <code class="text-violet-300">&#123;to&#125;</code> and
+          <code class="text-violet-300">&#123;msg&#125;</code> placeholders. When set, customers get an SMS
+          as their order moves through Processing → Shipped → Delivered. Leave blank to disable.
+        </p>
+        <div class="form-group">
+          <label>SMS Gateway URL</label>
+          <input type="text" [(ngModel)]="smsApiUrl" name="smsApiUrl" class="form-input"
+            placeholder="http://bulksmsbd.net/api/smsapi?api_key=KEY&type=text&senderid=SID&number={to}&message={msg}">
+          </div>
+          <p class="text-[11px] text-gray-600 mt-2">Works with bulksmsbd, greenweb, MIM SMS and any gateway that accepts number &amp; message as URL params.</p>
+        </div>
+        <!-- Storefront Sections: category/sub-category visibility + per-category top-10 ordering -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+          <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Storefront Sections</h3>
+          <p class="text-xs text-gray-500 mb-4">
+            Tick a category or sub-category to give it its own section on the public storefront homepage.
+            Open it to pick &amp; order up to {{ MAX_PER_CATEGORY }} products — leave empty to auto-show the latest products instead.
+          </p>
+          @if (categoryTree.length === 0) {
+            <div class="text-center text-gray-600 text-sm py-4">
+              No categories available. Create categories first.
+            </div>
+          }
+          @for (node of categoryTree; track node) {
+            <ng-container *ngTemplateOutlet="categoryRow; context: { node: node, depth: 0 }"></ng-container>
+          }
+          <!-- Recursive row template: renders a category + its children + its product picker -->
+          <ng-template #categoryRow let-node="node" let-depth="depth">
+            <div [style.margin-left.px]="depth * 20" class="mb-2">
+              <div class="flex items-center gap-2 p-3 rounded-xl border transition-all"
+                [ngClass]="selectedCategoryIds[node.id] ? 'border-sky-500/50 bg-sky-900/20' : 'border-white/5 bg-white/[0.02]'">
+                @if (node.children.length) {
+                  <button (click)="toggleCategoryExpand(node)"
+                    class="text-gray-400 hover:text-gray-200 flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 transition-transform" [ngClass]="node.expanded ? 'rotate-90' : ''"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              }
+              @if (!node.children.length) {
+                <span class="w-3.5 flex-shrink-0"></span>
+              }
+              <label class="flex items-center gap-2 flex-1 cursor-pointer select-none">
+                <input type="checkbox" [checked]="!!selectedCategoryIds[node.id]" (change)="toggleCategoryVisible(node.id)"
+                  class="rounded border-white/20 bg-transparent text-sky-500 h-4 w-4 flex-shrink-0">
+                  <span class="text-sm text-gray-200">{{ node.name }}</span>
+                </label>
+                @if (selectedCategoryIds[node.id]) {
+                  <button (click)="togglePicker(node.id)"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-all flex-shrink-0"
+                    [ngClass]="selectedCount(node.id) > 0 ? 'border-violet-500/50 bg-violet-900/20 text-violet-300' : 'border-white/10 text-gray-400 hover:border-white/20'">
+                    {{ selectedCount(node.id) > 0 ? (selectedCount(node.id) + ' / ' + MAX_PER_CATEGORY + ' picked') : 'Auto (latest)' }}
+                    <svg class="w-3 h-3 inline-block ml-1 transition-transform" [ngClass]="openPickerId === node.id ? 'rotate-180' : ''"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:inline">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+              }
+            </div>
+            <!-- Product picker / ordering panel -->
+            @if (selectedCategoryIds[node.id] && openPickerId === node.id) {
+              <div class="mt-2 ml-6 p-4 rounded-xl border border-white/5 bg-black/20">
+                <!-- Selected & ordered (one card per product — all sizes folded together) -->
+                @if (orderedGroupsInCategory(node.id).length > 0) {
+                  <div class="space-y-1.5 mb-3">
+                    @for (g of orderedGroupsInCategory(node.id); track g; let i = $index) {
+                      <div
+                        class="flex items-center gap-2 p-2 rounded-lg bg-violet-900/15 border border-violet-500/20">
+                        <span class="text-xs font-bold text-violet-400 w-5 text-center flex-shrink-0">{{ i + 1 }}</span>
+                        <div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
+                          @if (g.imageUrl) {
+                            <img [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
+                          }
+                          @if (!g.imageUrl) {
+                            <div class="w-full h-full flex items-center justify-center text-xs">📦</div>
+                          }
+                        </div>
+                        <span class="text-sm text-gray-200 flex-1 truncate">{{ g.baseName }}@if (g.variants.length > 1) {
+                          <span class="text-gray-500"> · {{ g.variants.length }} sizes</span>
+                        }</span>
+                        <button (click)="moveProduct(node.id, i, -1)" [disabled]="i === 0"
+                        class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↑</button>
+                        <button (click)="moveProduct(node.id, i, 1)" [disabled]="i === orderedGroupsInCategory(node.id).length - 1"
+                        class="text-gray-400 hover:text-gray-100 disabled:opacity-25 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center">↓</button>
+                        <button (click)="removeProductFromCategory(node.id, g)"
+                        class="text-rose-400 hover:text-rose-300 w-6 h-6 flex items-center justify-center">✕</button>
+                      </div>
+                    }
+                  </div>
+                }
+                @if (orderedGroupsInCategory(node.id).length === 0) {
+                  <p class="text-xs text-gray-500 mb-3 italic">
+                    No products picked yet — the storefront will auto-show the latest products from this category.
+                  </p>
+                }
+                <!-- Add more -->
+                <input type="text" [(ngModel)]="categorySearch[node.id]"
+                  class="form-input text-sm mb-2" placeholder="Search products to add…">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  @for (g of filteredGroupsInCategory(node.id); track g) {
+                    <button type="button"
+                      (click)="addProductToCategory(node.id, g)"
+                      class="flex items-center gap-2 p-2 rounded-lg border border-white/5 bg-white/[0.02] hover:border-white/15 transition-all text-left">
+                      <div class="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-black/30 border border-white/5">
+                        @if (g.imageUrl) {
+                          <img [src]="g.imageUrl | imgUrl" [alt]="g.baseName" class="w-full h-full object-cover">
+                        }
+                        @if (!g.imageUrl) {
+                          <div class="w-full h-full flex items-center justify-center text-xs">📦</div>
+                        }
+                      </div>
+                      <span class="text-xs text-gray-300 flex-1 truncate">{{ g.baseName }}@if (g.variants.length > 1) {
+                        <span class="text-gray-500"> · {{ g.variants.length }} sizes</span>
+                      }</span>
+                      <span class="text-violet-400 text-sm flex-shrink-0">+</span>
+                    </button>
+                  }
+                  @if (filteredGroupsInCategory(node.id).length === 0) {
+                    <p class="text-xs text-gray-600 italic py-2 col-span-full text-center">
+                      No more products to add in this category.
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+            <!-- Children -->
+            @if (node.children.length && node.expanded) {
+              @for (child of node.children; track child) {
+                <ng-container *ngTemplateOutlet="categoryRow; context: { node: child, depth: depth + 1 }"></ng-container>
+              }
+            }
+          </div>
+        </ng-template>
+      </div>
+      <!-- Save button bottom -->
+      <div class="flex justify-end pb-6">
+        <button (click)="saveSettings()" [disabled]="saving"
+          class="btn-primary flex items-center gap-2 min-w-[160px] justify-center">
+          @if (saving) {
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          }
+          {{ saving ? 'Saving…' : 'Save Configuration' }}
+        </button>
+      </div>
     </div>
-
-    <!-- Save button bottom -->
-    <div class="flex justify-end pb-6">
-      <button (click)="saveSettings()" [disabled]="saving"
-        class="btn-primary flex items-center gap-2 min-w-[160px] justify-center">
-        <svg *ngIf="saving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        {{ saving ? 'Saving…' : 'Save Configuration' }}
-      </button>
-    </div>
-
-  </div>
+  }
 </div>

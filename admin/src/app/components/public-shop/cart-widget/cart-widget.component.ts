@@ -11,10 +11,9 @@ import { groupProducts, ProductGroup, toShopProduct } from '../../../utils/produ
 import { ImgUrlPipe } from '../../../pipes/img-url.pipe';
 
 @Component({
-  selector: 'app-cart-widget',
-  standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, ImgUrlPipe],
-  templateUrl: './cart-widget.component.html'
+    selector: 'app-cart-widget',
+    imports: [TranslatePipe, CommonModule, FormsModule, ImgUrlPipe],
+    templateUrl: './cart-widget.component.html'
 })
 export class CartWidgetComponent implements OnInit {
   cartService = inject(CartService);

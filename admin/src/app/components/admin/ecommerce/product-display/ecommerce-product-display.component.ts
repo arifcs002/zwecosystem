@@ -1,15 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { SettingsService, CompanySetting } from '../../../../services/settings/settings.service';
 import { GlobalNotificationService } from '../../../../services/global-notification/global-notification.service';
 
 @Component({
-  selector: 'app-ecommerce-product-display',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './ecommerce-product-display.component.html',
-  styleUrl: '../ecommerce-config.css'
+    selector: 'app-ecommerce-product-display',
+    imports: [FormsModule],
+    templateUrl: './ecommerce-product-display.component.html',
+    styleUrl: '../ecommerce-config.css'
 })
 export class EcommerceProductDisplayComponent implements OnInit {
   private settingsService = inject(SettingsService);

@@ -9,11 +9,10 @@ import { ClickOutsideDirective } from '../../../directives/click-outside.directi
 import { DIVISIONS, getDistrictsByDivision, getUpazilasByDistrict } from '../../../data/bangladesh-geo.data';
 
 @Component({
-  selector: 'app-company-form',
-  standalone: true,
-  imports: [CommonModule, FormsModule, SearchFilterPipe, ClickOutsideDirective],
-  templateUrl: './company-form.component.html',
-  styleUrl: './company-form.component.css'
+    selector: 'app-company-form',
+    imports: [CommonModule, FormsModule, SearchFilterPipe, ClickOutsideDirective],
+    templateUrl: './company-form.component.html',
+    styleUrl: './company-form.component.css'
 })
 export class CompanyFormComponent implements OnInit {
   private router = inject(Router);

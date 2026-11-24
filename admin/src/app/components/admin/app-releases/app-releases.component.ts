@@ -6,11 +6,10 @@ import { GlobalNotificationService } from '../../../services/global-notification
 import { resolveImageUrl } from '../../../utils/image-url.util';
 
 @Component({
-  selector: 'app-app-releases',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './app-releases.component.html',
-  styleUrl: './app-releases.component.css'
+    selector: 'app-app-releases',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './app-releases.component.html',
+    styleUrl: './app-releases.component.css'
 })
 export class AppReleasesComponent implements OnInit {
   private appVersionService = inject(AppVersionService);

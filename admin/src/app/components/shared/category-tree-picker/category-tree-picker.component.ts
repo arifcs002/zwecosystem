@@ -8,42 +8,51 @@ import { buildTree, TreeNode, categoryPath } from '../../../utils/category-tree.
 // picker for every "choose a category" spot (add-product, category admin's
 // parent field, bulk restock, etc).
 @Component({
-  selector: 'app-category-tree-picker',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-category-tree-picker',
+    imports: [CommonModule],
+    template: `
     <div class="ctp-wrap">
       <button type="button" class="ctp-trigger" (click)="toggle()" [class.open]="open">
         <span class="ctp-value" [class.placeholder]="!value">{{ value ? path : (placeholder || 'Select category') }}</span>
         <span class="ctp-chevron">{{ open ? '▲' : '▼' }}</span>
       </button>
-
-      <div class="ctp-panel" *ngIf="open">
-        <button *ngIf="allowNone" type="button" class="ctp-none" (click)="select(null)">
-          — None (Root Category) —
-        </button>
-        <div class="ctp-tree">
-          <ng-container *ngTemplateOutlet="nodeList; context: { nodes: tree, depth: 0 }"></ng-container>
+    
+      @if (open) {
+        <div class="ctp-panel">
+          @if (allowNone) {
+            <button type="button" class="ctp-none" (click)="select(null)">
+              — None (Root Category) —
+            </button>
+          }
+          <div class="ctp-tree">
+            <ng-container *ngTemplateOutlet="nodeList; context: { nodes: tree, depth: 0 }"></ng-container>
+          </div>
         </div>
-      </div>
+      }
     </div>
-
+    
     <ng-template #nodeList let-nodes="nodes" let-depth="depth">
-      <div class="ctp-node" *ngFor="let n of nodes">
-        <div class="ctp-row" [style.padding-left.px]="depth * 18" [class.selected]="value === n.cat.id">
-          <button type="button" class="ctp-expand" *ngIf="n.children.length" (click)="toggleExpand(n, $event)">
-            {{ isExpanded(n) ? '▾' : '▸' }}
-          </button>
-          <span class="ctp-spacer" *ngIf="!n.children.length"></span>
-          <button type="button" class="ctp-label" (click)="select(n.cat.id ?? null)">{{ n.cat.name }}</button>
+      @for (n of nodes; track n) {
+        <div class="ctp-node">
+          <div class="ctp-row" [style.padding-left.px]="depth * 18" [class.selected]="value === n.cat.id">
+            @if (n.children.length) {
+              <button type="button" class="ctp-expand" (click)="toggleExpand(n, $event)">
+                {{ isExpanded(n) ? '▾' : '▸' }}
+              </button>
+            }
+            @if (!n.children.length) {
+              <span class="ctp-spacer"></span>
+            }
+            <button type="button" class="ctp-label" (click)="select(n.cat.id ?? null)">{{ n.cat.name }}</button>
+          </div>
+          @if (n.children.length && isExpanded(n)) {
+            <ng-container *ngTemplateOutlet="nodeList; context: { nodes: n.children, depth: depth + 1 }"></ng-container>
+          }
         </div>
-        <ng-container *ngIf="n.children.length && isExpanded(n)">
-          <ng-container *ngTemplateOutlet="nodeList; context: { nodes: n.children, depth: depth + 1 }"></ng-container>
-        </ng-container>
-      </div>
+      }
     </ng-template>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .ctp-wrap { position: relative; }
     .ctp-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
       background: #1c1b3a; border: 1px solid #2f2d55; color: #e5e7eb; border-radius: 8px; padding: 9px 12px;

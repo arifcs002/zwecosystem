@@ -44,15 +44,14 @@ export interface CategoryTree {
 }
 
 @Component({
-  selector: 'app-public-shop',
-  standalone: true,
-  imports: [TranslatePipe, 
-    CommonModule, FormsModule, RouterModule, ImgUrlPipe, ShopHeaderComponent, ShopFooterComponent, ImgFallbackDirective,
-    HeroSliderComponent, CategoryIconsComponent, ProductCarouselComponent,
-    BrandCarouselComponent, TestimonialsComponent
-  ],
-  templateUrl: './public-shop.component.html',
-  styleUrl: './public-shop.component.css'
+    selector: 'app-public-shop',
+    imports: [TranslatePipe,
+        CommonModule, FormsModule, RouterModule, ImgUrlPipe, ShopHeaderComponent, ShopFooterComponent, ImgFallbackDirective,
+        HeroSliderComponent, CategoryIconsComponent, ProductCarouselComponent,
+        BrandCarouselComponent, TestimonialsComponent
+    ],
+    templateUrl: './public-shop.component.html',
+    styleUrl: './public-shop.component.css'
 })
 export class PublicShopComponent implements OnInit {
   private route = inject(ActivatedRoute);

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SettingsService } from '../../../../services/settings/settings.service';
@@ -14,11 +14,10 @@ import {
 } from '../../../../models/storefront-layout.model';
 
 @Component({
-  selector: 'app-ecommerce-builder',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ImgUrlPipe],
-  templateUrl: './ecommerce-builder.component.html',
-  styleUrl: './ecommerce-builder.component.css'
+    selector: 'app-ecommerce-builder',
+    imports: [FormsModule, ImgUrlPipe],
+    templateUrl: './ecommerce-builder.component.html',
+    styleUrl: './ecommerce-builder.component.css'
 })
 export class EcommerceBuilderComponent implements OnInit {
   private settingsService = inject(SettingsService);
