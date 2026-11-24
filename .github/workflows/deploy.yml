@@ -275,6 +275,12 @@ jobs:
             echo "${{ secrets.SSH_PASSWORD }}" | sudo -S mkdir -p /data/apps/zwecosystem
             echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R $USER:$USER /data/apps/zwecosystem
 
+            # /data itself belongs to root, so the backup and uploads folders must be created with sudo (a plain mkdir under
+            # /data fails with "Permission denied" and, with set -e below, aborts the deploy). Only the backups folder is handed
+            # to the deploy user; the uploads folder keeps whatever owner the backend container writes as.
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S mkdir -p /data/backups /data/apps/uploads
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown $USER:$USER /data/backups
+
             cd /data/apps/zwecosystem
 
             # Move and overwrite the compose config
